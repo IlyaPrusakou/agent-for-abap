@@ -22,6 +22,11 @@ LONG MEMORY PROVIDER - ABAP class persists in database table all data during one
 
 INFO PROVIDER - ABAP class for getting info about agent, tool etc.
 
+SYSTEM PROMPT - prompt bound to agent, usually must be a part of each request to decision provider
+
+SYSTEM PROMPT PROVIDER - ABAP class containing system prompt. 
+
+
 Framework stucture
 1 ZPRU_AGENT_FRAMEWORK
 1.1 ZPRU_AGENT_API
