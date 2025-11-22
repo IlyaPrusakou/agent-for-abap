@@ -1,5 +1,22 @@
 ABAP Agent Framework
 
+Main definitions:
+
+AGENT DEFINITION - static container for agent and its tools, technical foundation for agent execution. One agent definition can have many executions.
+
+AGENT - root entity defining decision provider, short/long memory providers, ancor for assignment of tools. Represented as row in database table ZPRU_AGENT.
+
+TOOL - child entity containing name of tool class. Represented as a row in database table ZPRU_AGENT_TOOL
+
+TOOL CLASS - ABAP class representing a peace of work to be executed by agent. There are assigned tools and equiped tools.
+
+ASSIGNED TOOL - tool assigned to agent during definition phase and persisted in table ZPRU_AGENT_TOOL.
+
+EQUIPED TOOL - tool added to agent execution ad hoc via API method during building execution from agent definition. [NOT YET IMPLEMENTED]
+
+DECISION PROVIDER - ABAP class contained in agent definition which is using any decision platform(LLM, ML, Condition technique API etc. or combination of them) and produces invocation sequence of tools. 
+
+
 Framework stucture
 1 ZPRU_AGENT_FRAMEWORK
 1.1 ZPRU_AGENT_API
@@ -17,7 +34,18 @@ User can save into persistance storage prepared execution to use it later
 User can run execution to get result of agent work
 User can rerun execution
 
+Main packages
+Package ZPRU_AGENT_DEFINITION contains tables and classes relevant to agent definition.
 
-Package ZPRU_AGENT_DEFINITION contains tables and classes relevant to agent definition:
-1 database table ZPRU_AGENT
-2 database table ZPRY_AGENT_TOOL
+
+Main database tables:
+1 ZPRU_AGENT contains definition of agent, header table for tools table ZPRU_AGENT_TOOL with relation one to many.
+2 ZPRU_AGENT_TOOL contains assignments of tools to the agent
+
+
+
+Main interfaces:
+
+
+
+Main classes:
