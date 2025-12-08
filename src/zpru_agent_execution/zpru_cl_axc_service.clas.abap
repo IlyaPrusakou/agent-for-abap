@@ -98,6 +98,18 @@ CLASS zpru_cl_axc_service DEFINITION
                 it_delete_query TYPE tt_axc_query
                 it_delete_step  TYPE tt_axc_step
       RETURNING VALUE(rv_error) TYPE abap_boolean.
+
+    METHODS check_row
+      IMPORTING io_util         TYPE REF TO zpru_if_agent_util
+                iv_struct_name  TYPE string
+                it_req_fields   TYPE string_table OPTIONAL
+                iv_pk_field     TYPE string OPTIONAL
+                iv_fail_cause   TYPE if_abap_behv=>t_fail_cause DEFAULT zpru_if_agent_frw=>cs_fail_cause-dependency
+                iv_msg_num      TYPE symsgno DEFAULT '007'
+      CHANGING  cs_row          TYPE any
+                ct_failed       TYPE ANY TABLE
+                ct_reported     TYPE ANY TABLE
+      RETURNING VALUE(rv_ok)    TYPE abap_boolean.
 ENDCLASS.
 
 
@@ -1340,453 +1352,270 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     ENDLOOP.
   ENDMETHOD.
 
-  METHOD precheck_create.
+  METHOD check_row.
+    rv_ok = abap_true.
+    FIELD-SYMBOLS: <lv_field> TYPE any.
 
-    CLEAR et_entities.
-
-    LOOP AT it_head_create_imp ASSIGNING FIELD-SYMBOL(<ls_create>).
-      IF <ls_create>-run_uuid IS INITIAL.
+    " 1. Generate PK if requested and missing
+    IF iv_pk_field IS NOT INITIAL.
+      ASSIGN COMPONENT iv_pk_field OF STRUCTURE cs_row TO <lv_field>.
+      IF sy-subrc = 0 AND <lv_field> IS INITIAL.
         TRY.
-            <ls_create>-run_uuid = cl_system_uuid=>create_uuid_x16_static( ).
+            <lv_field> = cl_system_uuid=>create_uuid_x16_static( ).
           CATCH cx_uuid_error.
             RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
         ENDTRY.
       ENDIF.
+    ENDIF.
 
-      NEW zpru_cl_agent_util( )->zpru_if_agent_util~fill_flags(
-        EXPORTING
-          iv_name    = `ZPRU_IF_AXC_SERVICE=>TS_HEAD_CONTROL`
-        CHANGING
-          cs_data    = <ls_create>
-          cs_control = <ls_create>-control ).
+    " 2. Fill Control Flags
+    " We need to access the 'control' component of the row structure
+    ASSIGN COMPONENT 'CONTROL' OF STRUCTURE cs_row TO FIELD-SYMBOL(<ls_control>).
+    IF sy-subrc = 0.
+      io_util->fill_flags( EXPORTING iv_name = iv_struct_name
+                           CHANGING  cs_data = cs_row
+                                     cs_control = <ls_control> ).
+    ENDIF.
 
-      IF <ls_create>-agent_uuid IS INITIAL.
+    " 3. Check Required Fields
+    LOOP AT it_req_fields INTO DATA(lv_req).
+      ASSIGN COMPONENT lv_req OF STRUCTURE cs_row TO <lv_field>.
+      IF sy-subrc = 0 AND <lv_field> IS INITIAL.
+        rv_ok = abap_false.
 
-        APPEND VALUE #( run_uuid = <ls_create>-run_uuid
-                        create   = abap_true
-                        fail     = zpru_if_agent_frw=>cs_fail_cause-dependency )
-               TO cs_failed-header.
+        " Add to failed
+        APPEND INITIAL LINE TO ct_failed ASSIGNING FIELD-SYMBOL(<ls_fail>).
+        MOVE-CORRESPONDING cs_row TO <ls_fail>.
+        ASSIGN COMPONENT 'FAIL' OF STRUCTURE <ls_fail> TO FIELD-SYMBOL(<lv_fail_cause>).
+        IF sy-subrc = 0. <lv_fail_cause> = iv_fail_cause. ENDIF.
+        ASSIGN COMPONENT lv_req OF STRUCTURE <ls_fail> TO <lv_field>. " Explicitly Ensure the missing key is populated if CORRESPONDING didn't catch it? No, CORRESPONDING cs_row should have it (it's initial though)
+        " The failed structure usually requires the PARENT keys to be populated. cs_row has them if they are not the ones missing.
 
-        APPEND VALUE #( run_uuid = <ls_create>-run_uuid
-                        create   = abap_true
-                        msg      = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                           iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                           iv_number   = `004`
-                                           iv_severity = zpru_if_agent_message=>sc_severity-error ) )
-               TO cs_reported-header.
+        " Add to reported
+        APPEND INITIAL LINE TO ct_reported ASSIGNING FIELD-SYMBOL(<ls_rep>).
+        MOVE-CORRESPONDING cs_row TO <ls_rep>.
+        ASSIGN COMPONENT 'MSG' OF STRUCTURE <ls_rep> TO FIELD-SYMBOL(<lv_msg>).
+        IF sy-subrc = 0.
+           <lv_msg> = io_util->new_message( iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
+                                            iv_number   = iv_msg_num
+                                            iv_severity = zpru_if_agent_message=>sc_severity-error ).
+        ENDIF.
 
-        CONTINUE.
+        RETURN. " Fail on first missing required field
       ENDIF.
+    ENDLOOP.
+  ENDMETHOD.
 
-      APPEND INITIAL LINE TO et_entities ASSIGNING FIELD-SYMBOL(<ls_entity>).
-      <ls_entity> = <ls_create>.
+  METHOD precheck_create.
+    CLEAR et_entities.
+    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
 
+    LOOP AT it_head_create_imp ASSIGNING FIELD-SYMBOL(<ls_create>).
+      IF check_row( EXPORTING io_util        = lo_util
+                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_HEAD_CONTROL`
+                              iv_pk_field    = 'RUN_UUID'
+                              it_req_fields  = VALUE #( ( `AGENT_UUID` ) )
+                              iv_msg_num     = '004'
+                    CHANGING  cs_row         = <ls_create>
+                              ct_failed      = cs_failed-header
+                              ct_reported    = cs_reported-header ).
+         APPEND <ls_create> TO et_entities.
+      ENDIF.
     ENDLOOP.
   ENDMETHOD.
 
   METHOD precheck_cba_query.
-
     CLEAR et_entities.
+    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
 
     LOOP AT it_axc_query_imp ASSIGNING FIELD-SYMBOL(<ls_create>).
-      IF <ls_create>-query_uuid IS INITIAL.
-        TRY.
-            <ls_create>-query_uuid = cl_system_uuid=>create_uuid_x16_static( ).
-          CATCH cx_uuid_error.
-            RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
-        ENDTRY.
+      IF check_row( EXPORTING io_util        = lo_util
+                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_QUERY_CONTROL`
+                              iv_pk_field    = 'QUERY_UUID'
+                              it_req_fields  = VALUE #( ( `RUN_UUID` ) )
+                              iv_msg_num     = '006'
+                    CHANGING  cs_row         = <ls_create>
+                              ct_failed      = cs_failed-query
+                              ct_reported    = cs_reported-query ).
+         APPEND <ls_create> TO et_entities.
       ENDIF.
-
-      NEW zpru_cl_agent_util( )->zpru_if_agent_util~fill_flags(
-        EXPORTING
-          iv_name    = `ZPRU_IF_AXC_SERVICE=>TS_QUERY_CONTROL`
-        CHANGING
-          cs_data    = <ls_create>
-          cs_control = <ls_create>-control ).
-
-      IF <ls_create>-run_uuid IS INITIAL.
-
-         APPEND VALUE #( run_uuid  = <ls_create>-run_uuid
-               query_uuid = <ls_create>-query_uuid
-               create    = abap_true
-               fail      = zpru_if_agent_frw=>cs_fail_cause-dependency )
-           TO cs_failed-query.
-
-         APPEND VALUE #( run_uuid   = <ls_create>-run_uuid
-               query_uuid  = <ls_create>-query_uuid
-               create      = abap_true
-               msg         = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                   iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                   iv_number   = `006`
-                   iv_severity = zpru_if_agent_message=>sc_severity-error ) )
-           TO cs_reported-query.
-
-        CONTINUE.
-      ENDIF.
-
-      APPEND INITIAL LINE TO et_entities ASSIGNING FIELD-SYMBOL(<ls_entity>).
-      <ls_entity> = <ls_create>.
-
     ENDLOOP.
   ENDMETHOD.
 
   METHOD precheck_read.
-
     CLEAR et_entities.
+    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
 
     LOOP AT it_head_read_k ASSIGNING FIELD-SYMBOL(<ls_k>).
-
-      NEW zpru_cl_agent_util( )->zpru_if_agent_util~fill_flags(
-        EXPORTING
-          iv_name    = `ZPRU_IF_AXC_SERVICE=>TS_HEAD_CONTROL`
-        CHANGING
-          cs_data    = <ls_k>
-          cs_control = <ls_k>-control ).
-
-      IF <ls_k>-run_uuid IS INITIAL.
-        APPEND VALUE #( run_uuid = <ls_k>-run_uuid
-                        create   = abap_true
-                        fail     = zpru_if_agent_frw=>cs_fail_cause-dependency )
-               TO cs_failed-header.
-
-        APPEND VALUE #( run_uuid = <ls_k>-run_uuid
-                        create   = abap_true
-                        msg      = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                           iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                           iv_number   = `007`
-                                           iv_severity = zpru_if_agent_message=>sc_severity-error ) )
-               TO cs_reported-header.
-
-        CONTINUE.
+      IF check_row( EXPORTING io_util        = lo_util
+                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_HEAD_CONTROL`
+                              it_req_fields  = VALUE #( ( `RUN_UUID` ) )
+                    CHANGING  cs_row         = <ls_k>
+                              ct_failed      = cs_failed-header
+                              ct_reported    = cs_reported-header ).
+         APPEND <ls_k> TO et_entities.
       ENDIF.
-
-      APPEND INITIAL LINE TO et_entities ASSIGNING FIELD-SYMBOL(<ls_ent>).
-      <ls_ent> = <ls_k>.
     ENDLOOP.
   ENDMETHOD.
 
   METHOD precheck_rba_query.
-
     CLEAR et_entities.
+    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
 
     LOOP AT it_rba_query_k ASSIGNING FIELD-SYMBOL(<ls_in>).
-
-      NEW zpru_cl_agent_util( )->zpru_if_agent_util~fill_flags(
-        EXPORTING
-          iv_name    = `ZPRU_IF_AXC_SERVICE=>TS_QUERY_CONTROL`
-        CHANGING
-          cs_data    = <ls_in>
-          cs_control = <ls_in>-control ).
-
-      IF <ls_in>-run_uuid IS INITIAL.
-        APPEND VALUE #( run_uuid = <ls_in>-run_uuid
-                        fail     = zpru_if_agent_frw=>cs_fail_cause-dependency )
-               TO cs_failed-header.
-
-        APPEND VALUE #( run_uuid = <ls_in>-run_uuid
-                        msg      = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                    iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                    iv_number   = `007`
-                                    iv_severity = zpru_if_agent_message=>sc_severity-error ) )
-               TO cs_reported-header.
-
-        CONTINUE.
+      IF check_row( EXPORTING io_util        = lo_util
+                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_QUERY_CONTROL`
+                              it_req_fields  = VALUE #( ( `RUN_UUID` ) )
+                              iv_msg_num     = '007'
+                    CHANGING  cs_row         = <ls_in>
+                              ct_failed      = cs_failed-header
+                              ct_reported    = cs_reported-header ).
+         APPEND <ls_in> TO et_entities.
       ENDIF.
-
-      APPEND INITIAL LINE TO et_entities ASSIGNING FIELD-SYMBOL(<ls_ent>).
-      <ls_ent> = <ls_in>.
-
     ENDLOOP.
   ENDMETHOD.
 
   METHOD precheck_read_query.
-
     CLEAR et_entities.
+    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
 
     LOOP AT it_query_read_k ASSIGNING FIELD-SYMBOL(<ls_k>).
-
-      NEW zpru_cl_agent_util( )->zpru_if_agent_util~fill_flags(
-        EXPORTING
-          iv_name    = `ZPRU_IF_AXC_SERVICE=>TS_QUERY_CONTROL`
-        CHANGING
-          cs_data    = <ls_k>
-          cs_control = <ls_k>-control ).
-
-      IF <ls_k>-run_uuid IS INITIAL OR <ls_k>-query_uuid IS INITIAL.
-        APPEND VALUE #( run_uuid   = <ls_k>-run_uuid
-                        query_uuid = <ls_k>-query_uuid
-                        fail       = zpru_if_agent_frw=>cs_fail_cause-dependency )
-               TO cs_failed-query.
-
-        APPEND VALUE #( run_uuid   = <ls_k>-run_uuid
-                        query_uuid = <ls_k>-query_uuid
-                        msg        = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                      iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                      iv_number   = `007`
-                                      iv_severity = zpru_if_agent_message=>sc_severity-error ) )
-               TO cs_reported-query.
-
-        CONTINUE.
+      IF check_row( EXPORTING io_util        = lo_util
+                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_QUERY_CONTROL`
+                              it_req_fields  = VALUE #( ( `RUN_UUID` ) ( `QUERY_UUID` ) )
+                    CHANGING  cs_row         = <ls_k>
+                              ct_failed      = cs_failed-query
+                              ct_reported    = cs_reported-query ).
+         APPEND <ls_k> TO et_entities.
       ENDIF.
-
-      APPEND INITIAL LINE TO et_entities ASSIGNING FIELD-SYMBOL(<ls_ent>).
-      <ls_ent> = <ls_k>.
-
     ENDLOOP.
   ENDMETHOD.
 
   METHOD precheck_update_query.
-
     CLEAR et_entities.
+    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
 
     LOOP AT it_query_update_imp ASSIGNING FIELD-SYMBOL(<ls_k>).
-
-      NEW zpru_cl_agent_util( )->zpru_if_agent_util~fill_flags(
-        EXPORTING
-          iv_name    = `ZPRU_IF_AXC_SERVICE=>TS_QUERY_CONTROL`
-        CHANGING
-          cs_data    = <ls_k>
-          cs_control = <ls_k>-control ).
-
-      IF <ls_k>-run_uuid IS INITIAL OR <ls_k>-query_uuid IS INITIAL.
-        APPEND VALUE #( run_uuid   = <ls_k>-run_uuid
-                        query_uuid = <ls_k>-query_uuid
-                        fail       = zpru_if_agent_frw=>cs_fail_cause-dependency )
-               TO cs_failed-query.
-
-        APPEND VALUE #( run_uuid   = <ls_k>-run_uuid
-                        query_uuid = <ls_k>-query_uuid
-                        msg        = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                      iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                      iv_number   = `007`
-                                      iv_severity = zpru_if_agent_message=>sc_severity-error ) )
-               TO cs_reported-query.
-
-        CONTINUE.
+      IF check_row( EXPORTING io_util        = lo_util
+                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_QUERY_CONTROL`
+                              it_req_fields  = VALUE #( ( `RUN_UUID` ) ( `QUERY_UUID` ) )
+                    CHANGING  cs_row         = <ls_k>
+                              ct_failed      = cs_failed-query
+                              ct_reported    = cs_reported-query ).
+         APPEND <ls_k> TO et_entities.
       ENDIF.
-
-      APPEND INITIAL LINE TO et_entities ASSIGNING FIELD-SYMBOL(<ls_ent>).
-      <ls_ent> = <ls_k>.
-
     ENDLOOP.
   ENDMETHOD.
 
   METHOD precheck_delete_query.
-
     CLEAR et_entities.
+    " Delete doesn't use fill_flags, so we might just use Check Row for the required fields mainly?
+    " The original code ONLY checked required fields, no fill_flags call.
+    " However, check_row calls fill_flags. Is that harmful? No, but maybe wasteful if not needed.
+    " Actually Delete inputs usually don't have control structures, but here `it_query_delete_imp` are likely keys.
+    " Let's see: `it_query_delete_imp` type `tt_query_delete_imp` usually just keys.
+    " If it has no `control` component, `check_row`'s `ASSIGN ... 'CONTROL'` will fail (sy-subrc <> 0) and skip fill_flags.
+    " So `check_row` is safe to use if we treat it as just checking required fields.
+    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
 
     LOOP AT it_query_delete_imp ASSIGNING FIELD-SYMBOL(<ls_k>).
-
-      IF <ls_k>-run_uuid IS INITIAL OR <ls_k>-query_uuid IS INITIAL.
-        APPEND VALUE #( run_uuid   = <ls_k>-run_uuid
-                        query_uuid = <ls_k>-query_uuid
-                        fail       = zpru_if_agent_frw=>cs_fail_cause-dependency )
-               TO cs_failed-query.
-
-        APPEND VALUE #( run_uuid   = <ls_k>-run_uuid
-                        query_uuid = <ls_k>-query_uuid
-                        msg        = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                      iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                      iv_number   = `007`
-                                      iv_severity = zpru_if_agent_message=>sc_severity-error ) )
-               TO cs_reported-query.
-
-        CONTINUE.
-      ENDIF.
-
-      APPEND INITIAL LINE TO et_entities ASSIGNING FIELD-SYMBOL(<ls_ent>).
-      <ls_ent>-run_uuid = <ls_k>-run_uuid.
-      <ls_ent>-query_uuid = <ls_k>-query_uuid.
-
+       " We need to populate et_entities differently here (mapping structure)?
+       " Original code: <ls_ent>-run_uuid = <ls_k>-run_uuid...
+       " check_row works on <ls_k>.
+       " We can append to et_entities if check passes.
+       IF check_row( EXPORTING io_util        = lo_util
+                               iv_struct_name = `` " No control structure expected? Or just ignore.
+                               it_req_fields  = VALUE #( ( `RUN_UUID` ) ( `QUERY_UUID` ) )
+                     CHANGING  cs_row         = <ls_k>
+                               ct_failed      = cs_failed-query
+                               ct_reported    = cs_reported-query ).
+         APPEND INITIAL LINE TO et_entities ASSIGNING FIELD-SYMBOL(<ls_ent>).
+         MOVE-CORRESPONDING <ls_k> TO <ls_ent>.
+       ENDIF.
     ENDLOOP.
   ENDMETHOD.
 
   METHOD precheck_cba_step.
-
     CLEAR et_entities.
+    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
 
     LOOP AT it_axc_step_imp ASSIGNING FIELD-SYMBOL(<ls_create>).
-      IF <ls_create>-step_uuid IS INITIAL.
-        TRY.
-            <ls_create>-step_uuid = cl_system_uuid=>create_uuid_x16_static( ).
-          CATCH cx_uuid_error.
-            RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
-        ENDTRY.
+      IF check_row( EXPORTING io_util        = lo_util
+                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_STEP_CONTROL`
+                              iv_pk_field    = 'STEP_UUID'
+                              it_req_fields  = VALUE #( ( `QUERY_UUID` ) )
+                              iv_msg_num     = '006'
+                    CHANGING  cs_row         = <ls_create>
+                              ct_failed      = cs_failed-step
+                              ct_reported    = cs_reported-step ).
+         APPEND <ls_create> TO et_entities.
       ENDIF.
-
-      NEW zpru_cl_agent_util( )->zpru_if_agent_util~fill_flags(
-        EXPORTING
-          iv_name    = `ZPRU_IF_AXC_SERVICE=>TS_STEP_CONTROL`
-        CHANGING
-          cs_data    = <ls_create>
-          cs_control = <ls_create>-control ).
-
-      IF <ls_create>-query_uuid IS INITIAL.
-
-         APPEND VALUE #( run_uuid   = <ls_create>-run_uuid
-               query_uuid  = <ls_create>-query_uuid
-               step_uuid   = <ls_create>-step_uuid
-               create      = abap_true
-               fail        = zpru_if_agent_frw=>cs_fail_cause-dependency )
-           TO cs_failed-step.
-
-         APPEND VALUE #( run_uuid   = <ls_create>-run_uuid
-               query_uuid  = <ls_create>-query_uuid
-               step_uuid   = <ls_create>-step_uuid
-               create      = abap_true
-               msg         = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                   iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                   iv_number   = `006`
-                   iv_severity = zpru_if_agent_message=>sc_severity-error ) )
-           TO cs_reported-step.
-
-        CONTINUE.
-      ENDIF.
-
-      APPEND INITIAL LINE TO et_entities ASSIGNING FIELD-SYMBOL(<ls_entity>).
-      <ls_entity> = <ls_create>.
-
     ENDLOOP.
   ENDMETHOD.
 
   METHOD precheck_rba_step.
-
     CLEAR et_entities.
+    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
 
     LOOP AT it_rba_step_k ASSIGNING FIELD-SYMBOL(<ls_in>).
-
-      NEW zpru_cl_agent_util( )->zpru_if_agent_util~fill_flags(
-        EXPORTING
-          iv_name    = `ZPRU_IF_AXC_SERVICE=>TS_STEP_CONTROL`
-        CHANGING
-          cs_data    = <ls_in>
-          cs_control = <ls_in>-control ).
-
-      IF <ls_in>-query_uuid IS INITIAL.
-        APPEND VALUE #( query_uuid = <ls_in>-query_uuid
-                        fail      = zpru_if_agent_frw=>cs_fail_cause-dependency )
-               TO cs_failed-query.
-
-        APPEND VALUE #( query_uuid = <ls_in>-query_uuid
-                        msg       = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                    iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                    iv_number   = `007`
-                                    iv_severity = zpru_if_agent_message=>sc_severity-error ) )
-               TO cs_reported-query.
-
-        CONTINUE.
+      IF check_row( EXPORTING io_util        = lo_util
+                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_STEP_CONTROL`
+                              it_req_fields  = VALUE #( ( `QUERY_UUID` ) )
+                              iv_msg_num     = '007'
+                    CHANGING  cs_row         = <ls_in>
+                              ct_failed      = cs_failed-query
+                              ct_reported    = cs_reported-query ).
+         APPEND <ls_in> TO et_entities.
       ENDIF.
-
-      APPEND INITIAL LINE TO et_entities ASSIGNING FIELD-SYMBOL(<ls_ent>).
-      <ls_ent> = <ls_in>.
-
     ENDLOOP.
   ENDMETHOD.
 
   METHOD precheck_read_step.
-
     CLEAR et_entities.
+    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
 
     LOOP AT it_step_read_k ASSIGNING FIELD-SYMBOL(<ls_k>).
-
-      NEW zpru_cl_agent_util( )->zpru_if_agent_util~fill_flags(
-        EXPORTING
-          iv_name    = `ZPRU_IF_AXC_SERVICE=>TS_STEP_CONTROL`
-        CHANGING
-          cs_data    = <ls_k>
-          cs_control = <ls_k>-control ).
-
-      IF <ls_k>-query_uuid IS INITIAL OR <ls_k>-step_uuid IS INITIAL.
-        APPEND VALUE #( run_uuid   = <ls_k>-run_uuid
-                        query_uuid = <ls_k>-query_uuid
-                        step_uuid  = <ls_k>-step_uuid
-                        fail       = zpru_if_agent_frw=>cs_fail_cause-dependency )
-               TO cs_failed-step.
-
-        APPEND VALUE #( run_uuid   = <ls_k>-run_uuid
-                        query_uuid = <ls_k>-query_uuid
-                        step_uuid  = <ls_k>-step_uuid
-                        msg        = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                      iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                      iv_number   = `007`
-                                      iv_severity = zpru_if_agent_message=>sc_severity-error ) )
-               TO cs_reported-step.
-
-        CONTINUE.
+      IF check_row( EXPORTING io_util        = lo_util
+                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_STEP_CONTROL`
+                              it_req_fields  = VALUE #( ( `QUERY_UUID` ) ( `STEP_UUID` ) )
+                    CHANGING  cs_row         = <ls_k>
+                              ct_failed      = cs_failed-step
+                              ct_reported    = cs_reported-step ).
+         APPEND <ls_k> TO et_entities.
       ENDIF.
-
-      APPEND INITIAL LINE TO et_entities ASSIGNING FIELD-SYMBOL(<ls_ent>).
-      <ls_ent> = <ls_k>.
     ENDLOOP.
   ENDMETHOD.
 
   METHOD precheck_update_step.
-
     CLEAR et_entities.
+    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
 
     LOOP AT it_step_update_imp ASSIGNING FIELD-SYMBOL(<ls_k>).
-
-      NEW zpru_cl_agent_util( )->zpru_if_agent_util~fill_flags(
-        EXPORTING
-          iv_name    = `ZPRU_IF_AXC_SERVICE=>TS_STEP_CONTROL`
-        CHANGING
-          cs_data    = <ls_k>
-          cs_control = <ls_k>-control ).
-
-      IF <ls_k>-query_uuid IS INITIAL OR <ls_k>-step_uuid IS INITIAL.
-        APPEND VALUE #( run_uuid   = <ls_k>-run_uuid
-                        query_uuid = <ls_k>-query_uuid
-                        step_uuid  = <ls_k>-step_uuid
-                        fail       = zpru_if_agent_frw=>cs_fail_cause-dependency )
-               TO cs_failed-step.
-
-        APPEND VALUE #( run_uuid   = <ls_k>-run_uuid
-                        query_uuid = <ls_k>-query_uuid
-                        step_uuid  = <ls_k>-step_uuid
-                        msg        = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                      iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                      iv_number   = `007`
-                                      iv_severity = zpru_if_agent_message=>sc_severity-error ) )
-               TO cs_reported-step.
-
-        CONTINUE.
+      IF check_row( EXPORTING io_util        = lo_util
+                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_STEP_CONTROL`
+                              it_req_fields  = VALUE #( ( `QUERY_UUID` ) ( `STEP_UUID` ) )
+                    CHANGING  cs_row         = <ls_k>
+                              ct_failed      = cs_failed-step
+                              ct_reported    = cs_reported-step ).
+         APPEND <ls_k> TO et_entities.
       ENDIF.
-
-      APPEND INITIAL LINE TO et_entities ASSIGNING FIELD-SYMBOL(<ls_ent>).
-      <ls_ent> = <ls_k>.
-
     ENDLOOP.
   ENDMETHOD.
 
   METHOD precheck_delete_step.
-
     CLEAR et_entities.
+    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
 
     LOOP AT it_step_delete_imp ASSIGNING FIELD-SYMBOL(<ls_k>).
-
-      IF <ls_k>-query_uuid IS INITIAL OR <ls_k>-step_uuid IS INITIAL.
-        APPEND VALUE #( run_uuid   = <ls_k>-run_uuid
-                        query_uuid = <ls_k>-query_uuid
-                        step_uuid  = <ls_k>-step_uuid
-                        fail       = zpru_if_agent_frw=>cs_fail_cause-dependency )
-               TO cs_failed-step.
-
-        APPEND VALUE #( run_uuid   = <ls_k>-run_uuid
-                        query_uuid = <ls_k>-query_uuid
-                        step_uuid  = <ls_k>-step_uuid
-                        msg        = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                      iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                      iv_number   = `007`
-                                      iv_severity = zpru_if_agent_message=>sc_severity-error ) )
-               TO cs_reported-step.
-
-        CONTINUE.
+      IF check_row( EXPORTING io_util        = lo_util
+                              iv_struct_name = ``
+                              it_req_fields  = VALUE #( ( `QUERY_UUID` ) ( `STEP_UUID` ) )
+                    CHANGING  cs_row         = <ls_k>
+                              ct_failed      = cs_failed-step
+                              ct_reported    = cs_reported-step ).
+         APPEND INITIAL LINE TO et_entities ASSIGNING FIELD-SYMBOL(<ls_ent>).
+         MOVE-CORRESPONDING <ls_k> TO <ls_ent>.
       ENDIF.
-
-      APPEND INITIAL LINE TO et_entities ASSIGNING FIELD-SYMBOL(<ls_ent>).
-      <ls_ent>-query_uuid = <ls_k>-query_uuid.
-      <ls_ent>-step_uuid = <ls_k>-step_uuid.
-
     ENDLOOP.
   ENDMETHOD.
 ENDCLASS.
