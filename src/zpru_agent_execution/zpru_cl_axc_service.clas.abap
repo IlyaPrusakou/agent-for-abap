@@ -122,19 +122,7 @@ CLASS zpru_cl_axc_service DEFINITION
                 it_delete_step  TYPE tt_axc_step
       RETURNING VALUE(rv_error) TYPE abap_boolean.
 
-    METHODS check_row
-      IMPORTING io_util           TYPE REF TO zpru_if_agent_util
-                iv_struct_name    TYPE string
-                it_req_fields     TYPE string_table OPTIONAL
-                iv_pk_field       TYPE string       OPTIONAL
-                iv_fail_cause     TYPE i            DEFAULT zpru_if_agent_frw=>cs_fail_cause-dependency
-                iv_msg_num        TYPE symsgno      DEFAULT '007'
-                it_failed_flags   TYPE string_table OPTIONAL
-                it_msg_var_fields TYPE string_table OPTIONAL
-      CHANGING  cs_row            TYPE any
-                ct_failed         TYPE INDEX TABLE
-                ct_reported       TYPE INDEX TABLE
-      RETURNING VALUE(rv_ok)      TYPE abap_boolean.
+
 ENDCLASS.
 
 
@@ -1427,319 +1415,303 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     ENDLOOP.
   ENDMETHOD.
 
-  METHOD check_row.
-    DATA lv_v1 LIKE sy-msgv1.
-    DATA lv_v2 LIKE sy-msgv2.
-    DATA lv_v3 LIKE sy-msgv3.
-    DATA lv_v4 LIKE sy-msgv4.
 
-    rv_ok = abap_true.
-    FIELD-SYMBOLS <lv_field> TYPE any.
-
-    IF iv_pk_field IS NOT INITIAL.
-      ASSIGN COMPONENT iv_pk_field OF STRUCTURE cs_row TO <lv_field>.
-      IF sy-subrc = 0 AND <lv_field> IS INITIAL.
-        TRY.
-            <lv_field> = cl_system_uuid=>create_uuid_x16_static( ).
-          CATCH cx_uuid_error.
-            RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
-        ENDTRY.
-      ENDIF.
-    ENDIF.
-
-    ASSIGN COMPONENT 'CONTROL' OF STRUCTURE cs_row TO FIELD-SYMBOL(<ls_control>).
-    IF sy-subrc = 0.
-      io_util->fill_flags( EXPORTING iv_name    = iv_struct_name
-                           CHANGING  cs_data    = cs_row
-                                     cs_control = <ls_control> ).
-    ENDIF.
-
-    LOOP AT it_req_fields INTO DATA(lv_req).
-      ASSIGN COMPONENT lv_req OF STRUCTURE cs_row TO <lv_field>.
-      IF sy-subrc = 0 AND <lv_field> IS INITIAL.
-        rv_ok = abap_false.
-
-        APPEND INITIAL LINE TO ct_failed ASSIGNING FIELD-SYMBOL(<ls_fail>).
-        <ls_fail> = CORRESPONDING #( cs_row ).
-
-        ASSIGN COMPONENT 'FAIL' OF STRUCTURE <ls_fail> TO FIELD-SYMBOL(<lv_fail_cause>).
-        IF sy-subrc = 0.
-          <lv_fail_cause> = iv_fail_cause.
-        ENDIF.
-
-        LOOP AT it_failed_flags ASSIGNING FIELD-SYMBOL(<lv_failed_flag>).
-          ASSIGN COMPONENT <lv_failed_flag> OF STRUCTURE <ls_fail> TO FIELD-SYMBOL(<lv_fail_flag_target>).
-          <lv_fail_flag_target> = abap_true.
-        ENDLOOP.
-
-        APPEND INITIAL LINE TO ct_reported ASSIGNING FIELD-SYMBOL(<ls_rep>).
-        <ls_rep> = CORRESPONDING #( cs_row ).
-
-        ASSIGN COMPONENT 'MSG' OF STRUCTURE <ls_rep> TO FIELD-SYMBOL(<lv_msg>).
-        IF sy-subrc = 0.
-
-          ASSIGN COMPONENT it_msg_var_fields[ 1 ] OF STRUCTURE cs_row TO FIELD-SYMBOL(<lv_v1>).
-          IF sy-subrc = 0.
-            lv_v1 = <lv_v1>.
-          ENDIF.
-
-          ASSIGN COMPONENT it_msg_var_fields[ 2 ] OF STRUCTURE cs_row TO FIELD-SYMBOL(<lv_v2>).
-          IF sy-subrc = 0.
-            lv_v2 = <lv_v2>.
-          ENDIF.
-          ASSIGN COMPONENT it_msg_var_fields[ 3 ] OF STRUCTURE cs_row TO FIELD-SYMBOL(<lv_v3>).
-          IF sy-subrc = 0.
-            lv_v3 = <lv_v3>.
-          ENDIF.
-          ASSIGN COMPONENT it_msg_var_fields[ 4 ] OF STRUCTURE cs_row TO FIELD-SYMBOL(<lv_v4>).
-          IF sy-subrc = 0.
-            lv_v4 = <lv_v4>.
-          ENDIF.
-
-          <lv_msg> = io_util->new_message( iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                           iv_number   = iv_msg_num
-                                           iv_severity = zpru_if_agent_message=>sc_severity-error
-                                           iv_v1       = lv_v1
-                                           iv_v2       = lv_v2
-                                           iv_v3       = lv_v3
-                                           iv_v4       = lv_v4 ).
-        ENDIF.
-
-        RETURN.
-
-      ENDIF.
-    ENDLOOP.
-  ENDMETHOD.
 
   METHOD precheck_update_header.
-    CLEAR et_entities.
-    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
+    DATA(lo_pre) = NEW zpru_cl_axc_precheck( ).
+    DATA: lt_imp_pc   TYPE zpru_if_axc_precheck=>tt_head_update_imp,
+          lt_ent_pc   TYPE zpru_if_axc_precheck=>tt_head_update_imp,
+          ls_rep_pc   TYPE zpru_if_axc_precheck=>ts_reported,
+          ls_fail_pc  TYPE zpru_if_axc_precheck=>ts_failed.
 
-    LOOP AT it_head_update_imp ASSIGNING FIELD-SYMBOL(<ls_create>). " QQQ
-      IF check_row( EXPORTING io_util        = lo_util
-                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_HEAD_CONTROL`
-                              iv_pk_field    = 'RUN_UUID'
-                              it_req_fields  = VALUE #( ( `AGENT_UUID` ) )
-                              iv_msg_num     = '004'
-                    CHANGING  cs_row         = <ls_create>
-                              ct_failed      = cs_failed-header
-                              ct_reported    = cs_reported-header ).
-        APPEND <ls_create> TO et_entities.
-      ENDIF.
-    ENDLOOP.
+    lt_imp_pc = CORRESPONDING #( it_head_update_imp ).
+    ls_rep_pc = CORRESPONDING #( cs_reported ).
+    ls_fail_pc = CORRESPONDING #( cs_failed ).
+
+    lo_pre->zpru_if_axc_precheck~precheck_update_header(
+      EXPORTING it_head_update_imp = lt_imp_pc
+      IMPORTING et_entities        = lt_ent_pc
+      CHANGING  cs_reported        = ls_rep_pc
+                cs_failed          = ls_fail_pc ).
+
+    cs_reported = CORRESPONDING #( ls_rep_pc ).
+    cs_failed   = CORRESPONDING #( ls_fail_pc ).
+    et_entities = CORRESPONDING #( lt_ent_pc ).
   ENDMETHOD.
 
   METHOD precheck_create_header.
-    CLEAR et_entities.
-    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
+    DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
+    lo_pre = NEW zpru_cl_axc_precheck( ).
+    DATA: lt_imp_pc   TYPE zpru_if_axc_precheck=>tt_head_create_imp,
+          lt_ent_pc   TYPE zpru_if_axc_precheck=>tt_head_create_imp,
+          ls_rep_pc   TYPE zpru_if_axc_precheck=>ts_reported,
+          ls_fail_pc  TYPE zpru_if_axc_precheck=>ts_failed.
 
-    LOOP AT it_head_create_imp ASSIGNING FIELD-SYMBOL(<ls_create>).
-      IF check_row( EXPORTING io_util        = lo_util
-                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_HEAD_CONTROL`
-                              iv_pk_field    = 'RUN_UUID'
-                              it_req_fields  = VALUE #( ( `AGENT_UUID` ) )
-                              iv_msg_num     = '004'
-                    CHANGING  cs_row         = <ls_create>
-                              ct_failed      = cs_failed-header
-                              ct_reported    = cs_reported-header ).
-        APPEND <ls_create> TO et_entities.
-      ENDIF.
-    ENDLOOP.
+    lt_imp_pc = CORRESPONDING #( it_head_create_imp ).
+    ls_rep_pc = CORRESPONDING #( cs_reported ).
+    ls_fail_pc = CORRESPONDING #( cs_failed ).
+
+    lo_pre->zpru_if_axc_precheck~precheck_create_header(
+      EXPORTING it_head_create_imp = lt_imp_pc
+      IMPORTING et_entities        = lt_ent_pc
+      CHANGING  cs_reported        = ls_rep_pc
+                cs_failed          = ls_fail_pc ).
+
+    cs_reported = CORRESPONDING #( ls_rep_pc ).
+    cs_failed   = CORRESPONDING #( ls_fail_pc ).
+    et_entities = CORRESPONDING #( lt_ent_pc ).
   ENDMETHOD.
 
   METHOD precheck_cba_query.
-    CLEAR et_entities.
-    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
+    DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
+    lo_pre = NEW zpru_cl_axc_precheck( ).
+    DATA: lt_imp_pc   TYPE zpru_if_axc_precheck=>tt_query_create_imp,
+          lt_ent_pc   TYPE zpru_if_axc_precheck=>tt_query_create_imp,
+          ls_rep_pc   TYPE zpru_if_axc_precheck=>ts_reported,
+          ls_fail_pc  TYPE zpru_if_axc_precheck=>ts_failed.
 
-    LOOP AT it_axc_query_imp ASSIGNING FIELD-SYMBOL(<ls_create>).
-      IF check_row( EXPORTING io_util        = lo_util
-                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_QUERY_CONTROL`
-                              iv_pk_field    = 'QUERY_UUID'
-                              it_req_fields  = VALUE #( ( `RUN_UUID` ) )
-                              iv_msg_num     = '006'
-                    CHANGING  cs_row         = <ls_create>
-                              ct_failed      = cs_failed-query
-                              ct_reported    = cs_reported-query ).
-        APPEND <ls_create> TO et_entities.
-      ENDIF.
-    ENDLOOP.
+    lt_imp_pc = CORRESPONDING #( it_axc_query_imp ).
+    ls_rep_pc = CORRESPONDING #( cs_reported ).
+    ls_fail_pc = CORRESPONDING #( cs_failed ).
+
+    lo_pre->zpru_if_axc_precheck~precheck_cba_query(
+      EXPORTING it_axc_query_imp = lt_imp_pc
+      IMPORTING et_entities      = lt_ent_pc
+      CHANGING  cs_reported      = ls_rep_pc
+                cs_failed        = ls_fail_pc ).
+
+    cs_reported = CORRESPONDING #( ls_rep_pc ).
+    cs_failed   = CORRESPONDING #( ls_fail_pc ).
+    et_entities = CORRESPONDING #( lt_ent_pc ).
   ENDMETHOD.
 
   METHOD precheck_read_header.
-    CLEAR et_entities.
-    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
+    DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
+    lo_pre = NEW zpru_cl_axc_precheck( ).
+    DATA: lt_imp_pc   TYPE zpru_if_axc_precheck=>tt_head_read_k,
+          lt_ent_pc   TYPE zpru_if_axc_precheck=>tt_head_read_k,
+          ls_rep_pc   TYPE zpru_if_axc_precheck=>ts_reported,
+          ls_fail_pc  TYPE zpru_if_axc_precheck=>ts_failed.
 
-    LOOP AT it_head_read_k ASSIGNING FIELD-SYMBOL(<ls_k>).
-      IF check_row( EXPORTING io_util        = lo_util
-                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_HEAD_CONTROL`
-                              it_req_fields  = VALUE #( ( `RUN_UUID` ) )
-                    CHANGING  cs_row         = <ls_k>
-                              ct_failed      = cs_failed-header
-                              ct_reported    = cs_reported-header ).
-        APPEND <ls_k> TO et_entities.
-      ENDIF.
-    ENDLOOP.
+    lt_imp_pc = CORRESPONDING #( it_head_read_k ).
+    ls_rep_pc = CORRESPONDING #( cs_reported ).
+    ls_fail_pc = CORRESPONDING #( cs_failed ).
+
+    lo_pre->zpru_if_axc_precheck~precheck_read_header(
+      EXPORTING it_head_read_k = lt_imp_pc
+      IMPORTING et_entities    = lt_ent_pc
+      CHANGING  cs_reported    = ls_rep_pc
+                cs_failed      = ls_fail_pc ).
+
+    cs_reported = CORRESPONDING #( ls_rep_pc ).
+    cs_failed   = CORRESPONDING #( ls_fail_pc ).
+    et_entities = CORRESPONDING #( lt_ent_pc ).
   ENDMETHOD.
 
   METHOD precheck_rba_query.
-    CLEAR et_entities.
-    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
+    DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
+    lo_pre = NEW zpru_cl_axc_precheck( ).
+    DATA: lt_imp_pc   TYPE zpru_if_axc_precheck=>tt_rba_query_k,
+          lt_ent_pc   TYPE zpru_if_axc_precheck=>tt_rba_query_k,
+          ls_rep_pc   TYPE zpru_if_axc_precheck=>ts_reported,
+          ls_fail_pc  TYPE zpru_if_axc_precheck=>ts_failed.
 
-    LOOP AT it_rba_query_k ASSIGNING FIELD-SYMBOL(<ls_in>).
-      IF check_row( EXPORTING io_util        = lo_util
-                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_QUERY_CONTROL`
-                              it_req_fields  = VALUE #( ( `RUN_UUID` ) )
-                              iv_msg_num     = '007'
-                    CHANGING  cs_row         = <ls_in>
-                              ct_failed      = cs_failed-header
-                              ct_reported    = cs_reported-header ).
-        APPEND <ls_in> TO et_entities.
-      ENDIF.
-    ENDLOOP.
+    lt_imp_pc = CORRESPONDING #( it_rba_query_k ).
+    ls_rep_pc = CORRESPONDING #( cs_reported ).
+    ls_fail_pc = CORRESPONDING #( cs_failed ).
+
+    lo_pre->zpru_if_axc_precheck~precheck_rba_query(
+      EXPORTING it_rba_query_k = lt_imp_pc
+      IMPORTING et_entities    = lt_ent_pc
+      CHANGING  cs_reported    = ls_rep_pc
+                cs_failed      = ls_fail_pc ).
+
+    cs_reported = CORRESPONDING #( ls_rep_pc ).
+    cs_failed   = CORRESPONDING #( ls_fail_pc ).
+    et_entities = CORRESPONDING #( lt_ent_pc ).
   ENDMETHOD.
 
   METHOD precheck_read_query.
-    CLEAR et_entities.
-    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
+    DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
+    lo_pre = NEW zpru_cl_axc_precheck( ).
+    DATA: lt_imp_pc   TYPE zpru_if_axc_precheck=>tt_query_read_k,
+          lt_ent_pc   TYPE zpru_if_axc_precheck=>tt_query_read_k,
+          ls_rep_pc   TYPE zpru_if_axc_precheck=>ts_reported,
+          ls_fail_pc  TYPE zpru_if_axc_precheck=>ts_failed.
 
-    LOOP AT it_query_read_k ASSIGNING FIELD-SYMBOL(<ls_k>).
-      IF check_row( EXPORTING io_util        = lo_util
-                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_QUERY_CONTROL`
-                              it_req_fields  = VALUE #( ( `RUN_UUID` ) ( `QUERY_UUID` ) )
-                    CHANGING  cs_row         = <ls_k>
-                              ct_failed      = cs_failed-query
-                              ct_reported    = cs_reported-query ).
-        APPEND <ls_k> TO et_entities.
-      ENDIF.
-    ENDLOOP.
+    lt_imp_pc = CORRESPONDING #( it_query_read_k ).
+    ls_rep_pc = CORRESPONDING #( cs_reported ).
+    ls_fail_pc = CORRESPONDING #( cs_failed ).
+
+    lo_pre->zpru_if_axc_precheck~precheck_read_query(
+      EXPORTING it_query_read_k = lt_imp_pc
+      IMPORTING et_entities     = lt_ent_pc
+      CHANGING  cs_reported     = ls_rep_pc
+                cs_failed       = ls_fail_pc ).
+
+    cs_reported = CORRESPONDING #( ls_rep_pc ).
+    cs_failed   = CORRESPONDING #( ls_fail_pc ).
+    et_entities = CORRESPONDING #( lt_ent_pc ).
   ENDMETHOD.
 
   METHOD precheck_update_query.
-    CLEAR et_entities.
-    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
+    DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
+    lo_pre = NEW zpru_cl_axc_precheck( ).
+    DATA: lt_imp_pc   TYPE zpru_if_axc_precheck=>tt_query_update_imp,
+          lt_ent_pc   TYPE zpru_if_axc_precheck=>tt_query_update_imp,
+          ls_rep_pc   TYPE zpru_if_axc_precheck=>ts_reported,
+          ls_fail_pc  TYPE zpru_if_axc_precheck=>ts_failed.
 
-    LOOP AT it_query_update_imp ASSIGNING FIELD-SYMBOL(<ls_k>).
-      IF check_row( EXPORTING io_util        = lo_util
-                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_QUERY_CONTROL`
-                              it_req_fields  = VALUE #( ( `RUN_UUID` ) ( `QUERY_UUID` ) )
-                    CHANGING  cs_row         = <ls_k>
-                              ct_failed      = cs_failed-query
-                              ct_reported    = cs_reported-query ).
-        APPEND <ls_k> TO et_entities.
-      ENDIF.
-    ENDLOOP.
+    lt_imp_pc = CORRESPONDING #( it_query_update_imp ).
+    ls_rep_pc = CORRESPONDING #( cs_reported ).
+    ls_fail_pc = CORRESPONDING #( cs_failed ).
+
+    lo_pre->zpru_if_axc_precheck~precheck_update_query(
+      EXPORTING it_query_update_imp = lt_imp_pc
+      IMPORTING et_entities         = lt_ent_pc
+      CHANGING  cs_reported         = ls_rep_pc
+                cs_failed           = ls_fail_pc ).
+
+    cs_reported = CORRESPONDING #( ls_rep_pc ).
+    cs_failed   = CORRESPONDING #( ls_fail_pc ).
+    et_entities = CORRESPONDING #( lt_ent_pc ).
   ENDMETHOD.
 
   METHOD precheck_delete_query.
-*    CLEAR et_entities.
-*    " Delete doesn't use fill_flags, so we might just use Check Row for the required fields mainly?
-*    " The original code ONLY checked required fields, no fill_flags call.
-*    " However, check_row calls fill_flags. Is that harmful? No, but maybe wasteful if not needed.
-*    " Actually Delete inputs usually don't have control structures, but here `it_query_delete_imp` are likely keys.
-*    " Let's see: `it_query_delete_imp` type `tt_query_delete_imp` usually just keys.
-*    " If it has no `control` component, `check_row`'s `ASSIGN ... 'CONTROL'` will fail (sy-subrc <> 0) and skip fill_flags.
-*    " So `check_row` is safe to use if we treat it as just checking required fields.
-*    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
-*
-*    LOOP AT it_query_delete_imp ASSIGNING FIELD-SYMBOL(<ls_k>).
-*      " We need to populate et_entities differently here (mapping structure)?
-*      " Original code: <ls_ent>-run_uuid = <ls_k>-run_uuid...
-*      " check_row works on <ls_k>.
-*      " We can append to et_entities if check passes.
-*      IF check_row( EXPORTING io_util        = lo_util
-*                              iv_struct_name = `` " No control structure expected? Or just ignore.
-*                              it_req_fields  = VALUE #( ( `RUN_UUID` ) ( `QUERY_UUID` ) )
-*                    CHANGING  cs_row         = <ls_k>
-*                              ct_failed      = cs_failed-query
-*                              ct_reported    = cs_reported-query ).
-*        APPEND INITIAL LINE TO et_entities ASSIGNING FIELD-SYMBOL(<ls_ent>).
-*        MOVE-CORRESPONDING <ls_k> TO <ls_ent>.
-*      ENDIF.
-*    ENDLOOP.
+    DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
+    lo_pre = NEW zpru_cl_axc_precheck( ).
+    DATA: lt_imp_pc   TYPE zpru_if_axc_precheck=>tt_query_delete_imp,
+          lt_ent_pc   TYPE zpru_if_axc_precheck=>tt_query_delete_imp,
+          ls_rep_pc   TYPE zpru_if_axc_precheck=>ts_reported,
+          ls_fail_pc  TYPE zpru_if_axc_precheck=>ts_failed.
+
+    lt_imp_pc = CORRESPONDING #( it_query_delete_imp ).
+    ls_rep_pc = CORRESPONDING #( cs_reported ).
+    ls_fail_pc = CORRESPONDING #( cs_failed ).
+
+    lo_pre->zpru_if_axc_precheck~precheck_delete_query(
+      EXPORTING it_query_delete_imp = lt_imp_pc
+      IMPORTING et_entities         = lt_ent_pc
+      CHANGING  cs_reported         = ls_rep_pc
+                cs_failed           = ls_fail_pc ).
+
+    cs_reported = CORRESPONDING #( ls_rep_pc ).
+    cs_failed   = CORRESPONDING #( ls_fail_pc ).
+    et_entities = CORRESPONDING #( lt_ent_pc ).
   ENDMETHOD.
 
   METHOD precheck_cba_step.
-    CLEAR et_entities.
-    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
+    DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
+    lo_pre = NEW zpru_cl_axc_precheck( ).
+    DATA: lt_imp_pc   TYPE zpru_if_axc_precheck=>tt_step_create_imp,
+          lt_ent_pc   TYPE zpru_if_axc_precheck=>tt_step_create_imp,
+          ls_rep_pc   TYPE zpru_if_axc_precheck=>ts_reported,
+          ls_fail_pc  TYPE zpru_if_axc_precheck=>ts_failed.
 
-    LOOP AT it_axc_step_imp ASSIGNING FIELD-SYMBOL(<ls_create>).
-      IF check_row( EXPORTING io_util         = lo_util
-                              iv_struct_name  = `ZPRU_IF_AXC_SERVICE=>TS_STEP_CONTROL`
-                              iv_pk_field     = 'STEP_UUID'
-                              it_req_fields   = VALUE #( ( `QUERY_UUID` ) ( `RUN_UUID` ) )
-                              iv_msg_num      = '005'
-                              it_failed_flags = VALUE #( ( `CREATE` ) )
-                    CHANGING  cs_row          = <ls_create>
-                              ct_failed       = cs_failed-step
-                              ct_reported     = cs_reported-step ).
-        APPEND <ls_create> TO et_entities.
-      ENDIF.
-    ENDLOOP.
+    lt_imp_pc = CORRESPONDING #( it_axc_step_imp ).
+    ls_rep_pc = CORRESPONDING #( cs_reported ).
+    ls_fail_pc = CORRESPONDING #( cs_failed ).
+
+    lo_pre->zpru_if_axc_precheck~precheck_cba_step(
+      EXPORTING it_axc_step_imp = lt_imp_pc
+      IMPORTING et_entities     = lt_ent_pc
+      CHANGING  cs_reported     = ls_rep_pc
+                cs_failed       = ls_fail_pc ).
+
+    cs_reported = CORRESPONDING #( ls_rep_pc ).
+    cs_failed   = CORRESPONDING #( ls_fail_pc ).
+    et_entities = CORRESPONDING #( lt_ent_pc ).
   ENDMETHOD.
 
   METHOD precheck_rba_step.
-    CLEAR et_entities.
-    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
+    DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
+    lo_pre = NEW zpru_cl_axc_precheck( ).
+    DATA: lt_imp_pc   TYPE zpru_if_axc_precheck=>tt_rba_step_k,
+          lt_ent_pc   TYPE zpru_if_axc_precheck=>tt_rba_step_k,
+          ls_rep_pc   TYPE zpru_if_axc_precheck=>ts_reported,
+          ls_fail_pc  TYPE zpru_if_axc_precheck=>ts_failed.
 
-    LOOP AT it_rba_step_k ASSIGNING FIELD-SYMBOL(<ls_in>).
-      IF check_row( EXPORTING io_util        = lo_util
-                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_STEP_CONTROL`
-                              it_req_fields  = VALUE #( ( `QUERY_UUID` ) )
-                              iv_msg_num     = '007'
-                    CHANGING  cs_row         = <ls_in>
-                              ct_failed      = cs_failed-query
-                              ct_reported    = cs_reported-query ).
-        APPEND <ls_in> TO et_entities.
-      ENDIF.
-    ENDLOOP.
+    lt_imp_pc = CORRESPONDING #( it_rba_step_k ).
+    ls_rep_pc = CORRESPONDING #( cs_reported ).
+    ls_fail_pc = CORRESPONDING #( cs_failed ).
+
+    lo_pre->zpru_if_axc_precheck~precheck_rba_step(
+      EXPORTING it_rba_step_k = lt_imp_pc
+      IMPORTING et_entities   = lt_ent_pc
+      CHANGING  cs_reported   = ls_rep_pc
+                cs_failed     = ls_fail_pc ).
+
+    cs_reported = CORRESPONDING #( ls_rep_pc ).
+    cs_failed   = CORRESPONDING #( ls_fail_pc ).
+    et_entities = CORRESPONDING #( lt_ent_pc ).
   ENDMETHOD.
 
   METHOD precheck_read_step.
-    CLEAR et_entities.
-    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
+    DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
+    lo_pre = NEW zpru_cl_axc_precheck( ).
+    DATA: lt_imp_pc   TYPE zpru_if_axc_precheck=>tt_step_read_k,
+          lt_ent_pc   TYPE zpru_if_axc_precheck=>tt_step_read_k,
+          ls_rep_pc   TYPE zpru_if_axc_precheck=>ts_reported,
+          ls_fail_pc  TYPE zpru_if_axc_precheck=>ts_failed.
 
-    LOOP AT it_step_read_k ASSIGNING FIELD-SYMBOL(<ls_k>).
-      IF check_row( EXPORTING io_util        = lo_util
-                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_STEP_CONTROL`
-                              it_req_fields  = VALUE #( ( `QUERY_UUID` ) ( `STEP_UUID` ) )
-                    CHANGING  cs_row         = <ls_k>
-                              ct_failed      = cs_failed-step
-                              ct_reported    = cs_reported-step ).
-        APPEND <ls_k> TO et_entities.
-      ENDIF.
-    ENDLOOP.
+    lt_imp_pc = CORRESPONDING #( it_step_read_k ).
+    ls_rep_pc = CORRESPONDING #( cs_reported ).
+    ls_fail_pc = CORRESPONDING #( cs_failed ).
+
+    lo_pre->zpru_if_axc_precheck~precheck_read_step(
+      EXPORTING it_step_read_k = lt_imp_pc
+      IMPORTING et_entities    = lt_ent_pc
+      CHANGING  cs_reported    = ls_rep_pc
+                cs_failed      = ls_fail_pc ).
+
+    cs_reported = CORRESPONDING #( ls_rep_pc ).
+    cs_failed   = CORRESPONDING #( ls_fail_pc ).
+    et_entities = CORRESPONDING #( lt_ent_pc ).
   ENDMETHOD.
 
   METHOD precheck_update_step.
-    CLEAR et_entities.
-    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
+    DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
+    lo_pre = NEW zpru_cl_axc_precheck( ).
+    DATA: lt_imp_pc   TYPE zpru_if_axc_precheck=>tt_step_update_imp,
+          lt_ent_pc   TYPE zpru_if_axc_precheck=>tt_step_update_imp,
+          ls_rep_pc   TYPE zpru_if_axc_precheck=>ts_reported,
+          ls_fail_pc  TYPE zpru_if_axc_precheck=>ts_failed.
 
-    LOOP AT it_step_update_imp ASSIGNING FIELD-SYMBOL(<ls_k>).
-      IF check_row( EXPORTING io_util        = lo_util
-                              iv_struct_name = `ZPRU_IF_AXC_SERVICE=>TS_STEP_CONTROL`
-                              it_req_fields  = VALUE #( ( `QUERY_UUID` ) ( `STEP_UUID` ) )
-                    CHANGING  cs_row         = <ls_k>
-                              ct_failed      = cs_failed-step
-                              ct_reported    = cs_reported-step ).
-        APPEND <ls_k> TO et_entities.
-      ENDIF.
-    ENDLOOP.
+    lt_imp_pc = CORRESPONDING #( it_step_update_imp ).
+    ls_rep_pc = CORRESPONDING #( cs_reported ).
+    ls_fail_pc = CORRESPONDING #( cs_failed ).
+
+    lo_pre->zpru_if_axc_precheck~precheck_update_step(
+      EXPORTING it_step_update_imp = lt_imp_pc
+      IMPORTING et_entities        = lt_ent_pc
+      CHANGING  cs_reported        = ls_rep_pc
+                cs_failed          = ls_fail_pc ).
+
+    cs_reported = CORRESPONDING #( ls_rep_pc ).
+    cs_failed   = CORRESPONDING #( ls_fail_pc ).
+    et_entities = CORRESPONDING #( lt_ent_pc ).
   ENDMETHOD.
 
   METHOD precheck_delete_step.
-    CLEAR et_entities.
-    DATA(lo_util) = CAST zpru_if_agent_util( NEW zpru_cl_agent_util( ) ).
+    DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
+    lo_pre = NEW zpru_cl_axc_precheck( ).
+    DATA: lt_imp_pc   TYPE zpru_if_axc_precheck=>tt_step_delete_imp,
+          lt_ent_pc   TYPE zpru_if_axc_precheck=>tt_step_delete_imp,
+          ls_rep_pc   TYPE zpru_if_axc_precheck=>ts_reported,
+          ls_fail_pc  TYPE zpru_if_axc_precheck=>ts_failed.
 
-    LOOP AT it_step_delete_imp ASSIGNING FIELD-SYMBOL(<ls_k>).
-      IF check_row( EXPORTING io_util        = lo_util
-                              iv_struct_name = ``
-                              it_req_fields  = VALUE #( ( `QUERY_UUID` ) ( `STEP_UUID` ) )
-                    CHANGING  cs_row         = <ls_k>
-                              ct_failed      = cs_failed-step
-                              ct_reported    = cs_reported-step ).
-        APPEND INITIAL LINE TO et_entities ASSIGNING FIELD-SYMBOL(<ls_ent>).
-        MOVE-CORRESPONDING <ls_k> TO <ls_ent>.
-      ENDIF.
-    ENDLOOP.
+    lt_imp_pc = CORRESPONDING #( it_step_delete_imp ).
+    ls_rep_pc = CORRESPONDING #( cs_reported ).
+    ls_fail_pc = CORRESPONDING #( cs_failed ).
+
+    lo_pre->zpru_if_axc_precheck~precheck_delete_step(
+      EXPORTING it_step_delete_imp = lt_imp_pc
+      IMPORTING et_entities        = lt_ent_pc
+      CHANGING  cs_reported        = ls_rep_pc
+                cs_failed          = ls_fail_pc ).
+
+    cs_reported = CORRESPONDING #( ls_rep_pc ).
+    cs_failed   = CORRESPONDING #( ls_fail_pc ).
+    et_entities = CORRESPONDING #( lt_ent_pc ).
   ENDMETHOD.
 ENDCLASS.
