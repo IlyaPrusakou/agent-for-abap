@@ -1,0 +1,16 @@
+CLASS zpru_cl_axc_precheck DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    INTERFACES zpru_if_axc_precheck .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS zpru_cl_axc_precheck IMPLEMENTATION.
+ENDCLASS.

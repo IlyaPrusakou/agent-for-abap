@@ -2,6 +2,7 @@ INTERFACE zpru_if_axc_service
   PUBLIC.
 
   TYPES: BEGIN OF ts_head_control,
+           run_uuid           type abap_boolean,
            agent_uuid         TYPE abap_boolean,
            user_id            TYPE abap_boolean,
            start_timestamp    TYPE abap_boolean,
@@ -251,7 +252,9 @@ INTERFACE zpru_if_axc_service
 
   METHODS read_header
     IMPORTING it_head_read_k TYPE tt_head_read_k
-    EXPORTING et_axc_head    TYPE zpru_if_axc_database_access=>tt_axc_head.
+    EXPORTING et_axc_head    TYPE zpru_if_axc_database_access=>tt_axc_head
+    CHANGING  cs_reported    TYPE ts_reported
+              cs_failed      TYPE ts_failed.
 
   METHODS create_header
     IMPORTING it_head_create_imp TYPE tt_head_create_imp

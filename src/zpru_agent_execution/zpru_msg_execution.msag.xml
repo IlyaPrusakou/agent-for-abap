@@ -18,13 +18,13 @@
      <SPRSL>E</SPRSL>
      <ARBGB>ZPRU_MSG_EXECUTION</ARBGB>
      <MSGNR>001</MSGNR>
-     <TEXT>Execution Header is created</TEXT>
+     <TEXT>Execution Header with key &amp;1 is created</TEXT>
     </T100>
     <T100>
      <SPRSL>E</SPRSL>
      <ARBGB>ZPRU_MSG_EXECUTION</ARBGB>
      <MSGNR>002</MSGNR>
-     <TEXT>Execution Header creation is failed</TEXT>
+     <TEXT>Execution Header creation with key &amp;1 is failed</TEXT>
     </T100>
     <T100>
      <SPRSL>E</SPRSL>
@@ -79,6 +79,12 @@
      <ARBGB>ZPRU_MSG_EXECUTION</ARBGB>
      <MSGNR>011</MSGNR>
      <TEXT>Execution Query with key &amp;1 is not found</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>E</SPRSL>
+     <ARBGB>ZPRU_MSG_EXECUTION</ARBGB>
+     <MSGNR>012</MSGNR>
+     <TEXT>Execution Header with key &amp;1 is not found</TEXT>
     </T100>
    </T100>
   </asx:values>
