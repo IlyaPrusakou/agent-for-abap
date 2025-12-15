@@ -496,6 +496,12 @@ CLASS ZPRU_CL_ADF_SERVICE IMPLEMENTATION.
         <ls_buffer>-deleted = abap_true.
         <ls_buffer>-changed = abap_true.
 
+        LOOP AT zpru_cl_adf_buffer=>tool_buffer ASSIGNING FIELD-SYMBOL(<ls_tool_del>)
+             WHERE instance-agent_uuid = <ls_buffer>-instance-agent_uuid.
+          <ls_tool_del>-changed = abap_true.
+          <ls_tool_del>-deleted = abap_true.
+        ENDLOOP.
+
         APPEND VALUE #( msg      = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
                                            iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
                                            iv_number   = `001`
@@ -629,7 +635,7 @@ CLASS ZPRU_CL_ADF_SERVICE IMPLEMENTATION.
 
 
   METHOD zpru_if_adf_service~rba_tool.
-    DATA lt_fetched_tool LIKE zpru_cl_adf_buffer=>tool_buffer.
+    DATA ls_out TYPE zpru_agent_tool.
     CLEAR et_tool.
 
     IF it_rba_tool_k IS INITIAL.
@@ -650,31 +656,28 @@ CLASS ZPRU_CL_ADF_SERVICE IMPLEMENTATION.
                                                    IN     lt_entities
                                                    ( agent_uuid = <ls_q>-agent_uuid ) ) ).
 
-    LOOP AT lt_entities ASSIGNING FIELD-SYMBOL(<ls_prelim>).
-      LOOP AT zpru_cl_adf_buffer=>tool_buffer ASSIGNING FIELD-SYMBOL(<ls_fq>) WHERE instance-agent_uuid = <ls_prelim>-agent_uuid.
-        APPEND INITIAL LINE TO lt_fetched_tool ASSIGNING FIELD-SYMBOL(<ls_target_tool>).
-        <ls_target_tool> = <ls_fq>.
+    LOOP AT lt_entities ASSIGNING FIELD-SYMBOL(<ls_h>).
+      LOOP AT zpru_cl_adf_buffer=>tool_buffer ASSIGNING FIELD-SYMBOL(<ls_t_buf>)
+           WHERE     instance-agent_uuid = <ls_h>-agent_uuid
+                 AND deleted             = abap_false.
+
+        CLEAR ls_out.
+        ls_out-tool_uuid             = <ls_t_buf>-instance-tool_uuid.
+        ls_out-agent_uuid            = COND #( WHEN <ls_h>-control-agent_uuid = abap_true
+                                               THEN <ls_t_buf>-instance-agent_uuid ).
+        ls_out-tool_name             = COND #( WHEN <ls_h>-control-tool_name = abap_true
+                                               THEN <ls_t_buf>-instance-tool_name ).
+        ls_out-tool_provider         = COND #( WHEN <ls_h>-control-tool_provider = abap_true
+                                               THEN <ls_t_buf>-instance-tool_provider ).
+        ls_out-step_type             = COND #( WHEN <ls_h>-control-step_type = abap_true
+                                               THEN <ls_t_buf>-instance-step_type ).
+        ls_out-input_schema_provider = COND #( WHEN <ls_h>-control-input_schema_provider = abap_true
+                                               THEN <ls_t_buf>-instance-input_schema_provider ).
+        ls_out-tool_info_provider    = COND #( WHEN <ls_h>-control-tool_info_provider = abap_true
+                                               THEN <ls_t_buf>-instance-tool_info_provider ).
+
+        APPEND ls_out TO et_tool.
       ENDLOOP.
-    ENDLOOP.
-
-
-    LOOP AT lt_entities ASSIGNING FIELD-SYMBOL(<ls_read>).
-
-      ASSIGN zpru_cl_adf_buffer=>agent_buffer[ instance-agent_uuid = <ls_read>-agent_uuid ] TO FIELD-SYMBOL(<ls_buffer>).
-      IF sy-subrc = 0.
-        IF <ls_buffer>-deleted = abap_true.
-          " Parent deleted, do not return children
-        ELSE.
-          LOOP AT lt_fetched_tool ASSIGNING FIELD-SYMBOL(<ls_tool>) WHERE instance-agent_uuid = <ls_read>-agent_uuid.
-            IF <ls_tool>-deleted = abap_false.
-               APPEND <ls_tool>-instance TO et_tool.
-            ENDIF.
-          ENDLOOP.
-
-        ENDIF.
-      ELSE.
-         " Parent not found
-      ENDIF.
     ENDLOOP.
 
   ENDMETHOD.
