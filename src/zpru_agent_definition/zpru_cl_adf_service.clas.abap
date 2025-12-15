@@ -13,6 +13,60 @@ CLASS zpru_cl_adf_service DEFINITION
                 cs_mapped    TYPE zpru_if_adf_type_and_constant=>ts_mapped
       RETURNING VALUE(rv_error) TYPE abap_bool.
 
+    METHODS precheck_create_agent
+      IMPORTING it_agent_create_imp TYPE zpru_if_adf_type_and_constant=>tt_agent_create_imp
+      EXPORTING et_entities         TYPE zpru_if_adf_type_and_constant=>tt_agent_create_imp
+      CHANGING  cs_reported         TYPE zpru_if_adf_type_and_constant=>ts_reported
+                cs_failed           TYPE zpru_if_adf_type_and_constant=>ts_failed.
+
+    METHODS precheck_update_agent
+      IMPORTING it_agent_update_imp TYPE zpru_if_adf_type_and_constant=>tt_agent_update_imp
+      EXPORTING et_entities         TYPE zpru_if_adf_type_and_constant=>tt_agent_update_imp
+      CHANGING  cs_reported         TYPE zpru_if_adf_type_and_constant=>ts_reported
+                cs_failed           TYPE zpru_if_adf_type_and_constant=>ts_failed.
+
+    METHODS precheck_delete_agent
+      IMPORTING it_agent_delete_imp TYPE zpru_if_adf_type_and_constant=>tt_agent_delete_imp
+      EXPORTING et_entities         TYPE zpru_if_adf_type_and_constant=>tt_agent_delete_imp
+      CHANGING  cs_reported         TYPE zpru_if_adf_type_and_constant=>ts_reported
+                cs_failed           TYPE zpru_if_adf_type_and_constant=>ts_failed.
+
+    METHODS precheck_read_agent
+      IMPORTING it_agent_read_k TYPE zpru_if_adf_type_and_constant=>tt_agent_read_k
+      EXPORTING et_entities     TYPE zpru_if_adf_type_and_constant=>tt_agent_read_k
+      CHANGING  cs_reported     TYPE zpru_if_adf_type_and_constant=>ts_reported
+                cs_failed       TYPE zpru_if_adf_type_and_constant=>ts_failed.
+
+    METHODS precheck_cba_tool
+      IMPORTING it_tool_create_imp TYPE zpru_if_adf_type_and_constant=>tt_tool_create_imp
+      EXPORTING et_entities        TYPE zpru_if_adf_type_and_constant=>tt_tool_create_imp
+      CHANGING  cs_reported        TYPE zpru_if_adf_type_and_constant=>ts_reported
+                cs_failed          TYPE zpru_if_adf_type_and_constant=>ts_failed.
+
+    METHODS precheck_update_tool
+      IMPORTING it_tool_update_imp TYPE zpru_if_adf_type_and_constant=>tt_tool_update_imp
+      EXPORTING et_entities        TYPE zpru_if_adf_type_and_constant=>tt_tool_update_imp
+      CHANGING  cs_reported        TYPE zpru_if_adf_type_and_constant=>ts_reported
+                cs_failed          TYPE zpru_if_adf_type_and_constant=>ts_failed.
+
+    METHODS precheck_delete_tool
+      IMPORTING it_tool_delete_imp TYPE zpru_if_adf_type_and_constant=>tt_tool_delete_imp
+      EXPORTING et_entities        TYPE zpru_if_adf_type_and_constant=>tt_tool_delete_imp
+      CHANGING  cs_reported        TYPE zpru_if_adf_type_and_constant=>ts_reported
+                cs_failed          TYPE zpru_if_adf_type_and_constant=>ts_failed.
+
+    METHODS precheck_read_tool
+      IMPORTING it_tool_read_k TYPE zpru_if_adf_type_and_constant=>tt_tool_read_k
+      EXPORTING et_entities    TYPE zpru_if_adf_type_and_constant=>tt_tool_read_k
+      CHANGING  cs_reported    TYPE zpru_if_adf_type_and_constant=>ts_reported
+                cs_failed      TYPE zpru_if_adf_type_and_constant=>ts_failed.
+
+    METHODS precheck_rba_tool
+      IMPORTING it_rba_tool_k TYPE zpru_if_adf_type_and_constant=>tt_rba_tool_k
+      EXPORTING et_entities   TYPE zpru_if_adf_type_and_constant=>tt_rba_tool_k
+      CHANGING  cs_reported   TYPE zpru_if_adf_type_and_constant=>ts_reported
+                cs_failed     TYPE zpru_if_adf_type_and_constant=>ts_failed.
+
   PRIVATE SECTION.
     TYPES tt_agent      TYPE STANDARD TABLE OF zpru_agent WITH EMPTY KEY.
     TYPES tt_agent_tool TYPE STANDARD TABLE OF zpru_agent_tool WITH EMPTY KEY.
@@ -43,6 +97,113 @@ ENDCLASS.
 
 
 CLASS ZPRU_CL_ADF_SERVICE IMPLEMENTATION.
+
+  METHOD precheck_create_agent.
+    DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
+    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
+
+    lo_pre->zpru_if_adf_precheck~precheck_create_agent(
+      EXPORTING it_agent_create_imp = it_agent_create_imp
+      IMPORTING et_entities         = et_entities
+      CHANGING  cs_reported         = cs_reported
+                cs_failed           = cs_failed ).
+  ENDMETHOD.
+
+
+  METHOD precheck_update_agent.
+    DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
+    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
+
+    lo_pre->zpru_if_adf_precheck~precheck_update_agent(
+      EXPORTING it_agent_update_imp = it_agent_update_imp
+      IMPORTING et_entities         = et_entities
+      CHANGING  cs_reported         = cs_reported
+                cs_failed           = cs_failed ).
+  ENDMETHOD.
+
+
+  METHOD precheck_delete_agent.
+    DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
+    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
+
+    lo_pre->zpru_if_adf_precheck~precheck_delete_agent(
+      EXPORTING it_agent_delete_imp = it_agent_delete_imp
+      IMPORTING et_entities         = et_entities
+      CHANGING  cs_reported         = cs_reported
+                cs_failed           = cs_failed ).
+  ENDMETHOD.
+
+
+  METHOD precheck_read_agent.
+    DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
+    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
+
+    lo_pre->zpru_if_adf_precheck~precheck_read_agent(
+      EXPORTING it_agent_read_k = it_agent_read_k
+      IMPORTING et_entities     = et_entities
+      CHANGING  cs_reported     = cs_reported
+                cs_failed       = cs_failed ).
+  ENDMETHOD.
+
+
+  METHOD precheck_cba_tool.
+    DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
+    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
+
+    lo_pre->zpru_if_adf_precheck~precheck_cba_tool(
+      EXPORTING it_tool_create_imp = it_tool_create_imp
+      IMPORTING et_entities        = et_entities
+      CHANGING  cs_reported        = cs_reported
+                cs_failed          = cs_failed ).
+  ENDMETHOD.
+
+
+  METHOD precheck_update_tool.
+    DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
+    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
+
+    lo_pre->zpru_if_adf_precheck~precheck_update_tool(
+      EXPORTING it_tool_update_imp = it_tool_update_imp
+      IMPORTING et_entities        = et_entities
+      CHANGING  cs_reported        = cs_reported
+                cs_failed          = cs_failed ).
+  ENDMETHOD.
+
+
+  METHOD precheck_delete_tool.
+    DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
+    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
+
+    lo_pre->zpru_if_adf_precheck~precheck_delete_tool(
+      EXPORTING it_tool_delete_imp = it_tool_delete_imp
+      IMPORTING et_entities        = et_entities
+      CHANGING  cs_reported        = cs_reported
+                cs_failed          = cs_failed ).
+  ENDMETHOD.
+
+
+  METHOD precheck_read_tool.
+    DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
+    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
+
+    lo_pre->zpru_if_adf_precheck~precheck_read_tool(
+      EXPORTING it_tool_read_k = it_tool_read_k
+      IMPORTING et_entities    = et_entities
+      CHANGING  cs_reported    = cs_reported
+                cs_failed      = cs_failed ).
+  ENDMETHOD.
+
+
+  METHOD precheck_rba_tool.
+    DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
+    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
+
+    lo_pre->zpru_if_adf_precheck~precheck_rba_tool(
+      EXPORTING it_rba_tool_k = it_rba_tool_k
+      IMPORTING et_entities   = et_entities
+      CHANGING  cs_reported   = cs_reported
+                cs_failed     = cs_failed ).
+  ENDMETHOD.
 
 
   METHOD zpru_if_adf_service~query_agent.
@@ -77,14 +238,10 @@ CLASS ZPRU_CL_ADF_SERVICE IMPLEMENTATION.
 
 
   METHOD zpru_if_adf_service~create_agent.
-    DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
-    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
-
-    lo_pre->precheck_create_agent(
-      EXPORTING it_agent_create_imp = it_agent_create_imp
-      IMPORTING et_entities         = DATA(lt_entities)
-      CHANGING  cs_reported         = cs_reported
-                cs_failed           = cs_failed ).
+    precheck_create_agent( EXPORTING it_agent_create_imp = it_agent_create_imp
+                           IMPORTING et_entities         = DATA(lt_entities)
+                           CHANGING  cs_reported         = cs_reported
+                                     cs_failed           = cs_failed ).
 
     IF lt_entities IS INITIAL.
       RETURN.
@@ -176,11 +333,10 @@ CLASS ZPRU_CL_ADF_SERVICE IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    DATA(lo_pre) = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
-    lo_pre->precheck_read_agent( EXPORTING it_agent_read_k = it_agent_read_k
-                                 IMPORTING et_entities     = DATA(lt_entities)
-                                 CHANGING  cs_reported     = cs_reported
-                                           cs_failed       = cs_failed ).
+    precheck_read_agent( EXPORTING it_agent_read_k = it_agent_read_k
+                         IMPORTING et_entities     = DATA(lt_entities)
+                         CHANGING  cs_reported     = cs_reported
+                                   cs_failed       = cs_failed ).
 
     zpru_cl_adf_buffer=>prep_agent_buffer( VALUE #( FOR <ls_k>
                                                     IN     lt_entities
@@ -232,14 +388,10 @@ CLASS ZPRU_CL_ADF_SERVICE IMPLEMENTATION.
 
 
   METHOD zpru_if_adf_service~update_agent.
-    DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
-    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
-
-    lo_pre->precheck_update_agent(
-      EXPORTING it_agent_update_imp = it_agent_update_imp
-      IMPORTING et_entities         = DATA(lt_entities)
-      CHANGING  cs_reported         = cs_reported
-                cs_failed           = cs_failed ).
+    precheck_update_agent( EXPORTING it_agent_update_imp = it_agent_update_imp
+                           IMPORTING et_entities         = DATA(lt_entities)
+                           CHANGING  cs_reported         = cs_reported
+                                     cs_failed           = cs_failed ).
 
     IF lt_entities IS INITIAL.
       RETURN.
@@ -318,14 +470,10 @@ CLASS ZPRU_CL_ADF_SERVICE IMPLEMENTATION.
 
 
   METHOD zpru_if_adf_service~delete_agent.
-    DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
-    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
-
-    lo_pre->precheck_delete_agent(
-      EXPORTING it_agent_delete_imp = it_agent_delete_imp
-      IMPORTING et_entities         = DATA(lt_entities)
-      CHANGING  cs_reported         = cs_reported
-                cs_failed           = cs_failed ).
+    precheck_delete_agent( EXPORTING it_agent_delete_imp = it_agent_delete_imp
+                           IMPORTING et_entities         = DATA(lt_entities)
+                           CHANGING  cs_reported         = cs_reported
+                                     cs_failed           = cs_failed ).
 
     IF lt_entities IS INITIAL.
       RETURN.
@@ -375,14 +523,10 @@ CLASS ZPRU_CL_ADF_SERVICE IMPLEMENTATION.
 
 
   METHOD zpru_if_adf_service~cba_tool.
-    DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
-    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
-
-    lo_pre->precheck_cba_tool(
-      EXPORTING it_tool_create_imp = it_tool_create_imp
-      IMPORTING et_entities        = DATA(lt_entities)
-      CHANGING  cs_reported        = cs_reported
-                cs_failed          = cs_failed ).
+    precheck_cba_tool( EXPORTING it_tool_create_imp = it_tool_create_imp
+                       IMPORTING et_entities        = DATA(lt_entities)
+                       CHANGING  cs_reported        = cs_reported
+                                 cs_failed          = cs_failed ).
 
     IF lt_entities IS INITIAL.
       RETURN.
@@ -492,11 +636,10 @@ CLASS ZPRU_CL_ADF_SERVICE IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    DATA(lo_pre) = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
-    lo_pre->precheck_rba_tool( EXPORTING it_rba_tool_k = it_rba_tool_k
-                               IMPORTING et_entities   = DATA(lt_entities)
-                               CHANGING  cs_reported   = cs_reported
-                                         cs_failed     = cs_failed ).
+    precheck_rba_tool( EXPORTING it_rba_tool_k = it_rba_tool_k
+                       IMPORTING et_entities   = DATA(lt_entities)
+                       CHANGING  cs_reported   = cs_reported
+                                 cs_failed     = cs_failed ).
 
 
     zpru_cl_adf_buffer=>prep_agent_buffer( VALUE #( FOR <ls_k>
@@ -545,11 +688,10 @@ CLASS ZPRU_CL_ADF_SERVICE IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    DATA(lo_pre) = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
-    lo_pre->precheck_read_tool( EXPORTING it_tool_read_k = it_tool_read_k
-                                IMPORTING et_entities    = DATA(lt_entities)
-                                CHANGING  cs_reported    = cs_reported
-                                          cs_failed      = cs_failed ).
+    precheck_read_tool( EXPORTING it_tool_read_k = it_tool_read_k
+                        IMPORTING et_entities    = DATA(lt_entities)
+                        CHANGING  cs_reported    = cs_reported
+                                  cs_failed      = cs_failed ).
 
 
     zpru_cl_adf_buffer=>prep_agent_buffer( VALUE #( FOR <ls_k>
@@ -612,14 +754,10 @@ CLASS ZPRU_CL_ADF_SERVICE IMPLEMENTATION.
 
 
   METHOD zpru_if_adf_service~update_tool.
-    DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
-    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
-
-    lo_pre->precheck_update_tool(
-      EXPORTING it_tool_update_imp = it_tool_update_imp
-      IMPORTING et_entities        = DATA(lt_entities)
-      CHANGING  cs_reported        = cs_reported
-                cs_failed          = cs_failed ).
+    precheck_update_tool( EXPORTING it_tool_update_imp = it_tool_update_imp
+                          IMPORTING et_entities        = DATA(lt_entities)
+                          CHANGING  cs_reported        = cs_reported
+                                    cs_failed          = cs_failed ).
 
     IF lt_entities IS INITIAL.
       RETURN.
@@ -691,14 +829,10 @@ CLASS ZPRU_CL_ADF_SERVICE IMPLEMENTATION.
 
 
   METHOD zpru_if_adf_service~delete_tool.
-    DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
-    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
-
-    lo_pre->precheck_delete_tool(
-      EXPORTING it_tool_delete_imp = it_tool_delete_imp
-      IMPORTING et_entities        = DATA(lt_entities)
-      CHANGING  cs_reported        = cs_reported
-                cs_failed          = cs_failed ).
+    precheck_delete_tool( EXPORTING it_tool_delete_imp = it_tool_delete_imp
+                          IMPORTING et_entities        = DATA(lt_entities)
+                          CHANGING  cs_reported        = cs_reported
+                                    cs_failed          = cs_failed ).
 
     IF lt_entities IS INITIAL.
       RETURN.
