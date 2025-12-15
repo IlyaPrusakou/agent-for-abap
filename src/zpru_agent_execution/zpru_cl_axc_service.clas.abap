@@ -132,7 +132,10 @@ CLASS zpru_cl_axc_service DEFINITION
 ENDCLASS.
 
 
-CLASS zpru_cl_axc_service IMPLEMENTATION.
+
+CLASS ZPRU_CL_AXC_SERVICE IMPLEMENTATION.
+
+
   METHOD fill_head_admin_fields.
     GET TIME STAMP FIELD DATA(lv_now).
 
@@ -154,6 +157,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                                               THEN lv_now
                                               ELSE cs_header-instance-last_changed ).
   ENDMETHOD.
+
 
   METHOD db_modify.
     " TODO: parameter IV_DO_COMMIT is never used (ABAP cleaner)
@@ -187,6 +191,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                                  it_delete_step  = lt_delete_step ).
   ENDMETHOD.
 
+
   METHOD collect_changes.
     CLEAR: et_modify_head,
            et_modify_query,
@@ -219,6 +224,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
       ENDIF.
     ENDLOOP.
   ENDMETHOD.
+
 
   METHOD cascade_deletes.
     " Cascade: if headers deleted, fetch their queries and steps
@@ -259,6 +265,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
       ENDIF.
     ENDIF.
   ENDMETHOD.
+
 
   METHOD apply_db_changes.
     rv_error = abap_false.
@@ -315,6 +322,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
       ENDIF.
     ENDIF.
   ENDMETHOD.
+
 
   METHOD zpru_if_axc_service~cba_step.
     IF it_axc_step_imp IS INITIAL.
@@ -406,6 +414,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     ENDLOOP.
   ENDMETHOD.
 
+
   METHOD zpru_if_axc_service~rba_step.
     DATA ls_out TYPE zpru_axc_step.
 
@@ -454,6 +463,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
       ENDLOOP.
     ENDLOOP.
   ENDMETHOD.
+
 
   METHOD zpru_if_axc_service~read_step.
     DATA ls_out TYPE zpru_axc_step.
@@ -520,6 +530,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
       ENDIF.
     ENDLOOP.
   ENDMETHOD.
+
 
   METHOD zpru_if_axc_service~update_step.
     IF it_step_update_imp IS INITIAL.
@@ -595,6 +606,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     ENDLOOP.
   ENDMETHOD.
 
+
   METHOD zpru_if_axc_service~delete_step.
     IF it_step_delete_imp IS INITIAL.
       RETURN.
@@ -642,6 +654,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     ENDLOOP.
   ENDMETHOD.
 
+
   METHOD zpru_if_axc_service~read_agent_execution.
     DATA lo_axc_database_access TYPE REF TO zpru_if_axc_database_access.
 
@@ -653,7 +666,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    lo_axc_database_access = zpru_cl_axc_factory=>get_zpru_if_axc_db_access( ).
+    lo_axc_database_access = zpru_cl_axc_factory=>zpru_if_axc_factory~get_zpru_if_axc_db_access( ).
 
     et_axc_head = lo_axc_database_access->select_head( it_axc_head_k ).
 
@@ -667,6 +680,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     ENDIF.
   ENDMETHOD.
 
+
   METHOD zpru_if_axc_service~determine.
     " Placeholder for business logic that determines what to persist.
     " Currently a no-op; callers populate buffers via CBA/UPDATE/DELETE flows.
@@ -674,6 +688,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
       " leave as-is
     ENDIF.
   ENDMETHOD.
+
 
   METHOD zpru_if_axc_service~validate.
     " Placeholder for validation logic. Add domain-specific checks here.
@@ -683,6 +698,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     ENDIF.
   ENDMETHOD.
 
+
   METHOD zpru_if_axc_service~clean_up.
     " Clear in-memory buffers and mapped entries after save/rollback.
     CLEAR cs_mapped.
@@ -690,6 +706,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
            zpru_cl_axc_buffer=>query_buffer,
            zpru_cl_axc_buffer=>step_buffer.
   ENDMETHOD.
+
 
   METHOD zpru_if_axc_service~do_save.
     DATA(lv_err) = abap_false.
@@ -730,6 +747,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     me->zpru_if_axc_service~clean_up( CHANGING cs_mapped = cs_mapped ).
   ENDMETHOD.
 
+
   METHOD zpru_if_axc_service~get_actual_query.
     DATA lo_axc_database_access TYPE REF TO zpru_if_axc_database_access.
 
@@ -737,7 +755,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    lo_axc_database_access = zpru_cl_axc_factory=>get_zpru_if_axc_db_access( ).
+    lo_axc_database_access = zpru_cl_axc_factory=>zpru_if_axc_factory~get_zpru_if_axc_db_access( ).
     DATA(lt_query_candidates) = lo_axc_database_access->select_query_by_head( it_axc_head_k ).
 
     LOOP AT it_axc_head_k ASSIGNING FIELD-SYMBOL(<ls_axc_head_k>).
@@ -754,6 +772,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
 
     ENDLOOP.
   ENDMETHOD.
+
 
   METHOD zpru_if_axc_service~cba_query.
     IF it_axc_query_imp IS INITIAL.
@@ -849,6 +868,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     ENDLOOP.
   ENDMETHOD.
 
+
   METHOD zpru_if_axc_service~delete_header.
     DATA lt_fetched_query LIKE zpru_cl_axc_buffer=>query_buffer.
 
@@ -932,8 +952,10 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     ENDLOOP.
   ENDMETHOD.
 
+
   METHOD zpru_if_axc_service~lock.
   ENDMETHOD.
+
 
   METHOD zpru_if_axc_service~rba_query.
     DATA ls_out TYPE zpru_axc_query.
@@ -985,6 +1007,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
       ENDLOOP.
     ENDLOOP.
   ENDMETHOD.
+
 
   METHOD zpru_if_axc_service~read_query.
     DATA ls_out TYPE zpru_axc_query.
@@ -1082,6 +1105,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     ENDLOOP.
   ENDMETHOD.
 
+
   METHOD zpru_if_axc_service~update_query.
     IF it_query_update_imp IS INITIAL.
       RETURN.
@@ -1153,6 +1177,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     ENDLOOP.
   ENDMETHOD.
 
+
   METHOD zpru_if_axc_service~delete_query.
     IF it_query_delete_imp IS INITIAL.
       RETURN.
@@ -1208,6 +1233,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
       ENDIF.
     ENDLOOP.
   ENDMETHOD.
+
 
   METHOD zpru_if_axc_service~read_header.
 
@@ -1274,6 +1300,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
       ENDIF.
     ENDLOOP.
   ENDMETHOD.
+
 
   METHOD zpru_if_axc_service~update_header.
     IF it_head_update_imp IS INITIAL.
@@ -1346,6 +1373,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
       ENDIF.
     ENDLOOP.
   ENDMETHOD.
+
 
   METHOD zpru_if_axc_service~create_header.
     IF it_head_create_imp IS INITIAL.
@@ -1431,10 +1459,9 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
   ENDMETHOD.
 
 
-
   METHOD precheck_update_header.
     DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
-    lo_pre = NEW zpru_cl_axc_precheck( ).
+    lo_pre = zpru_cl_axc_factory=>zpru_if_axc_factory~get_zpru_if_axc_precheck( ).
 
     lo_pre->precheck_update_header(
       EXPORTING it_head_update_imp = it_head_update_imp
@@ -1443,9 +1470,10 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                 cs_failed          = cs_failed ).
   ENDMETHOD.
 
+
   METHOD precheck_delete_header.
     DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
-    lo_pre = zpru_cl_axc_factory=>get_zpru_if_axc_precheck( ).
+    lo_pre = zpru_cl_axc_factory=>zpru_if_axc_factory~get_zpru_if_axc_precheck( ).
 
     lo_pre->precheck_delete_header(
       EXPORTING it_head_delete_imp = it_head_delete_imp
@@ -1454,9 +1482,10 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                 cs_failed          = cs_failed ).
   ENDMETHOD.
 
+
   METHOD precheck_create_header.
     DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
-    lo_pre = zpru_cl_axc_factory=>get_zpru_if_axc_precheck( ).
+    lo_pre = zpru_cl_axc_factory=>zpru_if_axc_factory~get_zpru_if_axc_precheck( ).
 
     lo_pre->precheck_create_header(
       EXPORTING it_head_create_imp = it_head_create_imp
@@ -1465,9 +1494,10 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                 cs_failed          = cs_failed ).
   ENDMETHOD.
 
+
   METHOD precheck_cba_query.
     DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
-    lo_pre = zpru_cl_axc_factory=>get_zpru_if_axc_precheck( ).
+    lo_pre = zpru_cl_axc_factory=>zpru_if_axc_factory~get_zpru_if_axc_precheck( ).
 
     lo_pre->precheck_cba_query(
       EXPORTING it_axc_query_imp = it_axc_query_imp
@@ -1476,9 +1506,10 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                 cs_failed        = cs_failed ).
   ENDMETHOD.
 
+
   METHOD precheck_read_header.
     DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
-    lo_pre = zpru_cl_axc_factory=>get_zpru_if_axc_precheck( ).
+    lo_pre = zpru_cl_axc_factory=>zpru_if_axc_factory~get_zpru_if_axc_precheck( ).
 
     lo_pre->precheck_read_header(
       EXPORTING it_head_read_k = it_head_read_k
@@ -1487,9 +1518,10 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                 cs_failed      = cs_failed ).
   ENDMETHOD.
 
+
   METHOD precheck_rba_query.
     DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
-    lo_pre = zpru_cl_axc_factory=>get_zpru_if_axc_precheck( ).
+    lo_pre = zpru_cl_axc_factory=>zpru_if_axc_factory~get_zpru_if_axc_precheck( ).
 
     lo_pre->precheck_rba_query(
       EXPORTING it_rba_query_k = it_rba_query_k
@@ -1498,9 +1530,10 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                 cs_failed      = cs_failed ).
   ENDMETHOD.
 
+
   METHOD precheck_read_query.
     DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
-    lo_pre = zpru_cl_axc_factory=>get_zpru_if_axc_precheck( ).
+    lo_pre = zpru_cl_axc_factory=>zpru_if_axc_factory~get_zpru_if_axc_precheck( ).
 
     lo_pre->precheck_read_query(
       EXPORTING it_query_read_k = it_query_read_k
@@ -1509,9 +1542,10 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                 cs_failed       = cs_failed ).
   ENDMETHOD.
 
+
   METHOD precheck_update_query.
     DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
-    lo_pre = zpru_cl_axc_factory=>get_zpru_if_axc_precheck( ).
+    lo_pre = zpru_cl_axc_factory=>zpru_if_axc_factory~get_zpru_if_axc_precheck( ).
 
     lo_pre->precheck_update_query(
       EXPORTING it_query_update_imp = it_query_update_imp
@@ -1520,9 +1554,10 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                 cs_failed           = cs_failed ).
   ENDMETHOD.
 
+
   METHOD precheck_delete_query.
     DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
-    lo_pre = zpru_cl_axc_factory=>get_zpru_if_axc_precheck( ).
+    lo_pre = zpru_cl_axc_factory=>zpru_if_axc_factory~get_zpru_if_axc_precheck( ).
 
     lo_pre->precheck_delete_query(
       EXPORTING it_query_delete_imp = it_query_delete_imp
@@ -1531,9 +1566,10 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                 cs_failed           = cs_failed ).
   ENDMETHOD.
 
+
   METHOD precheck_cba_step.
     DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
-    lo_pre = zpru_cl_axc_factory=>get_zpru_if_axc_precheck( ).
+    lo_pre = zpru_cl_axc_factory=>zpru_if_axc_factory~get_zpru_if_axc_precheck( ).
 
     lo_pre->precheck_cba_step(
       EXPORTING it_axc_step_imp = it_axc_step_imp
@@ -1542,9 +1578,10 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                 cs_failed       = cs_failed ).
   ENDMETHOD.
 
+
   METHOD precheck_rba_step.
     DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
-    lo_pre = zpru_cl_axc_factory=>get_zpru_if_axc_precheck( ).
+    lo_pre = zpru_cl_axc_factory=>zpru_if_axc_factory~get_zpru_if_axc_precheck( ).
 
     lo_pre->precheck_rba_step(
       EXPORTING it_rba_step_k = it_rba_step_k
@@ -1553,9 +1590,10 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                 cs_failed     = cs_failed ).
   ENDMETHOD.
 
+
   METHOD precheck_read_step.
     DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
-    lo_pre = zpru_cl_axc_factory=>get_zpru_if_axc_precheck( ).
+    lo_pre = zpru_cl_axc_factory=>zpru_if_axc_factory~get_zpru_if_axc_precheck( ).
 
     lo_pre->precheck_read_step(
       EXPORTING it_step_read_k = it_step_read_k
@@ -1564,9 +1602,10 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                 cs_failed      = cs_failed ).
   ENDMETHOD.
 
+
   METHOD precheck_update_step.
     DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
-    lo_pre = zpru_cl_axc_factory=>get_zpru_if_axc_precheck( ).
+    lo_pre = zpru_cl_axc_factory=>zpru_if_axc_factory~get_zpru_if_axc_precheck( ).
 
     lo_pre->precheck_update_step(
       EXPORTING it_step_update_imp = it_step_update_imp
@@ -1575,9 +1614,10 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                 cs_failed          = cs_failed ).
   ENDMETHOD.
 
+
   METHOD precheck_delete_step.
     DATA lo_pre TYPE REF TO zpru_if_axc_precheck.
-    lo_pre = zpru_cl_axc_factory=>get_zpru_if_axc_precheck( ).
+    lo_pre = zpru_cl_axc_factory=>zpru_if_axc_factory~get_zpru_if_axc_precheck( ).
 
     lo_pre->precheck_delete_step(
       EXPORTING it_step_delete_imp = it_step_delete_imp

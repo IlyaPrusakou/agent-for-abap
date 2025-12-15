@@ -40,7 +40,10 @@ CLASS zpru_cl_adf_service DEFINITION
 
 ENDCLASS.
 
-CLASS zpru_cl_adf_service IMPLEMENTATION.
+
+
+CLASS ZPRU_CL_ADF_SERVICE IMPLEMENTATION.
+
 
   METHOD zpru_if_adf_service~query_agent.
     CLEAR: et_agent_k,
@@ -72,9 +75,10 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
     ENDIF.
   ENDMETHOD.
 
+
   METHOD zpru_if_adf_service~create_agent.
     DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
-    lo_pre = zpru_cl_adf_factory=>get_zpru_if_adf_precheck( ).
+    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
 
     lo_pre->precheck_create_agent(
       EXPORTING it_agent_create_imp = it_agent_create_imp
@@ -163,6 +167,7 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
     ENDLOOP.
   ENDMETHOD.
 
+
   METHOD zpru_if_adf_service~read_agent.
     DATA ls_out TYPE zpru_agent.
     CLEAR et_agent.
@@ -171,7 +176,7 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    DATA(lo_pre) = zpru_cl_adf_factory=>get_zpru_if_adf_precheck( ).
+    DATA(lo_pre) = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
     lo_pre->precheck_read_agent( EXPORTING it_agent_read_k = it_agent_read_k
                                  IMPORTING et_entities     = DATA(lt_entities)
                                  CHANGING  cs_reported     = cs_reported
@@ -225,9 +230,10 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
 
   ENDMETHOD.
 
+
   METHOD zpru_if_adf_service~update_agent.
     DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
-    lo_pre = zpru_cl_adf_factory=>get_zpru_if_adf_precheck( ).
+    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
 
     lo_pre->precheck_update_agent(
       EXPORTING it_agent_update_imp = it_agent_update_imp
@@ -310,9 +316,10 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
     ENDLOOP.
   ENDMETHOD.
 
+
   METHOD zpru_if_adf_service~delete_agent.
     DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
-    lo_pre = zpru_cl_adf_factory=>get_zpru_if_adf_precheck( ).
+    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
 
     lo_pre->precheck_delete_agent(
       EXPORTING it_agent_delete_imp = it_agent_delete_imp
@@ -369,7 +376,7 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
 
   METHOD zpru_if_adf_service~cba_tool.
     DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
-    lo_pre = zpru_cl_adf_factory=>get_zpru_if_adf_precheck( ).
+    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
 
     lo_pre->precheck_cba_tool(
       EXPORTING it_tool_create_imp = it_tool_create_imp
@@ -421,7 +428,7 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
                                                       THEN <ls_create>-tool_provider )
               instance-step_type            = COND #( WHEN <ls_create>-control-step_type = abap_true
                                                       THEN <ls_create>-step_type )
-              instance-input_schema_provider= COND #( WHEN <ls_create>-control-input_schema_provider = abap_true
+              instance-input_schema_provider = COND #( WHEN <ls_create>-control-input_schema_provider = abap_true
                                                       THEN <ls_create>-input_schema_provider )
               instance-tool_info_provider   = COND #( WHEN <ls_create>-control-tool_info_provider = abap_true
                                                       THEN <ls_create>-tool_info_provider )
@@ -443,7 +450,7 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
           APPEND VALUE #( agent_uuid = <ls_create>-agent_uuid
                           tool_uuid  = <ls_create>-tool_uuid
                           create     = abap_true
-                          fail       = zpru_if_agent_frw=>cs_fail_cause-key_duplicate )
+                          fail       = zpru_if_agent_frw=>cs_fail_cause-conflict )
                  TO cs_failed-tool.
 
           APPEND VALUE #( agent_uuid = <ls_create>-agent_uuid
@@ -476,6 +483,7 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
     ENDLOOP.
   ENDMETHOD.
 
+
   METHOD zpru_if_adf_service~rba_tool.
     DATA lt_fetched_tool LIKE zpru_cl_adf_buffer=>tool_buffer.
     CLEAR et_tool.
@@ -484,7 +492,7 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    DATA(lo_pre) = zpru_cl_adf_factory=>get_zpru_if_adf_precheck( ).
+    DATA(lo_pre) = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
     lo_pre->precheck_rba_tool( EXPORTING it_rba_tool_k = it_rba_tool_k
                                IMPORTING et_entities   = DATA(lt_entities)
                                CHANGING  cs_reported   = cs_reported
@@ -537,7 +545,7 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    DATA(lo_pre) = zpru_cl_adf_factory=>get_zpru_if_adf_precheck( ).
+    DATA(lo_pre) = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
     lo_pre->precheck_read_tool( EXPORTING it_tool_read_k = it_tool_read_k
                                 IMPORTING et_entities    = DATA(lt_entities)
                                 CHANGING  cs_reported    = cs_reported
@@ -586,7 +594,7 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
                                               THEN <ls_buffer>-instance-tool_provider ).
         ls_out-step_type            = COND #( WHEN <ls_read>-control-step_type = abap_true
                                               THEN <ls_buffer>-instance-step_type ).
-        ls_out-input_schema_provider= COND #( WHEN <ls_read>-control-input_schema_provider = abap_true
+        ls_out-input_schema_provider = COND #( WHEN <ls_read>-control-input_schema_provider = abap_true
                                               THEN <ls_buffer>-instance-input_schema_provider ).
         ls_out-tool_info_provider   = COND #( WHEN <ls_read>-control-tool_info_provider = abap_true
                                               THEN <ls_buffer>-instance-tool_info_provider ).
@@ -605,7 +613,7 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
 
   METHOD zpru_if_adf_service~update_tool.
     DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
-    lo_pre = zpru_cl_adf_factory=>get_zpru_if_adf_precheck( ).
+    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
 
     lo_pre->precheck_update_tool(
       EXPORTING it_tool_update_imp = it_tool_update_imp
@@ -653,7 +661,7 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
         <ls_buffer>-instance-step_type            = COND #( WHEN <ls_update>-control-step_type = abap_true
                                                             THEN <ls_update>-step_type
                                                             ELSE <ls_buffer>-instance-step_type ).
-        <ls_buffer>-instance-input_schema_provider= COND #( WHEN <ls_update>-control-input_schema_provider = abap_true
+        <ls_buffer>-instance-input_schema_provider = COND #( WHEN <ls_update>-control-input_schema_provider = abap_true
                                                             THEN <ls_update>-input_schema_provider
                                                             ELSE <ls_buffer>-instance-input_schema_provider ).
         <ls_buffer>-instance-tool_info_provider   = COND #( WHEN <ls_update>-control-tool_info_provider = abap_true
@@ -684,7 +692,7 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
 
   METHOD zpru_if_adf_service~delete_tool.
     DATA lo_pre TYPE REF TO zpru_if_adf_precheck.
-    lo_pre = zpru_cl_adf_factory=>get_zpru_if_adf_precheck( ).
+    lo_pre = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_precheck( ).
 
     lo_pre->precheck_delete_tool(
       EXPORTING it_tool_delete_imp = it_tool_delete_imp
@@ -741,10 +749,12 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
     ENDLOOP.
   ENDMETHOD.
 
+
   METHOD zpru_if_adf_service~clean_up.
     CLEAR zpru_cl_adf_buffer=>agent_buffer.
     CLEAR zpru_cl_adf_buffer=>tool_buffer.
   ENDMETHOD.
+
 
   METHOD zpru_if_adf_service~do_save.
 
@@ -772,9 +782,11 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
     ENDIF.
   ENDMETHOD.
 
+
   METHOD zpru_if_adf_service~determine.
     " Placeholder for determination logic
   ENDMETHOD.
+
 
   METHOD zpru_if_adf_service~validate.
     " Placeholder for validation logic
@@ -793,11 +805,10 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
                               ct_delete_tool  = lt_del_tool ).
 
 
-    apply_db_changes( EXPORTING it_modify_agent = lt_mod_agent
+   rv_error = apply_db_changes( EXPORTING it_modify_agent = lt_mod_agent
                                 it_modify_tool  = lt_mod_tool
                                 it_delete_agent = lt_del_agent
-                                it_delete_tool  = lt_del_tool
-                      IMPORTING ev_error = rv_error ).
+                                it_delete_tool  = lt_del_tool ).
 
   ENDMETHOD.
 
@@ -835,7 +846,7 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
 
 
   METHOD apply_db_changes.
-    DATA(lo_db_access) = zpru_cl_adf_factory=>get_zpru_if_adf_db_access( ).
+    DATA(lo_db_access) = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_db_access( ).
 
     " Handle Updates/Creates
     IF it_modify_agent IS NOT INITIAL.
@@ -866,6 +877,7 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
 
   ENDMETHOD.
 
+
   METHOD fill_agent_admin_fields.
     GET TIME STAMP FIELD DATA(lv_now).
 
@@ -882,5 +894,4 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
     cs_agent-instance-changed_by         = sy-uname.
     cs_agent-instance-local_last_changed = lv_now.
   ENDMETHOD.
-
 ENDCLASS.
