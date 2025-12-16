@@ -23,6 +23,15 @@ INTERFACE zpru_if_agent_frw
                zpru_msg_execution TYPE symsgid VALUE `ZPRU_MSG_EXECUTION`,
              END OF cs_message_class.
 
+  CONSTANTS: BEGIN OF cs_sign,
+               include TYPE char1 VALUE 'I',
+               exclude TYPE char1 VALUE 'E',
+             END OF cs_sign.
+
+  CONSTANTS: BEGIN OF cs_option,
+               equal TYPE char2 VALUE 'EQ',
+             END OF cs_option.
+
   TYPES ts_json       TYPE string.
   TYPES tt_agent_tool TYPE STANDARD TABLE OF zpru_agent_tool WITH EMPTY KEY.
 

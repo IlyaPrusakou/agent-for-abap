@@ -94,8 +94,8 @@ CLASS zpru_cl_axc_database_access IMPLEMENTATION.
 
     LOOP AT it_axc_query_k ASSIGNING FIELD-SYMBOL(<ls_axc_query>).
       APPEND INITIAL LINE TO lr_query ASSIGNING FIELD-SYMBOL(<ls_query>).
-      <ls_query>-sign   = `I`.
-      <ls_query>-option = `EQ`.
+      <ls_query>-sign   = zpru_if_agent_frw=>cs_sign-include.
+      <ls_query>-option = zpru_if_agent_frw=>cs_option-equal.
       <ls_query>-low    = <ls_axc_query>-query_uuid.
     ENDLOOP.
 
@@ -113,8 +113,8 @@ CLASS zpru_cl_axc_database_access IMPLEMENTATION.
 
     LOOP AT it_axc_step_k ASSIGNING FIELD-SYMBOL(<ls_axc_step>).
       APPEND INITIAL LINE TO lr_step ASSIGNING FIELD-SYMBOL(<ls_step>).
-      <ls_step>-sign   = `I`.
-      <ls_step>-option = `EQ`.
+      <ls_step>-sign   = zpru_if_agent_frw=>cs_sign-include.
+      <ls_step>-option = zpru_if_agent_frw=>cs_option-equal.
       <ls_step>-low    = <ls_axc_step>-step_uuid.
     ENDLOOP.
 
@@ -131,8 +131,8 @@ CLASS zpru_cl_axc_database_access IMPLEMENTATION.
     ENDIF.
 
     lt_run_uuid_r = VALUE #( FOR <ls_k> IN it_axc_head_k
-                             ( sign   = `I`
-                               option = `EQ`
+                             ( sign   = zpru_if_agent_frw=>cs_sign-include
+                               option = zpru_if_agent_frw=>cs_option-equal
                                low    = <ls_k>-run_uuid ) ).
     SELECT * FROM zpru_axc_query
       WHERE run_uuid IN @lt_run_uuid_r
@@ -147,8 +147,8 @@ CLASS zpru_cl_axc_database_access IMPLEMENTATION.
     ENDIF.
 
     lt_query_uuid_r = VALUE #( FOR <ls_k> IN it_axc_query_k
-                               ( sign   = `I`
-                                 option = `EQ`
+                               ( sign   = zpru_if_agent_frw=>cs_sign-include
+                                 option = zpru_if_agent_frw=>cs_option-equal
                                  low    = <ls_k>-query_uuid ) ).
     SELECT * FROM zpru_axc_step
       WHERE run_uuid IN @lt_query_uuid_r

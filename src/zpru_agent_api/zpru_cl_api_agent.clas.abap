@@ -255,8 +255,8 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
 
     lo_adf_service = zpru_cl_adf_factory=>zpru_if_adf_factory~get_zpru_if_adf_service( ).
 
-    lo_adf_service->query_agent( EXPORTING it_agent_name = VALUE #( ( sign   = `I`
-                                                                      option = `EQ`
+    lo_adf_service->query_agent( EXPORTING it_agent_name = VALUE #( ( sign   = zpru_if_agent_frw=>cs_sign-include
+                                                                      option = zpru_if_agent_frw=>cs_option-equal
                                                                       low    = iv_agent_name ) )
                                  IMPORTING et_agent_k    = DATA(lt_agent_k) ).
 
