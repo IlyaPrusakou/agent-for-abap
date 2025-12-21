@@ -12,6 +12,10 @@ CONSTANTS:
       info        TYPE zpru_de_message_type VALUE 'I',
     END OF cs_msg_type.
 
+  TYPES: ts_message TYPE zpru_s_mem_msg_ext.
+  TYPES: tt_message TYPE STANDARD TABLE OF ts_message WITH EMPTY KEY.
+
+
   TYPES: BEGIN OF ts_agent_message,
            agent_uuid       TYPE sysuuid_x16,
            run_uuid         TYPE sysuuid_x16,
@@ -25,11 +29,8 @@ CONSTANTS:
   TYPES tt_agent_message TYPE STANDARD TABLE OF ts_agent_message WITH EMPTY KEY.
 
   METHODS save_message
-    IMPORTING iv_agent_uuid   TYPE sysuuid_x16                                    OPTIONAL
-              iv_run_uuid     TYPE sysuuid_x16                                    OPTIONAL
-              iv_step_uuid    TYPE sysuuid_x16                                    OPTIONAL
-              iv_message_type TYPE zpru_de_message_type DEFAULT cs_msg_type-info
-              ir_message      TYPE REF TO data.
+    IMPORTING
+    it_message type tt_message.
 
   METHODS get_history
     RETURNING VALUE(rt_history) TYPE zpru_if_short_memory_provider=>tt_agent_message.

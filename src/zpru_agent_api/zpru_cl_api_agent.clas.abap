@@ -78,7 +78,7 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
     DATA lo_execution_plan         TYPE REF TO zpru_if_payload.
     DATA lo_langu                  TYPE REF TO zpru_if_payload.
     DATA lo_decision_log           TYPE REF TO zpru_if_payload.
-    DATA lt_message_in             TYPE zpru_tt_key_value_tuple.
+    DATA lt_message_in             TYPE zpru_if_short_memory_provider=>tt_message.
     DATA lv_langu                  TYPE sylangu.
     DATA lv_decision_log           TYPE zpru_if_agent_frw=>ts_json.
     DATA lv_first_tool_input       TYPE zpru_if_agent_frw=>ts_json.
@@ -156,20 +156,21 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
 
     mo_controller->mv_agent_uuid = ls_agent-agent_uuid.
 
-    lt_message_in = VALUE #( ( name  = 'STAGE'
-                               value = 'BUILD_EXECUTION' )
-                             ( name  = 'SUB STAGE'
-                               value = 'BEFORE DECISION' )
-                             ( name  = 'AGENT_NAME'
-                               value = ls_agent-agent_name )
-                             ( name  = 'SYSTEM PROMPT'
-                               value = lo_system_prompt_provider->get_system_prompt( ) )
-                             ( name  = 'AGENT INFO'
-                               value = lo_agent_info_provider->get_agent_info( ) ) ).
+    GET TIME STAMP FIELD DATA(lv_now).
 
-    lo_short_memory->save_message( iv_agent_uuid   = ls_agent-agent_uuid
-                                   iv_message_type = zpru_if_short_memory_provider=>cs_msg_type-info
-                                   ir_message      = REF #( lt_message_in ) ).
+    lt_message_in = VALUE #( (
+  message_cid    = |{ lv_now }-{ sy-uname }-{ 1 }|
+  stage          = 'BUILD_EXECUTION'
+  sub_stage      = 'BEFORE DECISION'
+  namespace      = |{ sy-uname }.{ ls_agent-agent_name }|
+  user_name      = sy-uname
+  agent_uuid     =  ls_agent-agent_uuid
+  message_time   = lv_now
+  content        = |\{ "SYSTEM PROMPT" : "{ lo_system_prompt_provider->get_system_prompt( ) }", | &&
+                   | "AGENT INFO" : "{ lo_agent_info_provider->get_agent_info( ) }" \}|
+  message_type   = zpru_if_short_memory_provider=>cs_msg_type-info ) ).
+
+    lo_short_memory->save_message( lt_message_in ).
 
     lo_first_tool_input = NEW zpru_cl_payload( ).
     lo_execution_plan   = NEW zpru_cl_payload( ).
@@ -204,31 +205,31 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
       lv_first_tool_input = lo_first_tool_input->get_data( )->*.
     ENDIF.
 
-    lt_message_in = VALUE #( ( name  = 'STAGE'
-                               value = 'BUILD_EXECUTION' )
-                             ( name  = 'SUB STAGE'
-                               value = 'AFTER DECISION' )
-                             ( name  = 'AGENT_NAME'
-                               value = ls_agent-agent_name )
-                             ( name  = 'FIRST TOOL INPUT'
-                               value = lv_first_tool_input )
-                             ( name  = 'DECISION LOG'
-                               value = lv_decision_log ) ).
-
-    LOOP AT lt_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
-      APPEND INITIAL LINE TO lt_message_in ASSIGNING FIELD-SYMBOL(<ls_message>).
-      <ls_message>-name  = 'TOOL TO BE BUILD'.
-      <ls_message>-value = <ls_execution_plan>-tool_name.
-    ENDLOOP.
-
-    lo_short_memory->save_message( iv_agent_uuid   = ls_agent-agent_uuid
-                                   iv_message_type = zpru_if_short_memory_provider=>cs_msg_type-info
-                                   ir_message      = REF #( lt_message_in ) ).
+*    lt_message_in = VALUE #( ( name  = 'STAGE'
+*                               value = 'BUILD_EXECUTION' )
+*                             ( name  = 'SUB STAGE'
+*                               value = 'AFTER DECISION' )
+*                             ( name  = 'AGENT_NAME'
+*                               value = ls_agent-agent_name )
+*                             ( name  = 'FIRST TOOL INPUT'
+*                               value = lv_first_tool_input )
+*                             ( name  = 'DECISION LOG'
+*                               value = lv_decision_log ) ).
+*
+*    LOOP AT lt_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+*      APPEND INITIAL LINE TO lt_message_in ASSIGNING FIELD-SYMBOL(<ls_message>).
+*      <ls_message>-name  = 'TOOL TO BE BUILD'.
+*      <ls_message>-value = <ls_execution_plan>-tool_name.
+*    ENDLOOP.
+*
+*    lo_short_memory->save_message( iv_agent_uuid   = ls_agent-agent_uuid
+*                                   iv_message_type = zpru_if_short_memory_provider=>cs_msg_type-info
+*                                   ir_message      = REF #( lt_message_in ) ).
 
     lo_axc_service = zpru_cl_axc_factory=>zpru_if_axc_factory~get_zpru_if_axc_service( ).
 
-    " create execution header
-    GET TIME STAMP FIELD DATA(lv_now).
+*    " create execution header
+*    GET TIME STAMP FIELD DATA(lv_now).
 
     TRY.
         " header
@@ -432,9 +433,9 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
       <ls_message>-value = <ls_tool>-tool_name.
     ENDLOOP.
 
-    lo_short_memory->save_message( iv_agent_uuid   = es_agent-agent_uuid
-                                   iv_message_type = zpru_if_short_memory_provider=>cs_msg_type-info
-                                   ir_message      = REF #( lt_message ) ).
+*    lo_short_memory->save_message( iv_agent_uuid   = es_agent-agent_uuid
+*                                   iv_message_type = zpru_if_short_memory_provider=>cs_msg_type-info
+*                                   ir_message      = REF #( lt_message ) ).
   ENDMETHOD.
 
   METHOD zpru_if_api_agent~rerun.
@@ -603,9 +604,9 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
                           ( name  = 'INPUT_QUERY'
                             value = mv_input_query )   ).
 
-    lo_short_memory->save_message( iv_agent_uuid   = <ls_agent>-agent_uuid
-                                   iv_message_type = zpru_if_short_memory_provider=>cs_msg_type-query
-                                   ir_message      = REF #( lt_message ) ).
+*    lo_short_memory->save_message( iv_agent_uuid   = <ls_agent>-agent_uuid
+*                                   iv_message_type = zpru_if_short_memory_provider=>cs_msg_type-query
+*                                   ir_message      = REF #( lt_message ) ).
   ENDMETHOD.
 
   METHOD get_short_memory.
