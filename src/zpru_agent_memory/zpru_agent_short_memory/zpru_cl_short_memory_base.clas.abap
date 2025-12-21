@@ -53,7 +53,7 @@ CLASS zpru_cl_short_memory_base IMPLEMENTATION.
     ls_message-timestamp = lv_now.
 
     IF ls_message-message_type IS INITIAL.
-      ls_message-message_type = zpru_if_short_memory_provider=>info.
+      ls_message-message_type = zpru_if_short_memory_provider=>cs_msg_type-info.
     ENDIF.
 
     APPEND INITIAL LINE TO mt_agent_message ASSIGNING FIELD-SYMBOL(<ls_target>).

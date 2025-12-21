@@ -16,10 +16,16 @@ INTERFACE zpru_if_agent_util
     RETURNING VALUE(ro_obj) TYPE REF TO zpru_if_agent_message.
 
   METHODS fill_flags
-    IMPORTING
-      iv_name   TYPE any
-    CHANGING
-      CS_DATA    TYPE ANY
-      cs_CONTROL TYPE any.
+    IMPORTING iv_name    TYPE any
+    CHANGING  cs_data    TYPE any
+              cs_control TYPE any.
+
+  METHODS serialize_json_2_xstring
+    IMPORTING iv_json           TYPE string
+    RETURNING VALUE(rv_xstring) TYPE xstring.
+
+  METHODS deserialize_xstring_2_json
+    IMPORTING iv_xstring     TYPE xstring
+    RETURNING VALUE(rv_json) TYPE string.
 
 ENDINTERFACE.

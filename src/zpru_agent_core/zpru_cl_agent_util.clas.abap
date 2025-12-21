@@ -101,4 +101,22 @@ CLASS zpru_cl_agent_util IMPLEMENTATION.
 
   ENDMETHOD.
 
+  METHOD zpru_if_agent_util~deserialize_xstring_2_json.
+
+    TRY.
+        rv_json = cl_abap_conv_codepage=>create_in( )->convert( iv_xstring ).
+      CATCH     cx_parameter_invalid_range cx_sy_conversion_codepage.
+        RETURN.
+    ENDTRY.
+
+  ENDMETHOD.
+
+  METHOD zpru_if_agent_util~serialize_json_2_xstring.
+    TRY.
+        rv_xstring = cl_abap_conv_codepage=>create_out( )->convert( iv_json ).
+      CATCH     cx_parameter_invalid_range cx_sy_conversion_codepage.
+        RETURN.
+    ENDTRY.
+  ENDMETHOD.
+
 ENDCLASS.
