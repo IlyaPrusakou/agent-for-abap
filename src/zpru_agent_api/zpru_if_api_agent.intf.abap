@@ -5,7 +5,17 @@ INTERFACE zpru_if_api_agent
 
   TYPES tv_agent_name TYPE char100.
 
-  METHODS add_query_2_run.
+  METHODS add_query_2_run
+    IMPORTING iv_run_uuid     TYPE sysuuid_x16
+              iv_input_query  TYPE zpru_if_agent_frw=>ts_json
+    exporting ev_run_uuid     TYPE sysuuid_x16
+              ev_query_uuid   TYPE sysuuid_x16
+    CHANGING  cs_axc_reported TYPE zpru_if_agent_frw=>ts_axc_reported
+              cs_axc_failed   TYPE zpru_if_agent_frw=>ts_axc_failed
+              cs_axc_mapped   TYPE zpru_if_agent_frw=>ts_axc_mapped
+              cs_adf_reported TYPE zpru_if_agent_frw=>ts_adf_reported
+              cs_adf_failed   TYPE zpru_if_agent_frw=>ts_adf_failed
+    RAISING   zpru_cx_agent_core.
 
   METHODS initialize
     IMPORTING iv_agent_name   TYPE zpru_if_api_agent=>tv_agent_name
@@ -25,6 +35,7 @@ INTERFACE zpru_if_api_agent
   METHODS build_execution
     IMPORTING iv_agent_uuid     TYPE sysuuid_x16
     EXPORTING ev_built_run_uuid TYPE sysuuid_x16
+              ev_built_query_uuid   TYPE sysuuid_x16
     CHANGING  cs_axc_reported   TYPE zpru_if_agent_frw=>ts_axc_reported
               cs_axc_failed     TYPE zpru_if_agent_frw=>ts_axc_failed
               cs_axc_mapped     TYPE zpru_if_agent_frw=>ts_axc_mapped
@@ -42,6 +53,7 @@ INTERFACE zpru_if_api_agent
   METHODS run
     IMPORTING iv_run_uuid     TYPE sysuuid_x16
               iv_query_uuid   TYPE sysuuid_x16 OPTIONAL
+    EXPORTING eo_final_response TYPE REF TO zpru_if_payload
     CHANGING  cs_axc_reported TYPE zpru_if_agent_frw=>ts_axc_reported
               cs_axc_failed   TYPE zpru_if_agent_frw=>ts_axc_failed
               cs_adf_reported TYPE zpru_if_agent_frw=>ts_adf_reported
@@ -51,6 +63,7 @@ INTERFACE zpru_if_api_agent
   METHODS rerun
     IMPORTING iv_run_uuid     TYPE sysuuid_x16
               iv_query_uuid   TYPE sysuuid_x16
+    EXPORTING eo_final_response TYPE REF TO zpru_if_payload
     CHANGING  cs_axc_reported TYPE zpru_if_agent_frw=>ts_axc_reported
               cs_axc_failed   TYPE zpru_if_agent_frw=>ts_axc_failed
               cs_adf_reported TYPE zpru_if_agent_frw=>ts_adf_reported
@@ -62,6 +75,7 @@ INTERFACE zpru_if_api_agent
               iv_query_uuid         TYPE sysuuid_x16
               iv_starting_step_uuid TYPE sysuuid_x16
               iv_new_step_prompt    TYPE string OPTIONAL
+    EXPORTING eo_final_response TYPE REF TO zpru_if_payload
     CHANGING  cs_axc_reported       TYPE zpru_if_agent_frw=>ts_axc_reported
               cs_axc_failed         TYPE zpru_if_agent_frw=>ts_axc_failed
               cs_adf_reported       TYPE zpru_if_agent_frw=>ts_adf_reported
