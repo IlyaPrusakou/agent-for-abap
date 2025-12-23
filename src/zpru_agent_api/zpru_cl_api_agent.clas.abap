@@ -42,7 +42,6 @@ CLASS zpru_cl_api_agent DEFINITION
                 cs_adf_reported    TYPE zpru_if_agent_frw=>ts_adf_reported
                 cs_adf_failed      TYPE zpru_if_agent_frw=>ts_adf_failed
       RAISING   zpru_cx_agent_core.
-
 ENDCLASS.
 
 

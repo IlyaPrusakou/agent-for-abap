@@ -1,0 +1,16 @@
+CLASS zpru_cl_unit_agent DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    INTERFACES zpru_if_unit_agent .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS zpru_cl_unit_agent IMPLEMENTATION.
+ENDCLASS.
