@@ -357,6 +357,8 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                                                            THEN <ls_create>-run_uuid )
                         instance-tool_uuid       = COND #( WHEN <ls_create>-control-tool_uuid = abap_true
                                                            THEN <ls_create>-tool_uuid )
+                        instance-step_number     = COND #( WHEN <ls_create>-control-step_number = abap_true
+                                                           THEN <ls_create>-step_number )
                         instance-execution_seq   = COND #( WHEN <ls_create>-control-execution_seq = abap_true
                                                            THEN <ls_create>-execution_seq )
                         instance-start_timestamp = COND #( WHEN <ls_create>-control-start_timestamp = abap_true
@@ -436,6 +438,8 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                                          THEN <ls_s_buf>-instance-run_uuid ).
         ls_out-tool_uuid       = COND #( WHEN <ls_h>-control-tool_uuid = abap_true
                                          THEN <ls_s_buf>-instance-tool_uuid ).
+        ls_out-step_number     = COND #( WHEN <ls_h>-control-step_number = abap_true
+                                         THEN <ls_s_buf>-instance-step_number ).
         ls_out-execution_seq   = COND #( WHEN <ls_h>-control-execution_seq = abap_true
                                          THEN <ls_s_buf>-instance-execution_seq ).
         ls_out-start_timestamp = COND #( WHEN <ls_h>-control-start_timestamp = abap_true
@@ -487,6 +491,8 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                                          THEN <ls_buf>-instance-run_uuid ).
         ls_out-tool_uuid       = COND #( WHEN <ls_ent>-control-tool_uuid = abap_true
                                          THEN <ls_buf>-instance-tool_uuid ).
+        ls_out-step_number     = COND #( WHEN <ls_ent>-control-step_number = abap_true
+                                         THEN <ls_buf>-instance-step_number ).
         ls_out-execution_seq   = COND #( WHEN <ls_ent>-control-execution_seq = abap_true
                                          THEN <ls_buf>-instance-execution_seq ).
         ls_out-start_timestamp = COND #( WHEN <ls_ent>-control-start_timestamp = abap_true
@@ -552,6 +558,9 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
         <ls_buf>-instance-tool_uuid       = COND #( WHEN <ls_update>-control-tool_uuid = abap_true
                                                     THEN <ls_update>-tool_uuid
                                                     ELSE <ls_buf>-instance-tool_uuid ).
+        <ls_buf>-instance-step_number     = COND #( WHEN <ls_update>-control-step_number = abap_true
+                                                    THEN <ls_update>-step_number
+                                                    ELSE <ls_buf>-instance-step_number ).
         <ls_buf>-instance-execution_seq   = COND #( WHEN <ls_update>-control-execution_seq = abap_true
                                                     THEN <ls_update>-execution_seq
                                                     ELSE <ls_buf>-instance-execution_seq ).
@@ -709,6 +718,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
       EXPORTING it_rba_query_k = VALUE #( FOR <ls_h> IN it_axc_head_k
                                           ( run_uuid = <ls_h>-run_uuid
                                             control  = VALUE #( run_uuid         = abap_true
+                                                                query_number     = abap_true
                                                                 query_uuid       = abap_true
                                                                 language         = abap_true
                                                                 execution_status = abap_true
@@ -777,6 +787,8 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                                                             THEN <ls_create>-run_uuid )
                         instance-language         = COND #( WHEN <ls_create>-control-language = abap_true
                                                             THEN <ls_create>-language )
+                        instance-query_number     = COND #( WHEN <ls_create>-control-query_number = abap_true
+                                                            THEN <ls_create>-query_number )
                         instance-execution_status = COND #( WHEN <ls_create>-control-execution_status = abap_true
                                                             THEN <ls_create>-execution_status )
                         instance-start_timestamp  = COND #( WHEN <ls_create>-control-start_timestamp = abap_true
@@ -945,8 +957,8 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                                           THEN <ls_q_buf>-instance-run_uuid ).
         ls_out-language         = COND #( WHEN <ls_h>-control-language = abap_true
                                           THEN <ls_q_buf>-instance-language ).
-        ls_out-execution_status = COND #( WHEN <ls_h>-control-execution_status = abap_true
-                                          THEN <ls_q_buf>-instance-execution_status ).
+        ls_out-query_number     = COND #( WHEN <ls_h>-control-query_number = abap_true
+                                          THEN <ls_q_buf>-instance-query_number ).
         ls_out-start_timestamp  = COND #( WHEN <ls_h>-control-start_timestamp = abap_true
                                           THEN <ls_q_buf>-instance-start_timestamp ).
         ls_out-end_timestamp    = COND #( WHEN <ls_h>-control-end_timestamp = abap_true
@@ -997,8 +1009,8 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                                           THEN <ls_buf>-instance-run_uuid ).
         ls_out-language         = COND #( WHEN <ls_ent>-control-language = abap_true
                                           THEN <ls_buf>-instance-language ).
-        ls_out-execution_status = COND #( WHEN <ls_ent>-control-execution_status = abap_true
-                                          THEN <ls_buf>-instance-execution_status ).
+        ls_out-query_number     = COND #( WHEN <ls_ent>-control-query_number = abap_true
+                                          THEN <ls_buf>-instance-query_number ).
         ls_out-start_timestamp  = COND #( WHEN <ls_ent>-control-start_timestamp = abap_true
                                           THEN <ls_buf>-instance-start_timestamp ).
         ls_out-end_timestamp    = COND #( WHEN <ls_ent>-control-end_timestamp = abap_true
@@ -1058,9 +1070,9 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
         <ls_buf>-instance-language         = COND #( WHEN <ls_update>-control-language = abap_true
                                                      THEN <ls_update>-language
                                                      ELSE <ls_buf>-instance-language ).
-        <ls_buf>-instance-execution_status = COND #( WHEN <ls_update>-control-execution_status = abap_true
-                                                     THEN <ls_update>-execution_status
-                                                     ELSE <ls_buf>-instance-execution_status ).
+        <ls_buf>-instance-query_number     = COND #( WHEN <ls_update>-control-query_number = abap_true
+                                                     THEN <ls_update>-query_number
+                                                     ELSE <ls_buf>-instance-query_number ).
         <ls_buf>-instance-start_timestamp  = COND #( WHEN <ls_update>-control-start_timestamp = abap_true
                                                      THEN <ls_update>-start_timestamp
                                                      ELSE <ls_buf>-instance-start_timestamp ).
@@ -1178,6 +1190,8 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
         CLEAR ls_out.
 
         ls_out-run_uuid           = <ls_buf>-instance-run_uuid.
+        ls_out-run_id             = COND #( WHEN <ls_req>-control-run_id = abap_true
+                                            THEN <ls_buf>-instance-run_id ).
         ls_out-agent_uuid         = COND #( WHEN <ls_req>-control-agent_uuid = abap_true
                                             THEN <ls_buf>-instance-agent_uuid ).
         ls_out-user_id            = COND #( WHEN <ls_req>-control-user_id = abap_true
@@ -1237,6 +1251,9 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
       ASSIGN zpru_cl_axc_buffer=>header_buffer[ instance-run_uuid = <ls_update>-run_uuid
                                                 deleted           = abap_false ] TO FIELD-SYMBOL(<ls_buffer>).
       IF sy-subrc = 0.
+        <ls_buffer>-instance-run_id          = COND #( WHEN <ls_update>-control-run_id = abap_true
+                                                       THEN <ls_update>-run_id
+                                                       ELSE <ls_buffer>-instance-run_id ).
         <ls_buffer>-instance-agent_uuid      = COND #( WHEN <ls_update>-control-agent_uuid = abap_true
                                                        THEN <ls_update>-agent_uuid
                                                        ELSE <ls_buffer>-instance-agent_uuid ).
@@ -1316,6 +1333,8 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
 
         APPEND VALUE #(
             instance-run_uuid           = <ls_create>-run_uuid
+            instance-run_id             = COND #( WHEN <ls_create>-control-run_id = abap_true
+                                                  THEN <ls_create>-run_id )
             instance-agent_uuid         = COND #( WHEN <ls_create>-control-agent_uuid = abap_true
                                                   THEN <ls_create>-agent_uuid )
             instance-user_id            = COND #( WHEN <ls_create>-control-user_id = abap_true
@@ -1522,5 +1541,4 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                                   CHANGING  cs_reported        = cs_reported
                                             cs_failed          = cs_failed ).
   ENDMETHOD.
-
 ENDCLASS.

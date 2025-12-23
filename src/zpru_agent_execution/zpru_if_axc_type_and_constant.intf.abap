@@ -52,6 +52,7 @@ INTERFACE zpru_if_axc_type_and_constant
 
   TYPES: BEGIN OF ts_head_control,
            run_uuid           TYPE abap_boolean,
+           run_id             type abap_boolean,
            agent_uuid         TYPE abap_boolean,
            user_id            TYPE abap_boolean,
            start_timestamp    TYPE abap_boolean,
@@ -86,6 +87,7 @@ INTERFACE zpru_if_axc_type_and_constant
 
   TYPES: BEGIN OF ts_query_control,
            run_uuid         TYPE abap_boolean,
+           query_number     type abap_boolean,
            query_uuid       TYPE abap_boolean,
            language         TYPE abap_boolean,
            execution_status TYPE abap_boolean,
@@ -138,6 +140,7 @@ INTERFACE zpru_if_axc_type_and_constant
 
   TYPES: BEGIN OF ts_step_control,
            step_uuid       TYPE abap_boolean,
+           step_number     type abap_boolean,
            query_uuid      TYPE abap_boolean,
            run_uuid        TYPE abap_boolean,
            tool_uuid       TYPE abap_boolean,
