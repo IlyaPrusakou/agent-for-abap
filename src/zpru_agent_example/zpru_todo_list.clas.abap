@@ -27,7 +27,7 @@ CLASS zpru_todo_list IMPLEMENTATION.
 *3 adjust messages with new fields - DONE
 *4 add field agent_type to agent node and customizing table with values and configs for agent type
 *5 add strategy for summarize and long memory process
-*6 save data as xstring in db
+*6 save data as xstring in db ?????
 
   ENDMETHOD.
 
