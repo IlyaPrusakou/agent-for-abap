@@ -1,5 +1,5 @@
 CLASS zpru_cl_long_memory_base DEFINITION
-  PUBLIC FINAL
+  PUBLIC
   CREATE PUBLIC.
 
   PUBLIC SECTION.
