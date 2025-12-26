@@ -14,6 +14,7 @@ ENDCLASS.
 CLASS zpru_run_agent IMPLEMENTATION.
   METHOD if_oo_adt_classrun~main.
 
+" test
 **    DELETE FROM zpru_axc_head.
 **    DELETE FROM zpru_axc_query.
 **    DELETE FROM zpru_axc_step.
