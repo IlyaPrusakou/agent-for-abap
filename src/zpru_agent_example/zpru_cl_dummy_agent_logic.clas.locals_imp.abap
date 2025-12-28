@@ -29,9 +29,9 @@ CLASS lcl_decision_provider IMPLEMENTATION.
 
     eo_execution_plan->set_data( ir_data = NEW zpru_if_decision_provider=>tt_execution_plan( lt_execution_plan ) ).
     eo_first_tool_input->set_data(
-        ir_data = NEW string( |\{ "FIRST_TOOL_INPUT" : "FIRST TOOL INPUT - { lv_now }" \}| ) ).
+        ir_data = NEW string( |FIRST TOOL INPUT - { lv_now }| ) ).
     eo_langu->set_data( ir_data = NEW spras( sy-langu ) ).
-    eo_decision_log->set_data( ir_data = NEW string( |\{ "DICISION LOG" : "DECISION LOG - { lv_now }" \}| ) ).
+    eo_decision_log->set_data( ir_data = NEW string( |DECISION LOG - { lv_now }| ) ).
   ENDMETHOD.
 
   METHOD zpru_if_decision_provider~prepare_final_response.
@@ -129,7 +129,7 @@ CLASS lcl_prompt_provider IMPLEMENTATION.
   METHOD zpru_if_prompt_provider~get_system_prompt.
     zpru_cl_dummy_agent_logic=>ms_method_registr-get_system_prompt = abap_true.
     GET TIME STAMP FIELD DATA(lv_now).
-    rv_system_prompt = |\{ "SYSTEM_PROMPT" : "DUMMY SYSTEM PROMPT - { lv_now }" \}|.
+    rv_system_prompt = |DUMMY SYSTEM PROMPT - { lv_now }|.
   ENDMETHOD.
 ENDCLASS.
 
@@ -260,11 +260,11 @@ CLASS lcl_input_schema_provider IMPLEMENTATION.
     zpru_cl_dummy_agent_logic=>ms_method_registr-get_input_schema = abap_true.
     CASE is_tool_master_data-tool_name.
       WHEN 'SIMPLE_TOOL'.
-        lv_input_schema = |\{ "INPUT_SCHEMA" : "SIMPLE_TOOL" \}|.
+        lv_input_schema = |SIMPLE_TOOL_SCHEMA|.
       WHEN 'KNOWLEDGE'.
-        lv_input_schema = |\{ "INPUT_SCHEMA" : "KNOWLEDGE" \}|.
+        lv_input_schema = |KNOWLEDGE_SCHEMA"|.
       WHEN 'NESTED_AGENT'.
-        lv_input_schema = |\{ "INPUT_SCHEMA" : "NESTED_AGENT" \}|.
+        lv_input_schema = |NESTED_AGENT_SCHEMA|.
       WHEN OTHERS.
     ENDCASE.
     ro_input_schema->set_data( ir_data = NEW string( lv_input_schema ) ).

@@ -1,0 +1,6 @@
+@EndUserText.label: 'ZR_PRU_SUMM_STRAT'
+@MappingRole: true
+define role ZR_PRU_SUMM_STRAT {
+  grant select on ZR_PRU_SUMM_STRAT
+  where TRUE;
+}

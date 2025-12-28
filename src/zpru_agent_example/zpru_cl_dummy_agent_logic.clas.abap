@@ -36,6 +36,7 @@ CLASS zpru_cl_dummy_agent_logic IMPLEMENTATION.
     lo_decision_provider = NEW lcl_decision_provider( ).
 
     lo_decision_provider->call_decision_engine( EXPORTING is_agent               = is_agent
+                                                          it_tool                = it_tool
                                                           io_controller          = io_controller
                                                           io_input               = io_input
                                                           io_system_prompt       = io_system_prompt

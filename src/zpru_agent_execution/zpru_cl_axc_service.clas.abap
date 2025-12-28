@@ -735,7 +735,7 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
 
       DATA(lt_query_copy) = lt_query_candidates.
       DELETE lt_query_copy WHERE run_uuid <> <ls_axc_head_k>-run_uuid.
-      DELETE lt_query_copy WHERE execution_status <> zpru_if_agent_frw=>cs_execution_status-new.
+      DELETE lt_query_copy WHERE execution_status <> zpru_if_axc_type_and_constant=>sc_query_status-new.
 
       SORT lt_query_copy BY start_timestamp ASCENDING.
 

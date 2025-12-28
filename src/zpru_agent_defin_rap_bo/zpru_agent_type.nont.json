@@ -1,0 +1,11 @@
+{
+  "formatVersion": "1",
+  "header": {
+    "description": "SAP Object Node Type ZPRU_AGENT_TYPE",
+    "originalLanguage": "en",
+    "abapLanguageVersion": "cloudDevelopment"
+  },
+  "name": "ZPRU_AGENT_TYPE",
+  "sapObjectType": "ZPRU_AGENT_TYPE",
+  "rootNode": true
+}

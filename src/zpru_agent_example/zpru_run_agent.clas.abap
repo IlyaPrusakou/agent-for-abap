@@ -14,6 +14,6 @@ CLASS zpru_run_agent IMPLEMENTATION.
     lo_cl_unit_agent = NEW zpru_cl_unit_agent( ).
     GET TIME STAMP FIELD DATA(lv_now).
     lo_cl_unit_agent->execute_agent( iv_agent_name  = 'DUMMY_AGENT'
-                                     iv_input_query = |\{ "INPUT_QUERY" : "MY QUERY - { lv_now }" \}| ).
+                                     iv_input_query = |MY QUERY - { lv_now }| ).
   ENDMETHOD.
 ENDCLASS.

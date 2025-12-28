@@ -1,0 +1,45 @@
+managed implementation in class ZBP_R_PRU_DISC_STRAT unique;
+strict ( 2 );
+with draft;
+extensible;
+define behavior for ZR_PRU_DISC_STRAT alias ZrPruDiscStrat
+persistent table ZPRU_DISC_STRAT
+extensible
+draft table ZPRU_DISC_STRT_D
+etag master LocalLastChanged
+lock master total etag LastChanged
+authorization master( global )
+{
+  field ( mandatory : create )
+   DiscardStrategy;
+
+  field ( readonly )
+   LastChanged,
+   LocalLastChanged;
+
+  field ( readonly : update )
+   DiscardStrategy;
+
+
+  create;
+  update;
+  delete;
+
+  draft action Activate optimized;
+  draft action Discard;
+  draft action Edit;
+  draft action Resume;
+  draft determine action Prepare;
+
+  mapping for ZPRU_DISC_STRAT corresponding extensible
+  {
+    DiscardStrategy = discard_strategy;
+    StrategyProvider = strategy_provider;
+    CreatedBy = created_by;
+    CreatedAt = created_at;
+    ChangedBy = changed_by;
+    LastChanged = last_changed;
+    LocalLastChanged = local_last_changed;
+  }
+
+}

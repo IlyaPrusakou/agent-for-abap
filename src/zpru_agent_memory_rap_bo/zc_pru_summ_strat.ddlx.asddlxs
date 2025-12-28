@@ -1,0 +1,108 @@
+@Metadata.layer: #CORE
+@UI.headerInfo.title.type: #STANDARD
+@UI.headerInfo.title.value: 'SummaryStrategy'
+@UI.headerInfo.description.type: #STANDARD
+@UI.headerInfo.description.value: 'SummaryStrategy'
+annotate view ZC_PRU_SUMM_STRAT with
+{
+  @UI.facet: [ {
+    label: 'General Information', 
+    id: 'GeneralInfo', 
+    purpose: #STANDARD, 
+    position: 10 , 
+    type: #IDENTIFICATION_REFERENCE
+  } ]
+  @UI.identification: [ {
+    position: 10 
+  } ]
+  @UI.lineItem: [ {
+    position: 10 
+  } ]
+  @UI.selectionField: [ {
+    position: 10 
+  } ]
+  SummaryStrategy;
+  
+  @EndUserText.label: 'StrategyProvider'
+  @UI.identification: [ {
+    position: 20 , 
+    label: 'StrategyProvider'
+  } ]
+  @UI.lineItem: [ {
+    position: 20 , 
+    label: 'StrategyProvider'
+  } ]
+  @UI.selectionField: [ {
+    position: 20 
+  } ]
+  StrategyProvider;
+  
+  @UI.identification: [ {
+    position: 30 
+  } ]
+  @UI.lineItem: [ {
+    position: 30 
+  } ]
+  @UI.selectionField: [ {
+    position: 30 
+  } ]
+  CreatedBy;
+  
+  @UI.identification: [ {
+    position: 40 
+  } ]
+  @UI.lineItem: [ {
+    position: 40 
+  } ]
+  @UI.selectionField: [ {
+    position: 40 
+  } ]
+  CreatedAt;
+  
+  @UI.identification: [ {
+    position: 50 
+  } ]
+  @UI.lineItem: [ {
+    position: 50 
+  } ]
+  @UI.selectionField: [ {
+    position: 50 
+  } ]
+  ChangedBy;
+  
+  @UI.identification: [ {
+    position: 60 
+  } ]
+  @UI.lineItem: [ {
+    position: 60 
+  } ]
+  @UI.selectionField: [ {
+    position: 60 
+  } ]
+  LastChanged;
+  
+  @UI.identification: [ {
+    position: 70 
+  } ]
+  @UI.lineItem: [ {
+    position: 70 
+  } ]
+  @UI.selectionField: [ {
+    position: 70 
+  } ]
+  LocalLastChanged;
+  
+  @EndUserText.label: '_BaseEntity'
+  @UI.identification: [ {
+    position: 80 , 
+    label: '_BaseEntity'
+  } ]
+  @UI.lineItem: [ {
+    position: 80 , 
+    label: '_BaseEntity'
+  } ]
+  @UI.selectionField: [ {
+    position: 80 
+  } ]
+  _BaseEntity;
+}

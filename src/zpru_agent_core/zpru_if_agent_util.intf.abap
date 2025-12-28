@@ -29,14 +29,17 @@ INTERFACE zpru_if_agent_util
     RETURNING VALUE(rv_json) TYPE string.
 
   METHODS convert_to_abap
-    IMPORTING
-      ir_string TYPE REF TO data
-    CHANGING
-      cr_abap   TYPE REF TO data.
+    IMPORTING ir_string TYPE REF TO data
+    CHANGING  cr_abap   TYPE REF TO data.
+
   METHODS convert_to_string
-    IMPORTING
-      ir_abap   TYPE REF TO data
-    CHANGING
-      cr_string TYPE zpru_if_agent_frw=>ts_json.
+    IMPORTING ir_abap   TYPE REF TO data
+    CHANGING  cr_string TYPE zpru_if_agent_frw=>ts_json.
+
+  " support only simple text targets, don't work with json subtree
+  METHODS search_node_in_json
+    IMPORTING iv_json         TYPE zpru_if_agent_frw=>ts_json
+              iv_field_2_search type string
+    RETURNING VALUE(rv_value) TYPE string.
 
 ENDINTERFACE.
