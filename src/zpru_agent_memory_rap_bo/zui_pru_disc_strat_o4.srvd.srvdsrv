@@ -1,0 +1,11 @@
+@EndUserText: {
+  label: 'Service Definition for ZC_PRU_DISC_STRAT'
+}
+@ObjectModel: {
+  leadingEntity: {
+    name: 'ZC_PRU_DISC_STRAT'
+  }
+}
+define service ZUI_PRU_DISC_STRAT_O4 provider contracts odata_v4_ui {
+  expose ZC_PRU_DISC_STRAT;
+}

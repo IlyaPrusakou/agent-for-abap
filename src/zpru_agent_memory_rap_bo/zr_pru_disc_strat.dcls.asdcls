@@ -1,0 +1,6 @@
+@EndUserText.label: 'ZR_PRU_DISC_STRAT'
+@MappingRole: true
+define role ZR_PRU_DISC_STRAT {
+  grant select on ZR_PRU_DISC_STRAT
+  where TRUE;
+}

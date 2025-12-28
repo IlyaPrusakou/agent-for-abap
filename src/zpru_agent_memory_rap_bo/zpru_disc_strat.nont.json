@@ -1,0 +1,11 @@
+{
+  "formatVersion": "1",
+  "header": {
+    "description": "SAP Object Node Type ZPRU_DISC_STRAT",
+    "originalLanguage": "en",
+    "abapLanguageVersion": "cloudDevelopment"
+  },
+  "name": "ZPRU_DISC_STRAT",
+  "sapObjectType": "ZPRU_DISC_STRAT",
+  "rootNode": true
+}

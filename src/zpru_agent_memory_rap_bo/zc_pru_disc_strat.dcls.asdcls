@@ -1,0 +1,6 @@
+@EndUserText.label: 'ZC_PRU_DISC_STRAT'
+@MappingRole: true
+define role ZC_PRU_DISC_STRAT {
+  grant select on ZC_PRU_DISC_STRAT
+  where INHERITING CONDITIONS FROM ENTITY ZR_PRU_DISC_STRAT REPLACING { ROOT WITH _BaseEntity };
+}

@@ -13,6 +13,7 @@ INTERFACE zpru_if_decision_provider
 
   METHODS call_decision_engine
     IMPORTING is_agent               TYPE zpru_if_adf_type_and_constant=>ts_agent
+              it_tool   type zpru_if_adf_type_and_constant=>tt_agent_tool
               io_controller          TYPE REF TO zpru_if_agent_controller
               io_input               TYPE REF TO zpru_if_payload
               io_system_prompt       TYPE REF TO zpru_if_prompt_provider       OPTIONAL

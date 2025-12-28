@@ -42,9 +42,9 @@ CLASS zpru_cl_agent_util IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD zpru_if_agent_util~fill_flags.
-    DATA lo_abap_struct TYPE REF TO cl_abap_structdescr.
+    DATA lo_abap_struct  TYPE REF TO cl_abap_structdescr.
     DATA lv_flags_filled TYPE abap_boolean.
-    DATA lv_processed TYPE abap_boolean.
+    DATA lv_processed    TYPE abap_boolean.
 
     lo_abap_struct ?= cl_abap_typedescr=>describe_by_name( p_name = iv_name ).
 
@@ -93,37 +93,104 @@ CLASS zpru_cl_agent_util IMPLEMENTATION.
     IF lv_processed = abap_false.
       RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
     ENDIF.
-
   ENDMETHOD.
 
   METHOD zpru_if_agent_util~deserialize_xstring_2_json.
-
     TRY.
         rv_json = cl_abap_conv_codepage=>create_in( )->convert( iv_xstring ).
-      CATCH     cx_parameter_invalid_range cx_sy_conversion_codepage.
+      CATCH cx_parameter_invalid_range
+            cx_sy_conversion_codepage.
         RETURN.
     ENDTRY.
-
   ENDMETHOD.
 
   METHOD zpru_if_agent_util~serialize_json_2_xstring.
     TRY.
         rv_xstring = cl_abap_conv_codepage=>create_out( )->convert( iv_json ).
-      CATCH     cx_parameter_invalid_range cx_sy_conversion_codepage.
+      CATCH cx_parameter_invalid_range
+            cx_sy_conversion_codepage.
         RETURN.
     ENDTRY.
   ENDMETHOD.
 
   METHOD zpru_if_agent_util~convert_to_abap.
-    /ui2/cl_json=>deserialize(
-      EXPORTING
-        json = ir_string->*
-      CHANGING
-        data = cr_abap->* ).
+    /ui2/cl_json=>deserialize( EXPORTING json = ir_string->*
+                               CHANGING  data = cr_abap->* ).
   ENDMETHOD.
 
   METHOD zpru_if_agent_util~convert_to_string.
     cr_string = /ui2/cl_json=>serialize( ir_abap->* ).
   ENDMETHOD.
 
+  METHOD zpru_if_agent_util~search_node_in_json.
+    DATA lv_node_found TYPE abap_boolean.
+
+    IF iv_json IS INITIAL OR
+    iv_field_2_search IS INITIAL.
+      RETURN.
+    ENDIF.
+
+    TRY.
+        DATA(lv_xml_to_parse) = cl_abap_conv_codepage=>create_out( )->convert( iv_json ).
+      CATCH cx_sy_conversion_codepage.
+        RETURN.
+    ENDTRY.
+
+    DATA(lo_reader) = cl_sxml_string_reader=>create( lv_xml_to_parse ).
+
+    TRY.
+        DO.
+
+          DATA(lo_node) = lo_reader->read_next_node( ).
+          IF lo_node IS INITIAL.
+            EXIT.
+          ENDIF.
+
+          DATA(lv_node_type) = lo_node->type.
+
+          CASE lv_node_type.
+            WHEN if_sxml_node=>co_nt_element_open.
+              DATA(lo_open_element) = CAST if_sxml_open_element( lo_node ).
+
+              IF lv_node_found = abap_true.
+                lv_node_found = abap_false.
+              ENDIF.
+
+              DATA(lt_attributes) = lo_open_element->get_attributes( ).
+
+              LOOP AT lt_attributes ASSIGNING FIELD-SYMBOL(<ls_attribute>).
+                IF     <ls_attribute>->qname-name   = 'name'
+                   AND <ls_attribute>->value_type   = if_sxml_value=>co_vt_text
+                   AND <ls_attribute>->get_value( ) = iv_field_2_search.
+                  lv_node_found = abap_true.
+                  EXIT.
+                ENDIF.
+              ENDLOOP.
+
+            WHEN if_sxml_node=>co_nt_element_close.
+              IF lv_node_found = abap_true.
+                lv_node_found = abap_false.
+              ENDIF.
+              CONTINUE.
+            WHEN if_sxml_node=>co_nt_value.
+              IF lv_node_found = abap_false.
+                CONTINUE.
+              ELSE.
+                DATA(lo_value_node) = CAST if_sxml_value_node( lo_node ).
+                IF lo_value_node->value_type = if_sxml_value=>co_vt_text.
+                  rv_value = lo_value_node->get_value( ).
+                  EXIT.
+                ENDIF.
+              ENDIF.
+            WHEN OTHERS.
+              IF lv_node_found = abap_true.
+                lv_node_found = abap_false.
+              ENDIF.
+              CONTINUE.
+          ENDCASE.
+        ENDDO.
+      CATCH cx_sxml_state_error INTO DATA(error_parse_oo). " TODO: variable is assigned but never used (ABAP cleaner)
+        RETURN.
+    ENDTRY.
+  ENDMETHOD.
 ENDCLASS.

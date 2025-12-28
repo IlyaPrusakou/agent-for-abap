@@ -1,12 +1,6 @@
 INTERFACE zpru_if_agent_frw
   PUBLIC.
 
-  CONSTANTS: BEGIN OF  cs_execution_status,
-               new       TYPE ZPRU_DE_AXC_QUERY_STATUS VALUE `N`,
-               ERROR   TYPE ZPRU_DE_AXC_QUERY_STATUS VALUE `E`,
-               completed TYPE ZPRU_DE_AXC_QUERY_STATUS VALUE `C`,
-             END OF cs_execution_status.
-
   CONSTANTS:
     BEGIN OF  cs_fail_cause,
       unspecific   TYPE i VALUE 0,

@@ -1,0 +1,6 @@
+@EndUserText.label: 'ZR_PRU_AGENT_TYPE'
+@MappingRole: true
+define role ZR_PRU_AGENT_TYPE {
+  grant select on ZR_PRU_AGENT_TYPE
+  where TRUE;
+}
