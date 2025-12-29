@@ -72,53 +72,39 @@ CLASS zpru_cl_dummy_agent_logic IMPLEMENTATION.
 
     " 3 TECHNICAL LOGIC
 
-    "        ------------------------------------------------------
-    "        *                                                    -
-    "        *  user provide input prompt as string + agent name  -
-    "        *                                                    -
-    "        ------------------------------------------------------
-    "                                 |
-    "                                 |
-    "                  -------------------------------
-    "                  *                             -
-    "                  *  initialize agent and query -
-    "                  *                             -
-    "                  -------------------------------
-    "                                 |
-    "                                 |
-    "    --------------------------------------------------------------
-    "    *                                                            -
-    "    *  invoke decision engine(LLM, ML, IF-ELSE) to get step plan -
-    "    *                                                            -
-    "    --------------------------------------------------------------
-    "                                 |
-    "                                 |
-    "     ------------------------------------------------------------
-    "     *                                                          -
-    "     *  build execution run + query + steps according step plan -
-    "     *                                                          -
-    "     ------------------------------------------------------------
-    "                                 |
-    "                                 |
-    "          -------------------------------------------------
-    "          *                                               -
-    "          *  execute steps in loop according to step plan -
-    "          *                                               -
-    "          -------------------------------------------------
-    "                                 |
-    "                                 |
-    " --------------------------------------------------------------------
-    " -
-    " invoke decision engine (LLM, ML, IF-ELSE) to get final response -
-    " -
-    " --------------------------------------------------------------------
-    "                                 |
-    "                                 |
-    "            --------------------------------------------
-    "            *                                          -
-    "            *  return final response as string to user -
-    "            *                                          -
-    "            --------------------------------------------
+    "  +------------------------------------------------------------+
+    "  |        User Input: Prompt String + Agent Name              |
+    "  +------------------------------------------------------------+
+    "                             |
+    "                             v
+    "  +------------------------------------------------------------+
+    "  |           Initialize Agent and Query Object                |
+    "  +------------------------------------------------------------+
+    "                             |
+    "                             v
+    "  +------------------------------------------------------------+
+    "  |   Invoke Decision Engine (LLM, ML, IF-ELSE) -> Step Plan   |
+    "  +------------------------------------------------------------+
+    "                             |
+    "                             v
+    "  +------------------------------------------------------------+
+    "  |      Build Execution Run + Query + Steps (per Plan)        |
+    "  +------------------------------------------------------------+
+    "                             |
+    "                             v
+    "  +------------------------------------------------------------+
+    "  |       Execute Steps in Loop According to Step Plan         |
+    "  +------------------------------------------------------------+
+    "                             |
+    "                             v
+    "  +------------------------------------------------------------+
+    "  |   Invoke Decision Engine -> Generate Final Response        |
+    "  +------------------------------------------------------------+
+    "                             |
+    "                             v
+    "  +------------------------------------------------------------+
+    "  |          Return Final Response String to User              |
+    "  +------------------------------------------------------------+
 
     " 4 BUSINESS CASE Inbound Logistics Agent
 
@@ -247,6 +233,7 @@ CLASS zpru_cl_dummy_agent_logic IMPLEMENTATION.
     lo_decision_provider = NEW lcl_decision_provider( ).
     lo_decision_provider->prepare_final_response( EXPORTING iv_run_uuid       = iv_run_uuid
                                                             iv_query_uuid     = iv_query_uuid
+                                                            io_last_output    = io_last_output
                                                   IMPORTING eo_final_response = eo_final_response
                                                   CHANGING  cs_axc_reported   = cs_axc_reported
                                                             cs_axc_failed     = cs_axc_failed
