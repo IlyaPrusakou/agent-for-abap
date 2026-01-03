@@ -125,13 +125,10 @@ CLASS zpru_cl_agent_util IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD zpru_if_agent_util~search_node_in_json.
-    DATA lv_node_found TYPE abap_boolean.
+    DATA lv_depth     TYPE i            VALUE 0.
+    DATA lv_recording TYPE abap_boolean VALUE abap_false.
 
-    IF    iv_json           IS INITIAL
-       OR iv_field_2_search IS INITIAL.
-      RETURN.
-    ENDIF.
-
+    DATA(lo_writer) = CAST if_sxml_writer( cl_sxml_string_writer=>create( type = if_sxml=>co_xt_json ) ).
     TRY.
         DATA(lv_xml_to_parse) = cl_abap_conv_codepage=>create_out( )->convert( iv_json ).
       CATCH cx_sy_conversion_codepage.
@@ -142,147 +139,74 @@ CLASS zpru_cl_agent_util IMPLEMENTATION.
 
     TRY.
         DO.
-
           lo_reader->next_node( ).
           IF lo_reader->node_type = if_sxml_node=>co_nt_final.
             EXIT.
           ENDIF.
 
+          IF lv_recording = abap_false AND lo_reader->node_type = if_sxml_node=>co_nt_element_open.
+            DATA(lo_open) = CAST if_sxml_open_element( lo_reader->read_current_node( ) ).
+            DATA(lt_attrs) = lo_open->get_attributes( ).
+
+            LOOP AT lt_attrs ASSIGNING FIELD-SYMBOL(<attr>).
+              IF <attr>->get_value( ) = iv_field_2_search.
+                lv_recording = abap_true.
+                lv_depth = 1.
+
+                lo_writer->open_element( name = lo_reader->name ).
+                EXIT.
+              ENDIF.
+            ENDLOOP.
+            CONTINUE.
+          ENDIF.
+
+          IF lv_recording = abap_false.
+            CONTINUE.
+          ENDIF.
+
           CASE lo_reader->node_type.
+
             WHEN if_sxml_node=>co_nt_element_open.
+              lv_depth += 1.
+              lo_writer->open_element( name = lo_reader->name ).
 
-              DATA(lo_current_node) = lo_reader->read_current_node( ).
-
-              DATA(lo_open_element) = CAST if_sxml_open_element( lo_current_node ).
-
-              DATA(lt_attributes) = lo_open_element->get_attributes( ).
-
-              LOOP AT lt_attributes ASSIGNING FIELD-SYMBOL(<ls_attribute>).
-                IF     <ls_attribute>->qname-name   = 'name'
-                   AND <ls_attribute>->value_type   = if_sxml_value=>co_vt_text
-                   AND <ls_attribute>->get_value( ) = iv_field_2_search.
-                  lv_node_found = abap_true.
-                  EXIT.
-                ENDIF.
+              DATA(lo_curr_open) = CAST if_sxml_open_element( lo_reader->read_current_node( ) ).
+              DATA(lt_curr_attrs) = lo_curr_open->get_attributes( ).
+              LOOP AT lt_curr_attrs ASSIGNING FIELD-SYMBOL(<curr_attr>).
+                lo_writer->write_attribute( name  = <curr_attr>->qname-name
+                                            value = <curr_attr>->get_value( ) ).
               ENDLOOP.
 
-              IF lv_node_found = abap_true.
-
-                DATA(lo_writer) = cl_sxml_string_writer=>create( type = if_sxml=>co_xt_json ).
-
-                TRY.
-                    IF lo_reader->name = 'array' OR lo_reader->name = 'object'.
-*                      lo_reader->push_back( ).
-*                     lo_reader->next_node( if_sxml_value=>CO_VT_ANY ).
-                      lo_reader->skip_node( lo_writer ).
-                      rv_value = cl_abap_conv_codepage=>create_in( )->convert( lo_writer->get_output( ) ).
-                    ELSE.
-                      lo_reader->next_node( ).
-                      IF lo_reader->node_type = if_sxml_node=>co_nt_value.
-                        DATA(lo_value_node) = CAST if_sxml_value_node( lo_reader->read_current_node( ) ).
-                        IF lo_value_node->value_type = if_sxml_value=>co_vt_text.
-                          rv_value = lo_value_node->get_value( ).
-                        ENDIF.
-                      ENDIF.
-                    ENDIF.
-                  CATCH cx_sxml_parse_error.
-                    RETURN.
-                ENDTRY.
-                RETURN.
-              ENDIF.
-            WHEN if_sxml_node=>co_nt_element_close.
-              CONTINUE.
             WHEN if_sxml_node=>co_nt_value.
-              CONTINUE.
-            WHEN OTHERS.
-              CONTINUE.
+              lo_writer->write_value( value = lo_reader->value ).
+
+            WHEN if_sxml_node=>co_nt_element_close.
+              lv_depth -= 1.
+              lo_writer->close_element( ).
+
           ENDCASE.
+
+          IF lv_depth = 0.
+            EXIT.
+          ENDIF.
         ENDDO.
-      CATCH cx_sxml_state_error
-            cx_sxml_parse_error.
+
+        rv_value = cl_abap_conv_codepage=>create_in( )->convert( CAST cl_sxml_string_writer( lo_writer )->get_output( ) ).
+
+        DATA(lv_len) = strlen( rv_value ).
+        data(lv_len2) = lv_len - 1.
+
+        IF lv_len >= 2 AND
+           rv_value(1) = '"' AND
+           rv_value+lv_len2 = '"' AND
+           NOT ( rv_value CS '{' OR rv_value CS '[' ).
+
+          rv_value = substring( val = rv_value off = 1 len = lv_len - 2 ).
+        ENDIF.
+
+      CATCH cx_sxml_parse_error.
         RETURN.
     ENDTRY.
-
-*DATA: lv_depth TYPE i VALUE 0,
-*      lv_recording TYPE abap_boolean VALUE abap_false.
-*
-*    DATA(lo_writer) = CAST if_sxml_writer( cl_sxml_string_writer=>create( type = if_sxml=>co_xt_json ) ).
-*    TRY.
-*        DATA(lv_xml_to_parse) = cl_abap_conv_codepage=>create_out( )->convert( lv_json ).
-*      CATCH cx_sy_conversion_codepage.
-*        RETURN.
-*    ENDTRY.
-*
-*
-*    "Creating reader
-*    "In this example, no special methods are used. Therefore, a cast is not carried out.
-*    DATA(lo_reader) = cl_sxml_string_reader=>create( lv_xml_to_parse ).
-*
-*
-*TRY.
-*    DO.
-*      lo_reader->next_node( ).
-*      IF lo_reader->node_type = if_sxml_node=>co_nt_final.
-*        EXIT.
-*      ENDIF.
-*
-*      " 1. START TRIGGER: Find the target field (e.g., 'content')
-*      IF lv_recording = abap_false AND lo_reader->node_type = if_sxml_node=>co_nt_element_open.
-*        DATA(lo_open) = CAST if_sxml_open_element( lo_reader->read_current_node( ) ).
-*        DATA(lt_attrs) = lo_open->get_attributes( ).
-*
-*        LOOP AT lt_attrs ASSIGNING FIELD-SYMBOL(<attr>).
-*          IF <attr>->get_value( ) = 'content'. " Use your search variable here
-*            lv_recording = abap_true.
-*            lv_depth = 1.
-*
-*            " Start the array/object in the writer
-*            lo_writer->open_element( name = lo_reader->name ).
-*            EXIT.
-*          ENDIF.
-*        ENDLOOP.
-*        CONTINUE.
-*      ENDIF.
-*
-*      " 2. RECORDING LOGIC
-*      IF lv_recording = abap_true.
-*        CASE lo_reader->node_type.
-*
-*          WHEN if_sxml_node=>co_nt_element_open.
-*            lv_depth = lv_depth + 1.
-*            lo_writer->open_element( name = lo_reader->name ).
-*
-*            " Copy attributes (like name="carrier_id")
-*            DATA(lo_curr_open) = CAST if_sxml_open_element( lo_reader->read_current_node( ) ).
-*            DATA(lt_curr_attrs) = lo_curr_open->get_attributes( ).
-*            LOOP AT lt_curr_attrs ASSIGNING FIELD-SYMBOL(<curr_attr>).
-*              lo_writer->write_attribute( name = <curr_attr>->qname-name
-*                                          value = <curr_attr>->get_value( ) ).
-*            ENDLOOP.
-*
-*          WHEN if_sxml_node=>co_nt_value.
-*            " Write primitive values (strings, numbers, etc.)
-*            lo_writer->write_value( value = lo_reader->value ).
-*
-*          WHEN if_sxml_node=>co_nt_element_close.
-*            lv_depth = lv_depth - 1.
-*            lo_writer->close_element( ).
-*
-*        ENDCASE.
-*
-*        " 3. STOP TRIGGER: Exit once the initial element is closed
-*        IF lv_depth = 0.
-*          EXIT.
-*        ENDIF.
-*      ENDIF.
-*    ENDDO.
-*
-*    data(rv_value) = cl_abap_conv_codepage=>create_in( )->convert( cast cl_sxml_string_writer( lo_writer )->get_output( ) ).
-*
-*  CATCH cx_sxml_parse_error.
-*    RETURN.
-*ENDTRY.
-
   ENDMETHOD.
 
   METHOD zpru_if_agent_util~snip_json.
@@ -310,10 +234,10 @@ CLASS zpru_cl_agent_util IMPLEMENTATION.
 
           DATA(lv_json_string) = cl_abap_conv_codepage=>create_in( )->convert( lo_writer->get_output( ) ).
           APPEND VALUE #( content  = lv_json_string
-                          is_valid = abap_false ) TO rt_fragments.
+                          is_valid = abap_true ) TO rt_fragments.
           lv_current_pos = <match>-offset + ( lo_reader->get_byte_offset( ) ).
 
-        CATCH cx_sxml_parse_error into data(lv_error).
+        CATCH cx_sxml_parse_error INTO DATA(lv_error). " TODO: variable is assigned but never used (ABAP cleaner)
           APPEND VALUE #( content  = lv_fragment
                           is_valid = abap_false ) TO rt_fragments.
       ENDTRY.
