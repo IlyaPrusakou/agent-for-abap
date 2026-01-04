@@ -298,15 +298,71 @@
 *  ENDMETHOD.
 *
 *  METHOD build_path_string.
-*    " Inside your loop, after getting node_info-path_tab:
-*    cs_node-string_path = ``.
+*cs_node-string_path = ``.
+*
+*    " Track logical indices for each depth level
+*    " You might want to define this as a member variable if you want
+*    " it to persist correctly across the entire parsing session.
+*    types: BEGIN OF ty_level_counter,
+*               depth TYPE i,
+*               pos   TYPE i,
+*               index TYPE i,
+*             END OF ty_level_counter.
+*            data lt_counters TYPE HASHED TABLE OF ty_level_counter WITH UNIQUE KEY depth pos.
+*
 *    LOOP AT cs_node-path_tab INTO DATA(ls_path_node).
+*      DATA(lv_depth) = sy-tabix.
+*
+*      " 1. Add basic tag name
 *      cs_node-string_path = cs_node-string_path && `/` && ls_path_node-qname-name.
+*
+*      " 2. Handle Indexing for Array Elements
+*      IF lv_depth > 1.
+*        DATA(lv_parent_idx) = lv_depth - 1.
+*        IF cs_node-path_tab[ lv_parent_idx ]-qname-name = 'array'.
+*
+*          " Use a logical counter instead of sXML position
+*          READ TABLE lt_counters ASSIGNING FIELD-SYMBOL(<ls_count>)
+*            WITH TABLE KEY depth = lv_depth pos = ls_path_node-child_position.
+*
+*          IF sy-subrc <> 0.
+*            " If this is a new child_position at this depth, it's a new element
+*            " We count how many unique child_positions we've seen at this depth
+*            DATA(lv_current_index) = 0.
+*            LOOP AT lt_counters TRANSPORTING NO FIELDS WHERE depth = lv_depth.
+*              lv_current_index = lv_current_index + 1.
+*            ENDLOOP.
+*            lv_current_index = lv_current_index + 1.
+*
+*            INSERT VALUE #( depth = lv_depth pos = ls_path_node-child_position index = lv_current_index )
+*                   INTO TABLE lt_counters ASSIGNING <ls_count>.
+*          ENDIF.
+*
+*          cs_node-string_path = cs_node-string_path && `[` && |{ <ls_count>-index }| && `]`.
+*        ENDIF.
+*      ENDIF.
 *    ENDLOOP.
 *
-*    " If it's a field name (Attribute 'name'), we append the actual field name to the path
-*    IF  cs_node-node_type = 'CO_NT_ATTRIBUTE' AND   cs_node-name = 'name'.
-*      cs_node-string_path = cs_node-string_path && `[` && cs_node-value && `]`.
+*    " 3. Append JSON key name
+*    IF cs_node-node_type = 'CO_NT_ATTRIBUTE' AND cs_node-name = 'name'.
+*      cs_node-string_path = cs_node-string_path && `(` && cs_node-value && `)`.
 *    ENDIF.
+*
+*    " 3. Handle Field Names (Attributes)
+*    IF cs_node-node_type = 'CO_NT_ATTRIBUTE' AND cs_node-name = 'name'.
+*      " Use round brackets to separate the Key Name from the Array Index
+*      cs_node-string_path = cs_node-string_path && `(` && cs_node-value && `)`.
+*    ENDIF.
+*
+**    " Inside your loop, after getting node_info-path_tab:
+**    cs_node-string_path = ``.
+**    LOOP AT cs_node-path_tab INTO DATA(ls_path_node).
+**      cs_node-string_path = cs_node-string_path && `/` && ls_path_node-qname-name.
+**    ENDLOOP.
+**
+**    " If it's a field name (Attribute 'name'), we append the actual field name to the path
+**    IF  cs_node-node_type = 'CO_NT_ATTRIBUTE' AND   cs_node-name = 'name'.
+**      cs_node-string_path = cs_node-string_path && `[` && cs_node-value && `]`.
+**    ENDIF.
 *  ENDMETHOD.
 *ENDCLASS.

@@ -33,6 +33,10 @@ CLASS zpru_cl_dynamic_abap_base IMPLEMENTATION.
              parameters  TYPE tt_json_parameters,
            END OF ts_tool_invocation.
 
+    TYPES: BEGIN OF ts_invokation_result,
+             dynamic_tool_result TYPE STANDARD TABLE OF ts_tool_invocation WITH EMPTY KEY,
+           END OF ts_invokation_result.
+
     DATA: lt_params   TYPE abap_parmbind_tab,
           ls_param    TYPE abap_parmbind,
           lo_instance TYPE REF TO object.
@@ -40,9 +44,13 @@ CLASS zpru_cl_dynamic_abap_base IMPLEMENTATION.
     DATA lv_input TYPE string.
     DATA lt_invocation_metadata TYPE STANDARD TABLE OF ts_tool_invocation WITH EMPTY KEY.
     DATA lt_invocation_result TYPE STANDARD TABLE OF ts_tool_invocation WITH EMPTY KEY.
+    DATA ls_invokation_result TYPE ts_invokation_result.
+    DATA lv_invokation_result_json TYPE zpru_if_agent_frw=>ts_json.
+
 
     lv_input = io_request->get_data( )->*.
     lo_util = NEW zpru_cl_agent_util( ).
+
 
     DATA(lv_invokation_metadata) = lo_util->search_node_in_json(
       EXPORTING
@@ -54,6 +62,10 @@ CLASS zpru_cl_dynamic_abap_base IMPLEMENTATION.
         ir_string = REF #( lv_invokation_metadata )
       CHANGING
         cr_abap   = lt_invocation_metadata ).
+
+    IF lt_invocation_metadata IS INITIAL.
+      RETURN.
+    ENDIF.
 
     SELECT log_area, class_name, method_name, is_static
       FROM zpru_dyn_list
@@ -142,6 +154,21 @@ CLASS zpru_cl_dynamic_abap_base IMPLEMENTATION.
       ENDTRY.
 
     ENDLOOP.
+
+    ls_invokation_result-dynamic_tool_result = lt_invocation_result.
+
+    lo_util->convert_to_string(
+      EXPORTING
+        ir_abap   = REF #( ls_invokation_result )
+      CHANGING
+        cr_string =  lv_invokation_result_json ).
+
+    IF lv_invokation_result_json IS NOT INITIAL.
+      lv_input = |{ lv_input } { cl_abap_char_utilities=>newline }| && |{ lv_invokation_result_json }|.
+      eo_response->set_data( ir_data = NEW string( lv_input ) ).
+    ELSE.
+      eo_response->set_data( ir_data = NEW string( lv_input ) ).
+    ENDIF.
 
 *SERIALIZE AND ADD TO RESPOND + CONTEXT
 *ALSO ADD IN SSYTEM PROMPT EXAMPLE ABOUT PAREMETER TYPE
