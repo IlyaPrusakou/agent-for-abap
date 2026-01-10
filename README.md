@@ -31,6 +31,9 @@ Standard AI calls in ABAP are stateless—they send a prompt and get a response.
 3. Pull the objects into the system.
 
 ### :mechanical_arm: Technical Overview
+
+At its core, an agent is a single-threaded process that starts with an initial decision, loops through tool executions, and concludes with a final decision call. It is designed to be simple: it receives a **string input** and returns a **string output**.
+
 ```mermaid
 
 flowchart TD
@@ -49,3 +52,63 @@ flowchart TD
     style Decision2 fill:#fff4dd,stroke:#d4a017,stroke-width:2px
 
 ```
+
+### 👩‍💻 Developer Experience
+
+AIPF is built specifically **for developers**. It does not provide a "generic" out-of-the-box agent; instead, it serves as a robust platform where you provide the implementation logic via framework-defined interfaces. 
+
+The development experience is intentionally designed to feel similar to writing an **unmanaged RAP implementation**, where you have full control over the business logic while the framework handles the orchestration and persistence.
+
+#### Core Interfaces
+To build your agent, you implement the following interfaces:
+* **Planning Logic:** Implement `ZPRU_IF_DECISION_PROVIDER` to define how the agent reasons and selects steps.
+* **Tool Definition:** Implement `ZPRU_IF_TOOL_PROVIDER` to describe the tool's capabilities.
+* **Tool Execution:** Implement `ZPRU_IF_TOOL_EXECUTOR` to write the actual ABAP code the agent will trigger.
+
+---
+
+### 🗄️ Persistence & Dynamic Execution
+
+Agent configurations and their assigned tools are stored in the framework's database tables. When the API method **`RUN`** is executed, the framework dynamically reads these configurations and invokes your interface implementations at runtime.
+
+#### Table: `ZPRU_AGENT` (Agent Registry)
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| **AGENT_UUID** | `RAW(16)` | Unique Identifier for the Agent. |
+| **AGENT_NAME** | `CHAR(100)` | Technical or descriptive name. |
+| **DECISION_PROVIDER** | `ZPRU_IF_DECISION_PROVIDER` | Class implementing the planning logic. |
+| **SHORT_MEMORY_PROVIDER** | `ZPRU_IF_SHORT_MEMORY_PROVIDER` | Handles session-based memory. |
+| **LONG_MEMORY_PROVIDER** | `ZPRU_IF_LONG_MEMORY_PROVIDER` | Handles historical/persistent memory. |
+| **AGENT_INFO_PROVIDER** | `ZPRU_IF_AGENT_INFO_PROVIDER` | Provides metadata about the agent's identity. |
+| **SYSTEM_PROMPT_PROVIDER**| `ZPRU_IF_PROMPT_PROVIDER` | Defines the base persona/instructions. |
+
+#### Table: `ZPRU_AGENT_TOOL` (Tool Assignments)
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| **AGENT_UUID** | `RAW(16)` | Foreign key to the Agent. |
+| **TOOL_NAME** | `CHAR(100)` | Technical name of the tool. |
+| **TOOL_PROVIDER** | `ZPRU_IF_TOOL_PROVIDER` | Class implementing the tool definition and execution. |
+
+
+### 🤖 Agent Types
+
+AIPF is designed to be model-agnostic. You can choose the "Intelligence Level" of your agent based on the complexity of the business task:
+
+| Agent Type | Planning Logic / Engine | Description |
+| :--- | :--- | :--- |
+| **IF-ELSE Agent** | Plain ABAP, Condition Technique, or **BRF+** | Planning logic written in plain ABAP or using standard frameworks. |
+| **ML Agent** | **SAP AI Core** (Machine Learning) | Planning logic made using ML models or multiple models deployed on SAP AI Core. |
+| **LLM Agent** | **SAP AI Core** (Generative AI Hub) | Planning logic made using Large Language Models (LLMs) via SAP AI Core. |
+| **Decision Agent** | Hybrid: **LLM + ML + ABAP (BRF+, etc.)** | Complex logic combining multiple calls of LLM, ML models, and ABAP frameworks. |
+
+### 🛠 Implementation Details
+
+* **IF-ELSE Agent:** Perfect for "Clean Core" legacy modernization where you want to wrap existing BRF+ or Condition Technique logic into an agentic interface.
+* **ML & LLM Agents:** Fully integrated with SAP AI Core, allowing you to swap models (e.g., moving from GPT-3.5 to GPT-4o) without changing your ABAP code.
+* **Decision Agent:** Acts as a meta-orchestrator. It can use an LLM to "think," an ML model to "calculate," and BRF+ to "verify" against corporate policy before executing a BAPI.
+
+### 🔄 Agent Composition
+
+* **Nested Agents:** An agent can be assigned as a tool to another agent. This allows for specialized "sub-agents" to handle specific domains (e.g., an HR Agent calling a Payroll Agent as a tool).
+* **Composed Agents:** Multiple agents can be chained together to handle multi-stage workflows.
+* **Reflexive Agents:** The simplest form of composition where the output of an agent is immediately fed back as the input for the next round of processing to refine or validate the result.
