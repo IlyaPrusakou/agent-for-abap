@@ -13,7 +13,7 @@ Standard AI calls in ABAP are stateless—they send a prompt and get a response.
 
 ### 🛠 Key Features
 * **Agentic Orchestration:** Define multi-step reasoning loops directly in ABAP.
-* **Clean Core Ready:** Built for S/4HANA Cloud using released APIs and the `/AIPF/` namespace.
+* **Clean Core Ready:** Built for S/4HANA Cloud using released APIs.
 * **Memory Management:** Persistence layer for conversation history and "thinking" states.
 * **Tool Integration:** Seamless binding between LLM reasoning and ABAP executable logic.
 
