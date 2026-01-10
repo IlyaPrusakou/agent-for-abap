@@ -159,13 +159,19 @@ CLASS zpru_cl_dynamic_abap_base IMPLEMENTATION.
 
     lo_util->convert_to_string(
       EXPORTING
-        ir_abap   = REF #( ls_invokation_result )
+        ir_abap   = REF #( lt_invocation_result )
       CHANGING
         cr_string =  lv_invokation_result_json ).
 
     IF lv_invokation_result_json IS NOT INITIAL.
-      lv_input = |{ lv_input } { cl_abap_char_utilities=>newline }| && |{ lv_invokation_result_json }|.
-      eo_response->set_data( ir_data = NEW string( lv_input ) ).
+
+      DATA(lv_new_json) = lo_util->append_json_to_json(
+         EXPORTING
+           iv_field_4_append = 'dynamic_tool_result'
+           iv_json_4_append  = lv_invokation_result_json
+           iv_json_target    = lv_input  ).
+
+      eo_response->set_data( ir_data = NEW string( lv_new_json ) ).
     ELSE.
       eo_response->set_data( ir_data = NEW string( lv_input ) ).
     ENDIF.
