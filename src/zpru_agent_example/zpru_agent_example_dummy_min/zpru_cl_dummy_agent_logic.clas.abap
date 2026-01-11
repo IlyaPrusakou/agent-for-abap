@@ -196,6 +196,58 @@ CLASS zpru_cl_dummy_agent_logic IMPLEMENTATION.
     "     GET_SAFETY_PROTOCOL: Fetches PDF instructions for a specific UN Number.
     "     ALERT_SAFETY_OFFICER: Sends an SAP Office Express message or triggers a workflow.
 
+*Tool F: WEATHER_TRAFFIC_AUDIT (HTTP Request - 'H')
+*Purpose: External validation. If the driver claims the goods were damaged due to extreme heat/moisture during transit,
+*the agent verifies the route conditions.
+*
+*The Procedure: Calls an external REST API (e.g., OpenWeather or a Logistics Map API).
+*
+*Input: departure_city, arrival_city, transit_timestamp.
+*
+*Response: Returns a JSON with the weather history for that route to validate the driver's claim on the CMR.
+
+*Tool G: STORAGE_BIN_LOCATOR (Service Consumption Model - 'S')
+*Purpose: Finding a physical spot in the warehouse using modern S/4HANA OData services.
+*
+*The Procedure: Uses an OData Client Proxy (generated via a Service Consumption Model) to call the Warehouse Management API.
+*
+*Input: material_id, quantity, storage_type.
+*
+*Response: Returns the exact coordinates of an empty storage bin (e.g., BIN-04-A-12).
+
+*Tool H: CMR_REMARK_INTERPRETER (Call LLM - 'L')
+*Purpose: The CMR often has handwritten-style digital notes like "Pallet 4 damaged but seal intact" or "Driver waited 2 hours at border".
+*
+*The Procedure: Sends the "Remarks" string to the LLM with a system prompt.
+*
+*Input: cmr_notes_string.
+*
+*Action: Prompt: "Identify if there is a claim of damage or a delay reason in this text."
+*
+*Response: Returns structured JSON: { "damage_reported": true, "delay_reason": "border_customs" }.
+
+*Tool J: RISK_SCORE_PREDICTOR (Infer ML Model - 'M')
+*Purpose: Assessing the probability that this specific delivery will result in a "Shortage Claim" based on the CMR data and historical vendor reliability.
+*
+*The Procedure: Calls an SAP AI Core model or a local ML scenario.
+*
+*Input: vendor_id, material_type, total_pallets.
+*
+*Response: Returns a risk percentage (e.g., "High Risk: 82% probability of quantity discrepancy").
+
+
+*Tool K: PHYSICAL_SEAL_VERIFICATION (User Tool - 'Z')
+*Purpose: The Agent stops and waits for a "Human-in-the-loop" to confirm the security seal on the truck matches the CMR number.
+*
+*The Procedure: The agent pauses execution and sends a "Work Item" to a Fiori App.
+*
+*Input: cmr_seal_number.
+*
+*Action: A human worker looks at the truck, compares the seal, and clicks "Match" or "Mismatch" in the UI.
+*
+*Response: The agent resumes only after the user provides the boolean input.
+
+
     " 5 STOCHASTIC BEHAVIOR
 
     " to imitate stochastic I made technical local class lcl_stochastic_producer. This is technical class for current agent implementation.
