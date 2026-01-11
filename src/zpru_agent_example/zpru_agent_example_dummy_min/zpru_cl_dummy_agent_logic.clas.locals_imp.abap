@@ -1,40 +1,3 @@
-" technical class for example implementation
-CLASS lcl_stochastic_producer DEFINITION.
-  PUBLIC SECTION.
-    METHODS get_decision
-      RETURNING VALUE(rv_result) TYPE i.
-
-    METHODS get_stochastic_value
-      IMPORTING iv_max           TYPE i DEFAULT 10
-      RETURNING VALUE(rv_result) TYPE i.
-ENDCLASS.
-
-
-CLASS lcl_stochastic_producer IMPLEMENTATION.
-  METHOD get_decision.
-    DATA(lo_rand) = cl_abap_random_int=>create( seed = cl_abap_random=>seed( )
-                                                min  = 1
-                                                max  = 10 ).
-
-    DATA(lv_digit) = lo_rand->get_next( ).
-
-    IF lv_digit MOD 2 = 0.
-      rv_result = 2.
-    ELSE.
-      rv_result = 1.
-    ENDIF.
-  ENDMETHOD.
-
-  METHOD get_stochastic_value.
-    DATA(lo_rand) = cl_abap_random_int=>create( seed = cl_abap_random=>seed( )
-                                                min  = 1
-                                                max  = iv_max ).
-    rv_result = lo_rand->get_next( ).
-  ENDMETHOD.
-ENDCLASS.
-
-
-" business classes
 CLASS lcl_decision_provider DEFINITION CREATE PUBLIC.
   PUBLIC SECTION.
     INTERFACES zpru_if_decision_provider.
@@ -147,7 +110,7 @@ ENDCLASS.
 
 
 CLASS lcl_prompt_provider DEFINITION
-  CREATE PUBLIC INHERITING FROM zpru_cl_syst_prmpt_prvdr_base.
+  INHERITING FROM zpru_cl_syst_prmpt_prvdr_base CREATE PUBLIC.
 
   PUBLIC SECTION.
     METHODS zpru_if_prompt_provider~get_system_prompt REDEFINITION.
@@ -155,9 +118,7 @@ ENDCLASS.
 
 
 CLASS lcl_prompt_provider IMPLEMENTATION.
-
   METHOD zpru_if_prompt_provider~get_system_prompt.
-
     rv_system_prompt = super->zpru_if_prompt_provider~get_system_prompt( ).
 
     zpru_cl_dummy_agent_logic=>ms_method_registr-get_system_prompt = abap_true.
@@ -309,37 +270,35 @@ CLASS lcl_simple_tool IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    DATA(lo_stochastic) = NEW lcl_stochastic_producer( ).
-
-    IF lo_stochastic->get_decision( ) = 1.
+    IF zpru_cl_stochastic_producer=>get_decision( ) = 1.
       <ls_context>-gate_pass_assessment-is_expected = abap_true.
     ELSE.
       <ls_context>-gate_pass_assessment-is_expected = abap_false.
       lv_risk_score += 1.
     ENDIF.
 
-    IF lo_stochastic->get_decision( ) = 1.
+    IF zpru_cl_stochastic_producer=>get_decision( ) = 1.
       <ls_context>-gate_pass_assessment-is_on_time = abap_true.
     ELSE.
       <ls_context>-gate_pass_assessment-is_on_time = abap_false.
       lv_risk_score += 1.
     ENDIF.
 
-    IF lo_stochastic->get_decision( ) = 1.
+    IF zpru_cl_stochastic_producer=>get_decision( ) = 1.
       <ls_context>-gate_pass_assessment-is_carrier_allowed = abap_true.
     ELSE.
       <ls_context>-gate_pass_assessment-is_carrier_allowed = abap_false.
       lv_risk_score += 1.
     ENDIF.
 
-    IF lo_stochastic->get_decision( ) = 1.
+    IF zpru_cl_stochastic_producer=>get_decision( ) = 1.
       <ls_context>-gate_pass_assessment-is_driver_verified = abap_true.
     ELSE.
       <ls_context>-gate_pass_assessment-is_driver_verified = abap_false.
       lv_risk_score += 1.
     ENDIF.
 
-    CASE lo_stochastic->get_stochastic_value( iv_max = 4 ).
+    CASE zpru_cl_stochastic_producer=>get_stochastic_value( iv_max = 4 ).
       WHEN 1.
         <ls_context>-gate_pass_assessment-assigned_gate = 'GATE01'.
       WHEN 2.
@@ -620,3 +579,172 @@ CLASS lcl_input_schema_provider IMPLEMENTATION.
     ro_input_schema->set_data( ir_data = NEW string( lv_input_schema ) ).
   ENDMETHOD.
 ENDCLASS.
+
+
+" Local class for HTTP Request tool
+CLASS lcl_http_request_tool DEFINITION CREATE PUBLIC.
+  PUBLIC SECTION.
+    INTERFACES zpru_if_http_request_sender.
+
+  PROTECTED SECTION.
+    METHODS get_http_client
+      IMPORTING iv_url                TYPE string
+      RETURNING VALUE(ro_http_client) TYPE REF TO if_web_http_client.
+
+    METHODS send_via_url
+      IMPORTING io_controller TYPE REF TO zpru_if_agent_controller
+                io_request    TYPE REF TO zpru_if_payload
+      EXPORTING eo_response   TYPE REF TO zpru_if_payload
+                ev_error_flag TYPE abap_boolean.
+
+    METHODS send_via_arrangement
+      IMPORTING io_controller TYPE REF TO zpru_if_agent_controller
+                io_request    TYPE REF TO zpru_if_payload
+      EXPORTING eo_response   TYPE REF TO zpru_if_payload
+                ev_error_flag TYPE abap_boolean.
+
+ENDCLASS.
+
+
+CLASS lcl_http_request_tool IMPLEMENTATION.
+  METHOD zpru_if_http_request_sender~send_http.
+    send_via_url( EXPORTING io_controller = io_controller
+                            io_request    = io_request
+                  IMPORTING eo_response   = eo_response
+                            ev_error_flag = ev_error_flag ).
+  ENDMETHOD.
+
+  METHOD send_via_url.
+
+
+    DATA lv_url         TYPE string.
+    DATA lo_http_client TYPE REF TO if_web_http_client.
+    DATA lo_response    TYPE REF TO if_web_http_response.
+    DATA lo_util        TYPE REF TO zpru_if_agent_util.
+
+    lv_url = 'https://www.youtube.com/watch?v=bkCQK-rROWk'.
+
+    TRY.
+
+        lo_http_client = get_http_client( lv_url ).
+
+        lo_http_client->get_http_request( )->set_header_fields(
+            i_fields = VALUE #( value = if_web_http_header=>accept_application_json
+                                ( name = if_web_http_header=>content_type )
+                                ( name = if_web_http_header=>accept ) ) ).
+
+        lo_response = lo_http_client->execute( if_web_http_client=>get ).
+
+        DATA(lv_status) = lo_response->get_status( ).
+        IF lv_status-code <> '200'.
+          " raise exception
+        ENDIF.
+
+        DATA(lv_reponse_json) = lo_response->get_text( ).
+
+        DATA(lv_input_json) = io_request->get_data( ).
+
+        DATA(lv_output) = lo_util->append_json_to_json( iv_field_4_append = 'http_response'
+                                                        iv_json_4_append  = lv_reponse_json
+                                                        iv_json_target    = lv_input_json->*  ).
+
+        eo_response->set_data( ir_data = NEW string( lv_output ) ).
+
+      CATCH cx_http_dest_provider_error
+            cx_web_http_client_error.
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD get_http_client.
+    DATA lo_http_destination TYPE REF TO if_http_destination.
+    IF zpru_cl_logic_switch=>get_logic( ) = abap_true.
+      ro_http_client = NEW zpru_cl_web_http_client( ).
+    ELSE.
+      TRY.
+          lo_http_destination = cl_http_destination_provider=>create_by_url( i_url = iv_url ).
+          ro_http_client = cl_web_http_client_manager=>create_by_http_destination(
+                               i_destination = lo_http_destination ).
+        CATCH cx_http_dest_provider_error
+              cx_web_http_client_error.
+      ENDTRY.
+
+    ENDIF.
+  ENDMETHOD.
+
+  METHOD send_via_arrangement.
+*    DATA lv_scenario_id TYPE if_com_management=>ty_cscn_id VALUE `Z_API_MY_SCENARIO_000`.
+*    DATA lv_service_id TYPE if_com_management=>ty_cscn_outb_srv_id VALUE `Z_API_MY_SERVICE_000_REST`.
+*    DATA lo_response    TYPE REF TO if_web_http_response.
+*    DATA lr_cscn TYPE if_com_scenario_factory=>ty_query-cscn_id_range.
+*    DATA LO TYPE REF TO if_com_scenario_factory.
+*
+*    lr_cscn = VALUE #( ( sign = 'I' option = 'EQ' low = lv_scenario_id ) ).
+*    DATA(lo_factory) = cl_com_scenario_factory=>create_instance( ).
+*    lo_factory->query_cscn(
+*      EXPORTING
+*        is_query        = VALUE #( cscn_id_range = lr_cscn )
+*      IMPORTING
+*        et_com_scenario = DATA(lt_com_scenario) ).
+  ENDMETHOD.
+ENDCLASS.
+
+
+" Local class for Service Consumption Model tool
+CLASS lcl_service_cons_model_tool DEFINITION CREATE PUBLIC.
+  PUBLIC SECTION.
+    INTERFACES zpru_if_service_model_consumer.
+ENDCLASS.
+
+
+CLASS lcl_service_cons_model_tool IMPLEMENTATION.
+  METHOD zpru_if_service_model_consumer~consume_service_model.
+*    rv_result = |Service { iv_service_name } consumed successfully.|.
+  ENDMETHOD.
+ENDCLASS.
+
+
+" Local class for Call LLM tool
+CLASS lcl_call_llm_tool DEFINITION CREATE PUBLIC.
+  PUBLIC SECTION.
+    INTERFACES zpru_if_llm_caller.
+ENDCLASS.
+
+
+CLASS lcl_call_llm_tool IMPLEMENTATION.
+  METHOD zpru_if_llm_caller~call_large_language_model.
+*    rv_output = |LLM Output for Prompt: { iv_prompt }|.
+  ENDMETHOD.
+ENDCLASS.
+
+
+" Local class for Dynamic ABAP Code tool
+CLASS lcl_dynamic_abap_code_tool DEFINITION CREATE PUBLIC.
+ENDCLASS.
+
+
+CLASS lcl_dynamic_abap_code_tool IMPLEMENTATION.
+ENDCLASS.
+
+*" Local class for Infer ML Model tool
+*CLASS lcl_infer_ml_model_tool DEFINITION CREATE PUBLIC.
+*  PUBLIC SECTION.
+*    INTERFACES zpru_if_infer_ml_model.
+*ENDCLASS.
+*
+*CLASS lcl_infer_ml_model_tool IMPLEMENTATION.
+*  METHOD zpru_if_infer_ml_model~infer.
+*    rv_prediction = |Prediction for Input: { iv_input }|.
+*  ENDMETHOD.
+*ENDCLASS.
+*
+*" Local class for User Tool
+*CLASS lcl_user_tool DEFINITION CREATE PUBLIC.
+*  PUBLIC SECTION.
+*    INTERFACES zpru_if_user_tool.
+*ENDCLASS.
+*
+*CLASS lcl_user_tool IMPLEMENTATION.
+*  METHOD zpru_if_user_tool~execute_user_tool.
+*    rv_result = |User Tool executed for Task: { iv_task }|.
+*  ENDMETHOD.
+*ENDCLASS.
