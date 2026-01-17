@@ -3,7 +3,7 @@ CLASS zpru_cl_unit_agent DEFINITION
   CREATE PUBLIC.
 
   PUBLIC SECTION.
-  INTERFACES zpru_if_agent_frw.
+    INTERFACES zpru_if_agent_frw.
     INTERFACES zpru_if_unit_agent.
 ENDCLASS.
 
@@ -12,7 +12,13 @@ CLASS zpru_cl_unit_agent IMPLEMENTATION.
   METHOD zpru_if_unit_agent~execute_agent.
     DATA lo_api_agent TYPE REF TO zpru_if_api_agent.
 
-    lo_api_agent = NEW zpru_cl_api_agent( ).
+    TRY.
+        lo_api_agent ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_API_AGENT`
+                                                                 iv_context = zpru_if_agent_frw=>cs_context-standard ).
+      CATCH zpru_cx_agent_core.
+        RETURN.
+    ENDTRY.
+
     TRY.
         lo_api_agent->initialize( EXPORTING iv_agent_name = iv_agent_name
                                   IMPORTING es_agent      = DATA(ls_agent)
