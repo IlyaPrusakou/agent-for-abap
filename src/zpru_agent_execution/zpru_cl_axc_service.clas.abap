@@ -3,7 +3,7 @@ CLASS zpru_cl_axc_service DEFINITION
   CREATE PUBLIC.
 
   PUBLIC SECTION.
-  INTERFACES zpru_if_agent_frw.
+    INTERFACES zpru_if_agent_frw.
     INTERFACES zpru_if_axc_service.
 
   PROTECTED SECTION.
@@ -316,6 +316,8 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD zpru_if_axc_service~cba_step.
+    DATA lo_util TYPE REF TO zpru_if_agent_util.
+
     IF it_axc_step_imp IS INITIAL.
       RETURN.
     ENDIF.
@@ -328,6 +330,13 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     IF lt_entities IS INITIAL.
       RETURN.
     ENDIF.
+
+    TRY.
+        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = `STANDARD` ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
 
     zpru_cl_axc_buffer=>prep_step_buffer( VALUE #( FOR <ls_k>
                                                    IN lt_entities
@@ -378,11 +387,11 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
 
         INSERT VALUE #( step_uuid = <ls_create>-step_uuid ) INTO TABLE cs_mapped-step.
 
-        APPEND VALUE #( msg       = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                            iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                            iv_number   = `007`
-                                            iv_severity = zpru_if_agent_message=>sc_severity-success
-                                            iv_v1       = <ls_create>-step_uuid )
+        APPEND VALUE #( msg       = lo_util->new_message(
+                                        iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
+                                        iv_number   = `007`
+                                        iv_severity = zpru_if_agent_message=>sc_severity-success
+                                        iv_v1       = <ls_create>-step_uuid )
                         step_uuid = <ls_create>-step_uuid ) TO cs_reported-step.
 
       ELSE.
@@ -394,11 +403,11 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
 
         APPEND VALUE #( step_uuid = <ls_create>-step_uuid
                         create    = abap_true
-                        msg       = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                            iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                            iv_number   = `005`
-                                            iv_severity = zpru_if_agent_message=>sc_severity-error
-                                            iv_v1       = <ls_create>-step_uuid ) )
+                        msg       = lo_util->new_message(
+                                        iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
+                                        iv_number   = `005`
+                                        iv_severity = zpru_if_agent_message=>sc_severity-error
+                                        iv_v1       = <ls_create>-step_uuid ) )
                TO cs_reported-step.
 
       ENDIF.
@@ -459,7 +468,8 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD zpru_if_axc_service~read_step.
-    DATA ls_out TYPE zpru_axc_step.
+    DATA ls_out  TYPE zpru_axc_step.
+    DATA lo_util TYPE REF TO zpru_if_agent_util.
 
     CLEAR et_axc_step.
 
@@ -475,6 +485,13 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     IF lt_entities IS INITIAL.
       RETURN.
     ENDIF.
+
+    TRY.
+        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = `STANDARD` ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
 
     zpru_cl_axc_buffer=>prep_step_buffer( VALUE #( FOR <ls_k> IN lt_entities
                                                    ( step_uuid = <ls_k>-step_uuid
@@ -514,17 +531,19 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                TO cs_failed-step.
 
         APPEND VALUE #( step_uuid = <ls_ent>-step_uuid
-                        msg       = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                            iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                            iv_number   = `010`
-                                            iv_severity = zpru_if_agent_message=>sc_severity-error
-                                            iv_v1       = <ls_ent>-step_uuid ) )
+                        msg       = lo_util->new_message(
+                                        iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
+                                        iv_number   = `010`
+                                        iv_severity = zpru_if_agent_message=>sc_severity-error
+                                        iv_v1       = <ls_ent>-step_uuid ) )
                TO cs_reported-step.
       ENDIF.
     ENDLOOP.
   ENDMETHOD.
 
   METHOD zpru_if_axc_service~update_step.
+    DATA lo_util TYPE REF TO zpru_if_agent_util.
+
     IF it_step_update_imp IS INITIAL.
       RETURN.
     ENDIF.
@@ -537,6 +556,13 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     IF lt_entities IS INITIAL.
       RETURN.
     ENDIF.
+
+    TRY.
+        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = `STANDARD` ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
 
     zpru_cl_axc_buffer=>prep_step_buffer( VALUE #( FOR <ls_k> IN lt_entities
                                                    ( query_uuid = <ls_k>-query_uuid
@@ -592,20 +618,29 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
 
         APPEND VALUE #( step_uuid = <ls_update>-step_uuid
                         update    = abap_true
-                        msg       = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                            iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                            iv_number   = `010`
-                                            iv_severity = zpru_if_agent_message=>sc_severity-error
-                                            iv_v1       = <ls_update>-query_uuid ) )
+                        msg       = lo_util->new_message(
+                                        iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
+                                        iv_number   = `010`
+                                        iv_severity = zpru_if_agent_message=>sc_severity-error
+                                        iv_v1       = <ls_update>-query_uuid ) )
                TO cs_reported-step.
       ENDIF.
     ENDLOOP.
   ENDMETHOD.
 
   METHOD zpru_if_axc_service~delete_step.
+    DATA lo_util TYPE REF TO zpru_if_agent_util.
+
     IF it_step_delete_imp IS INITIAL.
       RETURN.
     ENDIF.
+
+    TRY.
+        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = `STANDARD` ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
 
     precheck_delete_step( EXPORTING it_step_delete_imp = it_step_delete_imp
                           IMPORTING et_entities        = DATA(lt_entities)
@@ -635,11 +670,11 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
 
         APPEND VALUE #( step_uuid = <ls_delete>-step_uuid
                         delete    = abap_true
-                        msg       = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                            iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                            iv_number   = `006`
-                                            iv_severity = zpru_if_agent_message=>sc_severity-error
-                                            iv_v1       = <ls_delete>-step_uuid ) )
+                        msg       = lo_util->new_message(
+                                        iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
+                                        iv_number   = `006`
+                                        iv_severity = zpru_if_agent_message=>sc_severity-error
+                                        iv_v1       = <ls_delete>-step_uuid ) )
                TO cs_reported-step.
       ENDIF.
     ENDLOOP.
@@ -748,6 +783,8 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD zpru_if_axc_service~cba_query.
+    DATA lo_util TYPE REF TO zpru_if_agent_util.
+
     IF it_axc_query_imp IS INITIAL.
       RETURN.
     ENDIF.
@@ -760,6 +797,13 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     IF lt_entities IS INITIAL.
       RETURN.
     ENDIF.
+
+    TRY.
+        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = `STANDARD` ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
 
     zpru_cl_axc_buffer=>prep_query_buffer( VALUE #( FOR <ls_k>
                                                     IN     lt_entities
@@ -812,11 +856,11 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
 
         INSERT VALUE #( query_uuid = <ls_create>-query_uuid ) INTO TABLE cs_mapped-query.
 
-        APPEND VALUE #( msg        = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                             iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                             iv_number   = `008`
-                                             iv_severity = zpru_if_agent_message=>sc_severity-success
-                                             iv_v1       = <ls_just_added>-instance-query_uuid )
+        APPEND VALUE #( msg        = lo_util->new_message(
+                                         iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
+                                         iv_number   = `008`
+                                         iv_severity = zpru_if_agent_message=>sc_severity-success
+                                         iv_v1       = <ls_just_added>-instance-query_uuid )
                         query_uuid = <ls_create>-query_uuid ) TO cs_reported-query.
 
       ELSE.
@@ -828,11 +872,11 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
 
         APPEND VALUE #( query_uuid = <ls_create>-query_uuid
                         create     = abap_true
-                        msg        = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                             iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                             iv_number   = `009`
-                                             iv_severity = zpru_if_agent_message=>sc_severity-error
-                                             iv_v1       = <ls_create>-query_uuid ) )
+                        msg        = lo_util->new_message(
+                                         iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
+                                         iv_number   = `009`
+                                         iv_severity = zpru_if_agent_message=>sc_severity-error
+                                         iv_v1       = <ls_create>-query_uuid ) )
                TO cs_reported-query.
 
       ENDIF.
@@ -841,10 +885,18 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
 
   METHOD zpru_if_axc_service~delete_header.
     DATA lt_fetched_query LIKE zpru_cl_axc_buffer=>query_buffer.
+    DATA lo_util          TYPE REF TO zpru_if_agent_util.
 
     IF it_head_delete_imp IS INITIAL.
       RETURN.
     ENDIF.
+
+    TRY.
+        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = `STANDARD` ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
 
     precheck_delete_header( EXPORTING it_head_delete_imp = it_head_delete_imp
                             IMPORTING et_entities        = DATA(lt_entities)
@@ -885,10 +937,10 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
         fill_head_admin_fields( EXPORTING iv_during_create = abap_false
                                 CHANGING  cs_header        = <ls_buffer> ).
 
-        APPEND VALUE #( msg      = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                           iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                           iv_number   = `005`
-                                           iv_severity = zpru_if_agent_message=>sc_severity-success )
+        APPEND VALUE #( msg      = lo_util->new_message(
+                                       iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
+                                       iv_number   = `005`
+                                       iv_severity = zpru_if_agent_message=>sc_severity-success )
                         run_uuid = <ls_delete>-run_uuid ) TO cs_reported-header.
 
         LOOP AT zpru_cl_axc_buffer=>query_buffer ASSIGNING FIELD-SYMBOL(<ls_query_del>)
@@ -913,10 +965,10 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
 
         APPEND VALUE #( run_uuid = <ls_delete>-run_uuid
                         delete   = abap_true
-                        msg      = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                           iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                           iv_number   = `003`
-                                           iv_severity = zpru_if_agent_message=>sc_severity-error ) )
+                        msg      = lo_util->new_message(
+                                       iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
+                                       iv_number   = `003`
+                                       iv_severity = zpru_if_agent_message=>sc_severity-error ) )
                TO cs_reported-header.
       ENDIF.
     ENDLOOP.
@@ -979,7 +1031,8 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD zpru_if_axc_service~read_query.
-    DATA ls_out TYPE zpru_axc_query.
+    DATA ls_out  TYPE zpru_axc_query.
+    DATA lo_util TYPE REF TO zpru_if_agent_util.
 
     CLEAR et_axc_query.
 
@@ -995,6 +1048,13 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     IF lt_entities IS INITIAL.
       RETURN.
     ENDIF.
+
+    TRY.
+        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = `STANDARD` ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
 
     zpru_cl_axc_buffer=>prep_query_buffer( VALUE #( FOR <ls_q> IN lt_entities
                                                     ( query_uuid = <ls_q>-query_uuid
@@ -1032,17 +1092,19 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                TO cs_failed-query.
 
         APPEND VALUE #( query_uuid = <ls_ent>-query_uuid
-                        msg        = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                             iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                             iv_number   = `011`
-                                             iv_severity = zpru_if_agent_message=>sc_severity-error
-                                             iv_v1       = <ls_ent>-query_uuid ) )
+                        msg        = lo_util->new_message(
+                                         iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
+                                         iv_number   = `011`
+                                         iv_severity = zpru_if_agent_message=>sc_severity-error
+                                         iv_v1       = <ls_ent>-query_uuid ) )
                TO cs_reported-query.
       ENDIF.
     ENDLOOP.
   ENDMETHOD.
 
   METHOD zpru_if_axc_service~update_query.
+    DATA lo_util TYPE REF TO zpru_if_agent_util.
+
     IF it_query_update_imp IS INITIAL.
       RETURN.
     ENDIF.
@@ -1055,6 +1117,13 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     IF lt_entities IS INITIAL.
       RETURN.
     ENDIF.
+
+    TRY.
+        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = `STANDARD` ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
 
     zpru_cl_axc_buffer=>prep_query_buffer( VALUE #( FOR <ls_k> IN lt_entities
                                                     ( run_uuid   = <ls_k>-run_uuid
@@ -1104,17 +1173,19 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
 
         APPEND VALUE #( query_uuid = <ls_update>-query_uuid
                         update     = abap_true
-                        msg        = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                             iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                             iv_number   = `011`
-                                             iv_severity = zpru_if_agent_message=>sc_severity-error
-                                             iv_v1       = <ls_update>-query_uuid ) )
+                        msg        = lo_util->new_message(
+                                         iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
+                                         iv_number   = `011`
+                                         iv_severity = zpru_if_agent_message=>sc_severity-error
+                                         iv_v1       = <ls_update>-query_uuid ) )
                TO cs_reported-query.
       ENDIF.
     ENDLOOP.
   ENDMETHOD.
 
   METHOD zpru_if_axc_service~delete_query.
+    DATA lo_util TYPE REF TO zpru_if_agent_util.
+
     IF it_query_delete_imp IS INITIAL.
       RETURN.
     ENDIF.
@@ -1123,6 +1194,17 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                            IMPORTING et_entities         = DATA(lt_entities)
                            CHANGING  cs_reported         = cs_reported
                                      cs_failed           = cs_failed ).
+
+    IF lt_entities IS INITIAL.
+      RETURN.
+    ENDIF.
+
+    TRY.
+        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = `STANDARD` ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
 
     zpru_cl_axc_buffer=>prep_query_buffer( VALUE #( FOR <ls_k> IN lt_entities
                                                     ( query_uuid = <ls_k>-query_uuid
@@ -1152,18 +1234,19 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
 
         APPEND VALUE #( query_uuid = <ls_delete>-query_uuid
                         delete     = abap_true
-                        msg        = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                             iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                             iv_number   = `011`
-                                             iv_severity = zpru_if_agent_message=>sc_severity-error
-                                             iv_v1       = <ls_delete>-query_uuid ) )
+                        msg        = lo_util->new_message(
+                                         iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
+                                         iv_number   = `011`
+                                         iv_severity = zpru_if_agent_message=>sc_severity-error
+                                         iv_v1       = <ls_delete>-query_uuid ) )
                TO cs_reported-query.
       ENDIF.
     ENDLOOP.
   ENDMETHOD.
 
   METHOD zpru_if_axc_service~read_header.
-    DATA ls_out TYPE zpru_axc_head.
+    DATA ls_out  TYPE zpru_axc_head.
+    DATA lo_util TYPE REF TO zpru_if_agent_util.
 
     CLEAR et_axc_head.
 
@@ -1179,6 +1262,13 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     IF lt_entities IS INITIAL.
       RETURN.
     ENDIF.
+
+    TRY.
+        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = `STANDARD` ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
 
     zpru_cl_axc_buffer=>prep_header_buffer( VALUE #( FOR <ls_k> IN lt_entities
                                                      ( run_uuid = <ls_k>-run_uuid ) ) ).
@@ -1219,17 +1309,19 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                TO cs_failed-header.
 
         APPEND VALUE #( run_uuid = <ls_req>-run_uuid
-                        msg      = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                           iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                           iv_number   = `012`
-                                           iv_severity = zpru_if_agent_message=>sc_severity-error
-                                           iv_v1       = <ls_req>-run_uuid ) )
+                        msg      = lo_util->new_message(
+                                       iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
+                                       iv_number   = `012`
+                                       iv_severity = zpru_if_agent_message=>sc_severity-error
+                                       iv_v1       = <ls_req>-run_uuid ) )
                TO cs_reported-header.
       ENDIF.
     ENDLOOP.
   ENDMETHOD.
 
   METHOD zpru_if_axc_service~update_header.
+    DATA lo_util TYPE REF TO zpru_if_agent_util.
+
     IF it_head_update_imp IS INITIAL.
       RETURN.
     ENDIF.
@@ -1242,6 +1334,13 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     IF lt_entities IS INITIAL.
       RETURN.
     ENDIF.
+
+    TRY.
+        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = `STANDARD` ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
 
     zpru_cl_axc_buffer=>prep_header_buffer( VALUE #( FOR <ls_k>
                                                      IN     lt_entities
@@ -1294,17 +1393,19 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
 
         APPEND VALUE #( run_uuid = <ls_update>-run_uuid
                         update   = abap_true
-                        msg      = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                           iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                           iv_number   = `012`
-                                           iv_severity = zpru_if_agent_message=>sc_severity-error
-                                           iv_v1       = <ls_update>-run_uuid ) )
+                        msg      = lo_util->new_message(
+                                       iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
+                                       iv_number   = `012`
+                                       iv_severity = zpru_if_agent_message=>sc_severity-error
+                                       iv_v1       = <ls_update>-run_uuid ) )
                TO cs_reported-header.
       ENDIF.
     ENDLOOP.
   ENDMETHOD.
 
   METHOD zpru_if_axc_service~create_header.
+    DATA lo_util TYPE REF TO zpru_if_agent_util.
+
     IF it_head_create_imp IS INITIAL.
       RETURN.
     ENDIF.
@@ -1313,6 +1414,17 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
                             IMPORTING et_entities        = DATA(lt_entities)
                             CHANGING  cs_reported        = cs_reported
                                       cs_failed          = cs_failed ).
+
+    IF lt_entities IS INITIAL.
+      RETURN.
+    ENDIF.
+
+    TRY.
+        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = `STANDARD` ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
 
     zpru_cl_axc_buffer=>prep_header_buffer( VALUE #( FOR <ls_k>
                                                      IN lt_entities
@@ -1362,11 +1474,11 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
 
         INSERT VALUE #( run_uuid = <ls_create>-run_uuid ) INTO TABLE cs_mapped-header.
 
-        APPEND VALUE #( msg      = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                           iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                           iv_number   = `001`
-                                           iv_severity = zpru_if_agent_message=>sc_severity-success
-                                           iv_v1       = <ls_create>-run_uuid )
+        APPEND VALUE #( msg      = lo_util->new_message(
+                                       iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
+                                       iv_number   = `001`
+                                       iv_severity = zpru_if_agent_message=>sc_severity-success
+                                       iv_v1       = <ls_create>-run_uuid )
                         run_uuid = <ls_create>-run_uuid  ) TO cs_reported-header.
 
       ELSE.
@@ -1378,11 +1490,11 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
 
         APPEND VALUE #( run_uuid = <ls_create>-run_uuid
                         create   = abap_true
-                        msg      = NEW zpru_cl_agent_util( )->zpru_if_agent_util~new_message(
-                                           iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                           iv_number   = `002`
-                                           iv_severity = zpru_if_agent_message=>sc_severity-error
-                                           iv_v1       = <ls_create>-run_uuid ) )
+                        msg      = lo_util->new_message(
+                                       iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
+                                       iv_number   = `002`
+                                       iv_severity = zpru_if_agent_message=>sc_severity-error
+                                       iv_v1       = <ls_create>-run_uuid ) )
                TO cs_reported-header.
 
       ENDIF.

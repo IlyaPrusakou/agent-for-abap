@@ -3,10 +3,12 @@ CLASS zpru_cl_dynamic_abap_base DEFINITION
   CREATE PUBLIC.
 
   PUBLIC SECTION.
-  INTERFACES zpru_if_agent_frw.
+    INTERFACES zpru_if_agent_frw.
     INTERFACES zpru_if_dynamic_abap_processor.
     INTERFACES zpru_if_tool_executor.
+
   PROTECTED SECTION.
+
   PRIVATE SECTION.
 ENDCLASS.
 
@@ -22,8 +24,14 @@ CLASS zpru_cl_dynamic_abap_base IMPLEMENTATION.
     DATA lt_invocation_result      TYPE STANDARD TABLE OF zpru_if_axc_type_and_constant=>ts_tool_invocation WITH EMPTY KEY.
     DATA lv_invokation_result_json TYPE zpru_if_agent_frw=>ts_json.
 
+    TRY.
+        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = `STANDARD` ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
+
     lv_input = io_request->get_data( )->*.
-    lo_util = NEW zpru_cl_agent_util( ).
 
     DATA(lv_invokation_metadata) = lo_util->search_node_in_json( iv_json           = lv_input
                                                                  iv_field_2_search = 'dynamic_tool' ).
@@ -117,7 +125,10 @@ CLASS zpru_cl_dynamic_abap_base IMPLEMENTATION.
             <ls_par_target>-value = <ls_par_result>-value->*.
 
           ENDLOOP.
-        CATCH cx_sy_dyn_call_error cx_sy_no_handler cx_sy_ref_is_initial cx_sy_create_object_error.
+        CATCH cx_sy_dyn_call_error
+              cx_sy_no_handler
+              cx_sy_ref_is_initial
+              cx_sy_create_object_error.
           RETURN.
       ENDTRY.
 

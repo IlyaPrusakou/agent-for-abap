@@ -37,7 +37,12 @@ CLASS zpru_cl_long_memory_base IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    lo_prepar_response = NEW zpru_cl_payload( ).
+    TRY.
+        lo_prepar_response ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_PAYLOAD`
+                                                            iv_context = `STANDARD` ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
 
     prepare_db_sum( EXPORTING io_input  = io_input
                     IMPORTING eo_output = lo_prepar_response ).
@@ -58,7 +63,12 @@ CLASS zpru_cl_long_memory_base IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    lo_prepar_response = NEW zpru_cl_payload( ).
+    TRY.
+        lo_prepar_response ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_PAYLOAD`
+                                                            iv_context = `STANDARD` ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
 
     prepare_db_msg( EXPORTING io_input  = io_input
                     IMPORTING eo_output = lo_prepar_response ).
@@ -83,6 +93,14 @@ CLASS zpru_cl_long_memory_base IMPLEMENTATION.
 
   METHOD zpru_if_long_memory_provider~get_msg_persistence.
     IF mo_msg_persistence IS NOT BOUND.
+
+      TRY.
+          mo_msg_persistence ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_LONG_MEM_PERSISTENCE`
+                                                              iv_context = `STANDARD_PERSISTENCE_MESSAGE` ).
+        CATCH zpru_cx_agent_core.
+          RETURN.
+      ENDTRY.
+
       mo_msg_persistence = NEW zpru_cl_persistence_msg( ).
     ENDIF.
 
