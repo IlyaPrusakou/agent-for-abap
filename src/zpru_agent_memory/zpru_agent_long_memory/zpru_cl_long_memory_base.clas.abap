@@ -101,7 +101,6 @@ CLASS zpru_cl_long_memory_base IMPLEMENTATION.
           RETURN.
       ENDTRY.
 
-      mo_msg_persistence = NEW zpru_cl_persistence_msg( ).
     ENDIF.
 
     ro_msg_persistence = mo_msg_persistence.
@@ -109,7 +108,12 @@ CLASS zpru_cl_long_memory_base IMPLEMENTATION.
 
   METHOD zpru_if_long_memory_provider~get_sum_persistence.
     IF mo_sum_persistence IS NOT BOUND.
-      mo_sum_persistence = NEW zpru_cl_persistence_sum( ).
+      TRY.
+          mo_sum_persistence ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_LONG_MEM_PERSISTENCE`
+                                                              iv_context = `STANDARD_PERSISTENCE_SUMMARIZE` ).
+        CATCH zpru_cx_agent_core.
+          RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+      ENDTRY.
     ENDIF.
 
     ro_sum_persistence = mo_sum_persistence.
@@ -125,6 +129,7 @@ CLASS zpru_cl_long_memory_base IMPLEMENTATION.
 
   METHOD prepare_db_msg.
     DATA lt_message_db TYPE zpru_if_long_mem_persistence=>tt_message_db.
+    DATA lo_util TYPE REF TO zpru_if_agent_util.
 
     FIELD-SYMBOLS <lt_message> TYPE zpru_if_long_mem_persistence=>tt_message.
 
@@ -140,6 +145,13 @@ CLASS zpru_cl_long_memory_base IMPLEMENTATION.
     ENDIF.
 
     GET TIME STAMP FIELD DATA(lv_now).
+
+    TRY.
+        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = `STANDARD` ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
 
     DATA(lv_count) = 1.
     LOOP AT <lt_message> ASSIGNING FIELD-SYMBOL(<ls_message>).
@@ -165,7 +177,7 @@ CLASS zpru_cl_long_memory_base IMPLEMENTATION.
         <ls_message_db>-message_type = zpru_if_short_memory_provider=>cs_msg_type-info.
       ENDIF.
 
-      <ls_message_db>-content    = NEW zpru_cl_agent_util( )->zpru_if_agent_util~serialize_json_2_xstring(
+      <ls_message_db>-content    = lo_util->serialize_json_2_xstring(
                                            <ls_message>-content ).
 
       <ls_message_db>-created_by = sy-uname.
@@ -180,7 +192,12 @@ CLASS zpru_cl_long_memory_base IMPLEMENTATION.
       IF eo_output IS BOUND.
         eo_output->set_data( ir_data = NEW zpru_if_long_mem_persistence=>tt_message_db( lt_message_db ) ).
       ELSE.
-        eo_output = NEW zpru_cl_payload( ).
+        TRY.
+            eo_output ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_PAYLOAD`
+                                                                iv_context = `STANDARD` ).
+          CATCH zpru_cx_agent_core.
+            RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+        ENDTRY.
         eo_output->set_data( ir_data = NEW zpru_if_long_mem_persistence=>tt_message_db( lt_message_db ) ).
       ENDIF.
     ENDIF.
@@ -188,6 +205,7 @@ CLASS zpru_cl_long_memory_base IMPLEMENTATION.
 
   METHOD prepare_db_sum.
     DATA lt_summarization_db TYPE zpru_if_long_mem_persistence=>tt_summarization_db.
+    DATA lo_util TYPE REF TO zpru_if_agent_util.
 
     FIELD-SYMBOLS <lt_summarization> TYPE zpru_if_long_mem_persistence=>tt_summarization.
 
@@ -203,6 +221,13 @@ CLASS zpru_cl_long_memory_base IMPLEMENTATION.
     ENDIF.
 
     GET TIME STAMP FIELD DATA(lv_now).
+
+    TRY.
+        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = `STANDARD` ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
 
     DATA(lv_count) = 1.
     LOOP AT <lt_summarization> ASSIGNING FIELD-SYMBOL(<ls_summarization>).
@@ -224,7 +249,7 @@ CLASS zpru_cl_long_memory_base IMPLEMENTATION.
         <ls_summarization_db>-user_name = sy-uname.
       ENDIF.
 
-      <ls_summarization_db>-content    = NEW zpru_cl_agent_util( )->zpru_if_agent_util~serialize_json_2_xstring(
+      <ls_summarization_db>-content    = lo_util->serialize_json_2_xstring(
                                                  <ls_summarization>-content ).
 
       <ls_summarization_db>-created_by = sy-uname.
@@ -239,7 +264,14 @@ CLASS zpru_cl_long_memory_base IMPLEMENTATION.
       IF eo_output IS BOUND.
         eo_output->set_data( ir_data = NEW zpru_if_long_mem_persistence=>tt_summarization_db( lt_summarization_db ) ).
       ELSE.
-        eo_output = NEW zpru_cl_payload( ).
+
+        TRY.
+            eo_output ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_PAYLOAD`
+                                                                iv_context = `STANDARD` ).
+          CATCH zpru_cx_agent_core.
+            RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+        ENDTRY.
+
         eo_output->set_data( ir_data = NEW zpru_if_long_mem_persistence=>tt_summarization_db( lt_summarization_db ) ).
       ENDIF.
     ENDIF.
@@ -247,7 +279,12 @@ CLASS zpru_cl_long_memory_base IMPLEMENTATION.
 
   METHOD zpru_if_long_memory_provider~get_summarization.
     IF mo_summarize IS NOT BOUND.
-      mo_summarize = NEW zpru_cl_summarize_simple( ).
+      TRY.
+          mo_summarize ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_SUMMARIZATION`
+                                                              iv_context = `STANDARD_SUMMARIZE` ).
+        CATCH zpru_cx_agent_core.
+          RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+      ENDTRY.
     ENDIF.
     ro_summarization = mo_summarize.
   ENDMETHOD.

@@ -4,7 +4,7 @@ CLASS zpru_cl_summarize_simple DEFINITION
   CREATE PUBLIC .
 
   PUBLIC SECTION.
-INTERFACES zpru_if_agent_frw.
+    INTERFACES zpru_if_agent_frw.
     INTERFACES zpru_if_summarization .
   PROTECTED SECTION.
   PRIVATE SECTION.
@@ -18,6 +18,7 @@ CLASS zpru_cl_summarize_simple IMPLEMENTATION.
     DATA lt_message TYPE zpru_if_long_mem_persistence=>tt_message.
     DATA lt_summarization TYPE zpru_if_long_mem_persistence=>tt_summarization.
     DATA lv_string TYPE zpru_if_agent_frw=>ts_json.
+    DATA lo_utility TYPE REF TO zpru_if_agent_util.
 
     IF io_input IS NOT BOUND.
       RETURN.
@@ -25,9 +26,14 @@ CLASS zpru_cl_summarize_simple IMPLEMENTATION.
 
     lt_message = io_input->get_data( )->*.
 
-    DATA(lo_utility) = NEW zpru_cl_agent_util( ).
+    TRY.
+        lo_utility ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = `STANDARD` ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
 
-    lo_utility->zpru_if_agent_util~convert_to_string(
+    lo_utility->convert_to_string(
       EXPORTING
         ir_abap   = REF #(  lt_message )
       CHANGING
@@ -45,7 +51,14 @@ CLASS zpru_cl_summarize_simple IMPLEMENTATION.
       IF eo_output IS BOUND.
         eo_output->set_data( NEW zpru_if_long_mem_persistence=>tt_summarization( lt_summarization ) ).
       ELSE.
-        eo_output = NEW zpru_cl_payload( ).
+
+        TRY.
+            eo_output ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_PAYLOAD`
+                                                                iv_context = `STANDARD` ).
+          CATCH zpru_cx_agent_core.
+            RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+        ENDTRY.
+
         eo_output->set_data( NEW zpru_if_long_mem_persistence=>tt_summarization( lt_summarization ) ).
       ENDIF.
     ENDIF.
