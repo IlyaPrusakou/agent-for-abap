@@ -242,96 +242,97 @@ ENDCLASS.
 
 
 CLASS lcl_abap_code_tool DEFINITION
-  CREATE PUBLIC.
+  CREATE PUBLIC inhERITING FROM zpru_cl_abap_executor.
 
   PUBLIC SECTION.
-    INTERFACES zpru_if_tool_executor.
-    INTERFACES zpru_if_abap_executor.
+  proTECTED SECTION.
+  methods execute_code_int reDEFINITION.
+  priVATE SECTION.
 ENDCLASS.
 
 
 CLASS lcl_abap_code_tool IMPLEMENTATION.
-  METHOD zpru_if_abap_executor~execute_code.
-    DATA lv_payload    TYPE string.
-    DATA lv_risk_score TYPE i.
-    DATA lo_agent_util TYPE REF TO zpru_if_agent_util.
-
-    FIELD-SYMBOLS <ls_context> TYPE zpru_cl_dummy_agent_logic=>ts_context.
-
-    zpru_cl_dummy_agent_logic=>ms_method_registr-simple_tool = abap_true.
-
-    IF io_controller->mo_context IS NOT BOUND.
-      RETURN.
-    ENDIF.
-
-    DATA(lr_context_data) = io_controller->mo_context->get_data( ).
-    ASSIGN lr_context_data->* TO <ls_context>.
-    IF sy-subrc <> 0.
-      RETURN.
-    ENDIF.
-
-    IF zpru_cl_stochastic_producer=>get_decision( ) = 1.
-      <ls_context>-gate_pass_assessment-is_expected = abap_true.
-    ELSE.
-      <ls_context>-gate_pass_assessment-is_expected = abap_false.
-      lv_risk_score += 1.
-    ENDIF.
-
-    IF zpru_cl_stochastic_producer=>get_decision( ) = 1.
-      <ls_context>-gate_pass_assessment-is_on_time = abap_true.
-    ELSE.
-      <ls_context>-gate_pass_assessment-is_on_time = abap_false.
-      lv_risk_score += 1.
-    ENDIF.
-
-    IF zpru_cl_stochastic_producer=>get_decision( ) = 1.
-      <ls_context>-gate_pass_assessment-is_carrier_allowed = abap_true.
-    ELSE.
-      <ls_context>-gate_pass_assessment-is_carrier_allowed = abap_false.
-      lv_risk_score += 1.
-    ENDIF.
-
-    IF zpru_cl_stochastic_producer=>get_decision( ) = 1.
-      <ls_context>-gate_pass_assessment-is_driver_verified = abap_true.
-    ELSE.
-      <ls_context>-gate_pass_assessment-is_driver_verified = abap_false.
-      lv_risk_score += 1.
-    ENDIF.
-
-    CASE zpru_cl_stochastic_producer=>get_stochastic_value( iv_max = 4 ).
-      WHEN 1.
-        <ls_context>-gate_pass_assessment-assigned_gate = 'GATE01'.
-      WHEN 2.
-        <ls_context>-gate_pass_assessment-assigned_gate = 'GATE02'.
-      WHEN 3.
-        <ls_context>-gate_pass_assessment-assigned_gate = 'GATE03'.
-      WHEN 4.
-        <ls_context>-gate_pass_assessment-assigned_gate = 'GATE04'.
-      WHEN OTHERS.
-        <ls_context>-gate_pass_assessment-assigned_gate = 'GATE05'.
-    ENDCASE.
-
-    IF lv_risk_score <= 1.
-      <ls_context>-gate_pass_assessment-risk_score = 'GREEN'.
-    ELSEIF lv_risk_score > 1 AND lv_risk_score <= 3.
-      <ls_context>-gate_pass_assessment-risk_score = 'YELLOW'.
-    ELSE.
-      <ls_context>-gate_pass_assessment-risk_score = 'RED'.
-    ENDIF.
-
-    TRY.
-        lo_agent_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
-                                                                  iv_context = zpru_if_agent_frw=>cs_context-standard ).
-      CATCH zpru_cx_agent_core.
-        RETURN.
-    ENDTRY.
-
-    lo_agent_util->convert_to_string( EXPORTING ir_abap   = REF #( <ls_context>-gate_pass_assessment )
-                                      CHANGING  cr_string = <ls_context>-gate_pass_assessment_json ).
-
-    lv_payload = io_request->get_data( )->*.
-    lv_payload = |{ lv_payload } - SIMPLE TOOL VISITED - { <ls_context>-gate_pass_assessment_json }|.
-    eo_response->set_data( ir_data = NEW string( lv_payload ) ).
+  METHOD execute_code_int.
+*    DATA lv_payload    TYPE string.
+*    DATA lv_risk_score TYPE i.
+*    DATA lo_agent_util TYPE REF TO zpru_if_agent_util.
+*
+*    FIELD-SYMBOLS <ls_context> TYPE zpru_cl_dummy_agent_logic=>ts_context.
+*
+*    zpru_cl_dummy_agent_logic=>ms_method_registr-simple_tool = abap_true.
+*
+*    IF io_controller->mo_context IS NOT BOUND.
+*      RETURN.
+*    ENDIF.
+*
+*    DATA(lr_context_data) = io_controller->mo_context->get_data( ).
+*    ASSIGN lr_context_data->* TO <ls_context>.
+*    IF sy-subrc <> 0.
+*      RETURN.
+*    ENDIF.
+*
+*    IF zpru_cl_stochastic_producer=>get_decision( ) = 1.
+*      <ls_context>-gate_pass_assessment-is_expected = abap_true.
+*    ELSE.
+*      <ls_context>-gate_pass_assessment-is_expected = abap_false.
+*      lv_risk_score += 1.
+*    ENDIF.
+*
+*    IF zpru_cl_stochastic_producer=>get_decision( ) = 1.
+*      <ls_context>-gate_pass_assessment-is_on_time = abap_true.
+*    ELSE.
+*      <ls_context>-gate_pass_assessment-is_on_time = abap_false.
+*      lv_risk_score += 1.
+*    ENDIF.
+*
+*    IF zpru_cl_stochastic_producer=>get_decision( ) = 1.
+*      <ls_context>-gate_pass_assessment-is_carrier_allowed = abap_true.
+*    ELSE.
+*      <ls_context>-gate_pass_assessment-is_carrier_allowed = abap_false.
+*      lv_risk_score += 1.
+*    ENDIF.
+*
+*    IF zpru_cl_stochastic_producer=>get_decision( ) = 1.
+*      <ls_context>-gate_pass_assessment-is_driver_verified = abap_true.
+*    ELSE.
+*      <ls_context>-gate_pass_assessment-is_driver_verified = abap_false.
+*      lv_risk_score += 1.
+*    ENDIF.
+*
+*    CASE zpru_cl_stochastic_producer=>get_stochastic_value( iv_max = 4 ).
+*      WHEN 1.
+*        <ls_context>-gate_pass_assessment-assigned_gate = 'GATE01'.
+*      WHEN 2.
+*        <ls_context>-gate_pass_assessment-assigned_gate = 'GATE02'.
+*      WHEN 3.
+*        <ls_context>-gate_pass_assessment-assigned_gate = 'GATE03'.
+*      WHEN 4.
+*        <ls_context>-gate_pass_assessment-assigned_gate = 'GATE04'.
+*      WHEN OTHERS.
+*        <ls_context>-gate_pass_assessment-assigned_gate = 'GATE05'.
+*    ENDCASE.
+*
+*    IF lv_risk_score <= 1.
+*      <ls_context>-gate_pass_assessment-risk_score = 'GREEN'.
+*    ELSEIF lv_risk_score > 1 AND lv_risk_score <= 3.
+*      <ls_context>-gate_pass_assessment-risk_score = 'YELLOW'.
+*    ELSE.
+*      <ls_context>-gate_pass_assessment-risk_score = 'RED'.
+*    ENDIF.
+*
+*    TRY.
+*        lo_agent_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+*                                                                  iv_context = zpru_if_agent_frw=>cs_context-standard ).
+*      CATCH zpru_cx_agent_core.
+*        RETURN.
+*    ENDTRY.
+*
+*    lo_agent_util->convert_to_string( EXPORTING ir_abap   = REF #( <ls_context>-gate_pass_assessment )
+*                                      CHANGING  cr_string = <ls_context>-gate_pass_assessment_json ).
+*
+*    lv_payload = io_request->get_data( )->*.
+*    lv_payload = |{ lv_payload } - SIMPLE TOOL VISITED - { <ls_context>-gate_pass_assessment_json }|.
+*    eo_response->set_data( ir_data = NEW string( lv_payload ) ).
   ENDMETHOD.
 ENDCLASS.
 
@@ -542,72 +543,6 @@ CLASS lcl_nested_agent IMPLEMENTATION.
     eo_response->set_data( ir_data = NEW zpru_if_agent_frw=>ts_json( lv_final_response ) ).
   ENDMETHOD.
 ENDCLASS.
-
-
-CLASS lcl_schema_provider DEFINITION
-  CREATE PUBLIC.
-
-  PUBLIC SECTION.
-    INTERFACES zpru_if_tool_schema_provider.
-ENDCLASS.
-
-
-CLASS lcl_schema_provider IMPLEMENTATION.
-
-  METHOD zpru_if_tool_schema_provider~input_json_schema.
-    zpru_cl_dummy_agent_logic=>ms_method_registr-get_input_schema = abap_true.
-    CASE is_tool_master_data-tool_name.
-      WHEN 'DUMMY_CODE'.
-*        lv_input_schema = |SIMPLE_TOOL_SCHEMA|.
-      WHEN 'DUMMY_KNOWLEDGE'.
-*        lv_input_schema = |KNOWLEDGE_SCHEMA"|.
-      WHEN 'NESTED_AGENT'.
-*        lv_input_schema = |NESTED_AGENT_SCHEMA|.
-      WHEN OTHERS.
-    ENDCASE.
-  ENDMETHOD.
-
-  METHOD zpru_if_tool_schema_provider~input_rtts_schema.
-    zpru_cl_dummy_agent_logic=>ms_method_registr-get_input_schema = abap_true.
-    CASE is_tool_master_data-tool_name.
-      WHEN 'DUMMY_CODE'.
-*        lv_input_schema = |SIMPLE_TOOL_SCHEMA|.
-      WHEN 'DUMMY_KNOWLEDGE'.
-*        lv_input_schema = |KNOWLEDGE_SCHEMA"|.
-      WHEN 'NESTED_AGENT'.
-*        lv_input_schema = |NESTED_AGENT_SCHEMA|.
-      WHEN OTHERS.
-    ENDCASE.
-  ENDMETHOD.
-
-  METHOD zpru_if_tool_schema_provider~output_json_schema.
-    zpru_cl_dummy_agent_logic=>ms_method_registr-get_input_schema = abap_true.
-    CASE is_tool_master_data-tool_name.
-      WHEN 'DUMMY_CODE'.
-*        lv_input_schema = |SIMPLE_TOOL_SCHEMA|.
-      WHEN 'DUMMY_KNOWLEDGE'.
-*        lv_input_schema = |KNOWLEDGE_SCHEMA"|.
-      WHEN 'NESTED_AGENT'.
-*        lv_input_schema = |NESTED_AGENT_SCHEMA|.
-      WHEN OTHERS.
-    ENDCASE.
-  ENDMETHOD.
-
-  METHOD zpru_if_tool_schema_provider~output_rtts_schema.
-    zpru_cl_dummy_agent_logic=>ms_method_registr-get_input_schema = abap_true.
-    CASE is_tool_master_data-tool_name.
-      WHEN 'DUMMY_CODE'.
-*        lv_input_schema = |SIMPLE_TOOL_SCHEMA|.
-      WHEN 'DUMMY_KNOWLEDGE'.
-*        lv_input_schema = |KNOWLEDGE_SCHEMA"|.
-      WHEN 'NESTED_AGENT'.
-*        lv_input_schema = |NESTED_AGENT_SCHEMA|.
-      WHEN OTHERS.
-    ENDCASE.
-  ENDMETHOD.
-
-ENDCLASS.
-
 
 " Local class for HTTP Request tool
 CLASS lcl_http_request_tool DEFINITION CREATE PUBLIC.
@@ -1036,6 +971,7 @@ ENDCLASS.
 
 CLASS lcl_ml_model_inference IMPLEMENTATION.
   METHOD zpru_if_ml_model_inference~get_machine_learning_inference.
+  " cl_aic_islm_embed_api_factory
   ENDMETHOD.
 ENDCLASS.
 
@@ -1296,4 +1232,68 @@ CLASS lcl_tool_info_provider IMPLEMENTATION.
 *        RETURN.
 *    ENDCASE.
   ENDMETHOD.
+ENDCLASS.
+
+CLASS lcl_schema_provider DEFINITION
+  CREATE PUBLIC.
+
+  PUBLIC SECTION.
+    INTERFACES zpru_if_tool_schema_provider.
+ENDCLASS.
+
+
+CLASS lcl_schema_provider IMPLEMENTATION.
+
+  METHOD zpru_if_tool_schema_provider~input_json_schema.
+    zpru_cl_dummy_agent_logic=>ms_method_registr-get_input_schema = abap_true.
+    CASE is_tool_master_data-tool_name.
+      WHEN 'DUMMY_CODE'.
+*        lv_input_schema = |SIMPLE_TOOL_SCHEMA|.
+      WHEN 'DUMMY_KNOWLEDGE'.
+*        lv_input_schema = |KNOWLEDGE_SCHEMA"|.
+      WHEN 'NESTED_AGENT'.
+*        lv_input_schema = |NESTED_AGENT_SCHEMA|.
+      WHEN OTHERS.
+    ENDCASE.
+  ENDMETHOD.
+
+  METHOD zpru_if_tool_schema_provider~input_rtts_schema.
+    zpru_cl_dummy_agent_logic=>ms_method_registr-get_input_schema = abap_true.
+    CASE is_tool_master_data-tool_name.
+      WHEN 'DUMMY_CODE'.
+*        lv_input_schema = |SIMPLE_TOOL_SCHEMA|.
+      WHEN 'DUMMY_KNOWLEDGE'.
+*        lv_input_schema = |KNOWLEDGE_SCHEMA"|.
+      WHEN 'NESTED_AGENT'.
+*        lv_input_schema = |NESTED_AGENT_SCHEMA|.
+      WHEN OTHERS.
+    ENDCASE.
+  ENDMETHOD.
+
+  METHOD zpru_if_tool_schema_provider~output_json_schema.
+    zpru_cl_dummy_agent_logic=>ms_method_registr-get_input_schema = abap_true.
+    CASE is_tool_master_data-tool_name.
+      WHEN 'DUMMY_CODE'.
+*        lv_input_schema = |SIMPLE_TOOL_SCHEMA|.
+      WHEN 'DUMMY_KNOWLEDGE'.
+*        lv_input_schema = |KNOWLEDGE_SCHEMA"|.
+      WHEN 'NESTED_AGENT'.
+*        lv_input_schema = |NESTED_AGENT_SCHEMA|.
+      WHEN OTHERS.
+    ENDCASE.
+  ENDMETHOD.
+
+  METHOD zpru_if_tool_schema_provider~output_rtts_schema.
+    zpru_cl_dummy_agent_logic=>ms_method_registr-get_input_schema = abap_true.
+    CASE is_tool_master_data-tool_name.
+      WHEN 'DUMMY_CODE'.
+*        lv_input_schema = |SIMPLE_TOOL_SCHEMA|.
+      WHEN 'DUMMY_KNOWLEDGE'.
+*        lv_input_schema = |KNOWLEDGE_SCHEMA"|.
+      WHEN 'NESTED_AGENT'.
+*        lv_input_schema = |NESTED_AGENT_SCHEMA|.
+      WHEN OTHERS.
+    ENDCASE.
+  ENDMETHOD.
+
 ENDCLASS.

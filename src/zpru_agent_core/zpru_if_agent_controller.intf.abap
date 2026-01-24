@@ -1,17 +1,35 @@
 INTERFACE zpru_if_agent_controller
   PUBLIC.
 
+  TYPES: BEGIN OF ts_run_context,
+           tool_master_data   TYPE zpru_if_adf_type_and_constant=>ts_agent_tool,
+           execution_step     TYPE zpru_if_axc_type_and_constant=>ts_axc_step,
+           abap_input_schema  TYPE REF TO cl_abap_structdescr,
+           json_input_schema  TYPE zpru_if_agent_frw=>ts_json,
+           abap_output_schema TYPE REF TO cl_abap_structdescr,
+           json_output_schema TYPE zpru_if_agent_frw=>ts_json,
+           abap_request       TYPE REF TO data,
+           json_request       TYPE zpru_if_agent_frw=>ts_json,
+           abap_response      TYPE REF TO data,
+           json_response      TYPE zpru_if_agent_frw=>ts_json,
+         END OF ts_run_context.
+
+  TYPES: tt_run_context TYPE STANDARD TABLE OF ts_run_context WITH EMPTY KEY.
+
   TYPES: BEGIN OF ts_input_output,
            number          TYPE i,
            input_query     TYPE zpru_if_agent_frw=>ts_json,
+           execution_steps TYPE zpru_if_axc_type_and_constant=>tt_axc_step,
+           run_context     TYPE tt_run_context,
            output_response TYPE zpru_if_agent_frw=>ts_json,
          END OF ts_input_output.
 
   TYPES tt_input_output TYPE STANDARD TABLE OF ts_input_output WITH EMPTY KEY.
 
+  DATA mt_execution_steps TYPE zpru_if_axc_type_and_constant=>tt_axc_step.
   DATA mv_stop_agent        TYPE abap_boolean.
   DATA mv_agent_uuid        TYPE sysuuid_x16.
-  DATA mo_context           TYPE REF TO zpru_if_payload.
+  DATA mt_run_context       TYPE tt_run_context.
   DATA mo_parent_controller TYPE REF TO zpru_if_agent_controller.
   DATA mo_short_memory      TYPE REF TO zpru_if_short_memory_provider.
   DATA mo_long_memory       TYPE REF TO zpru_if_long_memory_provider.
