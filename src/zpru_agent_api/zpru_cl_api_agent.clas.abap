@@ -58,6 +58,26 @@ CLASS zpru_cl_api_agent DEFINITION
                 cs_adf_reported     TYPE zpru_if_agent_frw=>ts_adf_reported
                 cs_adf_failed       TYPE zpru_if_agent_frw=>ts_adf_failed
       RAISING   zpru_cx_agent_core.
+
+    METHODS execute_mini_loop
+      IMPORTING is_agent            TYPE zpru_if_adf_type_and_constant=>ts_agent
+                is_execution_header TYPE zpru_axc_head
+                is_execution_query  TYPE zpru_if_axc_type_and_constant=>ts_axc_query
+                it_ADDITIONAL_steps  TYPE zpru_if_axc_type_and_constant=>tt_axc_step
+                it_agent_tools      TYPE zpru_if_adf_type_and_constant=>tt_agent_tool
+                is_tool_master_data TYPE zpru_if_adf_type_and_constant=>ts_agent_tool
+                is_current_step     TYPE zpru_if_axc_type_and_constant=>ts_axc_step
+                iv_output_prompt    TYPE string
+      EXPORTING eo_final_response   TYPE REF TO zpru_if_payload
+      CHANGING  cs_axc_reported     TYPE zpru_if_agent_frw=>ts_axc_reported
+                cs_axc_failed       TYPE zpru_if_agent_frw=>ts_axc_failed
+                cs_adf_reported     TYPE zpru_if_agent_frw=>ts_adf_reported
+                cs_adf_failed       TYPE zpru_if_agent_frw=>ts_adf_failed
+      RAISING   zpru_cx_agent_core.
+
+
+
+  PRIVATE SECTION.
 ENDCLASS.
 
 
@@ -1268,6 +1288,8 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
         EXIT.
       ENDIF.
 
+      " MINI LOOP
+
     ENDLOOP.
 
     <ls_input_output>-run_context = lo_controller->mt_run_context.
@@ -2025,4 +2047,448 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
     mo_controller->mo_api_agent = me.
     ro_controller = mo_controller.
   ENDMETHOD.
+
+  METHOD execute_mini_loop.
+    DATA lo_tool_provider     TYPE REF TO zpru_if_tool_provider.
+    DATA lo_executor          TYPE REF TO zpru_if_tool_executor.
+    DATA lo_input             TYPE REF TO zpru_if_payload.
+    DATA lo_output            TYPE REF TO zpru_if_payload.
+    DATA lo_last_output       TYPE REF TO zpru_if_payload.
+    DATA lo_axc_service       TYPE REF TO zpru_if_axc_service.
+    DATA lt_query_update_imp  TYPE zpru_if_axc_type_and_constant=>tt_query_update_imp.
+    DATA lt_step_update_imp   TYPE zpru_if_axc_type_and_constant=>tt_step_update_imp.
+    DATA lv_error_flag        TYPE abap_boolean.
+    DATA lt_message           TYPE zpru_if_short_memory_provider=>tt_message.
+    DATA lv_input_prompt      TYPE string.
+    DATA lv_output_prompt     TYPE string.
+    DATA lo_short_memory      TYPE REF TO zpru_if_short_memory_provider.
+    DATA lo_decision_provider TYPE REF TO zpru_if_decision_provider.
+
+    TRY.
+        lo_axc_service ?= zpru_cl_agent_service_mngr=>get_service(
+                              iv_service = `ZPRU_IF_AXC_SERVICE`
+                              iv_context = zpru_if_agent_frw=>cs_context-standard ).
+      CATCH zpru_cx_agent_core.
+        RAISE EXCEPTION NEW zpru_cx_agent_core( ).
+    ENDTRY.
+
+    get_short_memory( EXPORTING iv_agent_uuid   = is_agent-agent_uuid
+                      IMPORTING eo_short_memory = lo_short_memory
+                      CHANGING  cs_reported     = cs_adf_reported
+                                cs_failed       = cs_adf_failed ).
+
+    DATA(lo_controller) = get_controller( ).
+
+    DATA(lt_step_before) = lo_controller->mt_execution_steps.
+    DELETE lt_step_before WHERE execution_seq > is_current_step-execution_seq.
+    DATA(lt_step_after) = lo_controller->mt_execution_steps.
+    DELETE lt_step_after WHERE execution_seq <= is_current_step-execution_seq.
+
+    DATA(lv_count_before) = VALUE #( lt_step_before[ lines( lt_step_before ) ]-execution_seq OPTIONAL ).
+    DATA(lv_first_iteration) = abap_true.
+    LOOP AT it_ADDITIONAL_steps ASSIGNING FIELD-SYMBOL(<ls_add_exec_step>).
+      lv_count_before = lv_count_before + 1.
+
+      GET TIME STAMP FIELD DATA(lv_now).
+
+      APPEND INITIAL LINE TO lt_step_update_imp ASSIGNING FIELD-SYMBOL(<ls_step_2_upd>).
+      <ls_step_2_upd>-step_uuid     = cl_system_uuid=>create_uuid_x16_static( ).
+      <ls_step_2_upd>-step_number   = lo_axc_service->generate_step_number(
+                                                    iv_query_uuid       = is_execution_query-query_uuid ).
+      <ls_step_2_upd>-query_uuid    = is_execution_query-query_uuid.
+      <ls_step_2_upd>-run_uuid      = is_execution_header-run_uuid.
+      <ls_step_2_upd>-tool_uuid     = <ls_add_exec_step>-tool_uuid.
+      <ls_step_2_upd>-execution_seq = lv_count_before.
+      <ls_step_2_upd>-step_status   = zpru_if_axc_type_and_constant=>sc_step_status-new.
+      <ls_step_2_upd>-start_timestamp = lv_now.
+
+      IF lv_first_iteration = abap_true.
+        <ls_step_2_upd>-input_prompt  = iv_output_prompt.
+      ENDIF.
+
+      <ls_step_2_upd>-control-step_uuid       =    abap_true.
+      <ls_step_2_upd>-control-step_number     =    abap_true.
+      <ls_step_2_upd>-control-query_uuid      =    abap_true.
+      <ls_step_2_upd>-control-run_uuid        =    abap_true.
+      <ls_step_2_upd>-control-tool_uuid       =    abap_true.
+      <ls_step_2_upd>-control-execution_seq   =    abap_true.
+      <ls_step_2_upd>-control-step_status     =    abap_true.
+      <ls_step_2_upd>-control-start_timestamp =    abap_true.
+      IF lv_first_iteration = abap_true.
+        <ls_step_2_upd>-control-input_prompt    =    abap_true.
+      ENDIF.
+
+      APPEND INITIAL LINE TO lt_step_before ASSIGNING FIELD-SYMBOL(<ls_step_before>).
+      <ls_step_before> = CORRESPONDING #( <ls_step_2_upd> ).
+
+      lv_first_iteration = abap_false.
+    ENDLOOP.
+
+    LOOP AT lt_step_after ASSIGNING FIELD-SYMBOL(<ls_step_after>).
+      lv_count_before = lv_count_before + 1.
+
+      APPEND INITIAL LINE TO lt_step_update_imp ASSIGNING <ls_step_2_upd>.
+      <ls_step_2_upd>-step_uuid     = <ls_step_after>-step_uuid.
+      <ls_step_2_upd>-query_uuid    = is_execution_query-query_uuid.
+      <ls_step_2_upd>-run_uuid      = is_execution_header-run_uuid.
+      <ls_step_2_upd>-execution_seq = lv_count_before.
+      <ls_step_2_upd>-control-execution_seq = abap_true.
+
+      APPEND INITIAL LINE TO lt_step_before ASSIGNING <ls_step_before>.
+      <ls_step_before> = CORRESPONDING #( <ls_step_2_upd> ).
+
+    ENDLOOP.
+
+    IF lt_step_update_imp IS NOT INITIAL.
+      lo_axc_service->update_step(
+        EXPORTING
+          it_step_update_imp = lt_step_update_imp
+        CHANGING
+          cs_reported        = cs_axc_reported
+          cs_failed          = cs_axc_failed ).
+    ENDIF.
+
+    lo_controller->mt_execution_steps = lt_step_before.
+
+    ASSIGN lo_controller->mt_input_output[ number = lines( lo_controller->mt_input_output ) ] TO FIELD-SYMBOL(<ls_input_output>).
+    IF sy-subrc  = 0.
+      " error
+      RETURN.
+    ENDIF.
+
+    <ls_input_output>-execution_steps = lt_step_before.
+
+    DATA(lv_count) = 1.
+    LOOP AT it_ADDITIONAL_steps ASSIGNING FIELD-SYMBOL(<ls_execution_step>).
+
+      "HOW TO HANDLE TOOL_UUID FOR BORROWED AND TRANSIENT TOOLS
+      ASSIGN it_agent_tools[ tool_uuid = <ls_execution_step>-tool_uuid ] TO FIELD-SYMBOL(<ls_tool_master_data>).
+      IF sy-subrc <> 0.
+        CONTINUE.
+      ENDIF.
+
+      CREATE OBJECT lo_tool_provider TYPE (<ls_tool_master_data>-tool_provider).
+      IF sy-subrc <> 0.
+        CONTINUE.
+      ENDIF.
+
+      APPEND INITIAL LINE TO  lo_controller->mt_run_context ASSIGNING FIELD-SYMBOL(<ls_run_context>).
+      <ls_run_context>-tool_master_data = <ls_tool_master_data>.
+      <ls_run_context>-execution_step = <ls_execution_step>.
+
+      lo_executor = lo_tool_provider->get_tool( is_tool_master_data = <ls_tool_master_data>
+                                                is_execution_step   = <ls_execution_step> ).
+
+      IF lv_count = 1.
+
+        TRY.
+            lo_input ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_PAYLOAD`
+                                                                 iv_context = zpru_if_agent_frw=>cs_context-standard ).
+          CATCH zpru_cx_agent_core.
+            RAISE EXCEPTION NEW zpru_cx_agent_core( ).
+        ENDTRY.
+
+        lo_input->set_data( ir_data = REF #( iv_output_prompt ) ).
+
+        TRY.
+            lo_output ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_PAYLOAD`
+                                                                  iv_context = zpru_if_agent_frw=>cs_context-standard ).
+          CATCH zpru_cx_agent_core.
+            RAISE EXCEPTION NEW zpru_cx_agent_core( ).
+        ENDTRY.
+
+      ELSE.
+        IF lv_output_prompt IS NOT INITIAL.
+          lo_input->set_data( ir_data = REF #( lv_output_prompt ) ).
+        ELSE.
+          lo_input->clear_data( ).
+        ENDIF.
+        lo_output->clear_data( ).
+      ENDIF.
+
+      lv_error_flag = abap_false.
+
+      GET TIME STAMP FIELD lv_now.
+
+      CASE <ls_tool_master_data>-step_type.
+        WHEN zpru_if_adf_type_and_constant=>cs_step_type-abap_code.
+          CAST zpru_if_abap_executor( lo_executor )->execute_code( EXPORTING io_controller       = lo_controller
+                                                                             io_request          = lo_input
+                                                                             is_tool_master_data = <ls_tool_master_data>
+                                                                             is_execution_step   = <ls_execution_step>
+                                                                   IMPORTING eo_response         = lo_output
+                                                                             ev_error_flag       = lv_error_flag ).
+        WHEN zpru_if_adf_type_and_constant=>cs_step_type-knowledge_source.
+          CAST zpru_if_knowledge_provider( lo_executor )->lookup_knowledge(
+                                                         EXPORTING io_controller       = lo_controller
+                                                                   io_request          = lo_input
+                                                                   is_tool_master_data = <ls_tool_master_data>
+                                                                   is_execution_step   = <ls_execution_step>
+                                                         IMPORTING eo_response         = lo_output
+                                                                   ev_error_flag       = lv_error_flag ).
+        WHEN zpru_if_adf_type_and_constant=>cs_step_type-nested_agent.
+          CAST zpru_if_nested_agent_runner( lo_executor )->run_nested_agent(
+                                                          EXPORTING io_controller       = lo_controller
+                                                                    io_request          = lo_input
+                                                                    is_tool_master_data = <ls_tool_master_data>
+                                                                    is_execution_step   = <ls_execution_step>
+                                                          IMPORTING eo_response         = lo_output
+                                                                    ev_error_flag       = lv_error_flag ).
+        WHEN zpru_if_adf_type_and_constant=>cs_step_type-http_request.
+          CAST zpru_if_http_request_sender( lo_executor )->send_http(
+                                                          EXPORTING io_controller       = lo_controller
+                                                                    io_request          = lo_input
+                                                                    is_tool_master_data = <ls_tool_master_data>
+                                                                    is_execution_step   = <ls_execution_step>
+                                                          IMPORTING eo_response         = lo_output
+                                                                    ev_error_flag       = lv_error_flag ).
+
+        WHEN zpru_if_adf_type_and_constant=>cs_step_type-service_consumption_model.
+          CAST zpru_if_service_model_consumer( lo_executor )->consume_service_model(
+                                                             EXPORTING io_controller       = lo_controller
+                                                                       io_request          = lo_input
+                                                                       is_tool_master_data = <ls_tool_master_data>
+                                                                       is_execution_step   = <ls_execution_step>
+                                                             IMPORTING eo_response         = lo_output
+                                                                       ev_error_flag       = lv_error_flag ).
+
+        WHEN zpru_if_adf_type_and_constant=>cs_step_type-call_llm.
+          CAST zpru_if_llm_caller( lo_executor )->call_large_language_model(
+                                                 EXPORTING io_controller       = lo_controller
+                                                           io_request          = lo_input
+                                                           is_tool_master_data = <ls_tool_master_data>
+                                                           is_execution_step   = <ls_execution_step>
+                                                 IMPORTING eo_response         = lo_output
+                                                           ev_error_flag       = lv_error_flag ).
+
+        WHEN zpru_if_adf_type_and_constant=>cs_step_type-dynamic_abap_code.
+          CAST zpru_if_dynamic_abap_processor( lo_executor )->process_dynamic_abap(
+                                                             EXPORTING io_controller       = lo_controller
+                                                                       io_request          = lo_input
+                                                                       is_tool_master_data = <ls_tool_master_data>
+                                                                       is_execution_step   = <ls_execution_step>
+                                                             IMPORTING eo_response         = lo_output
+                                                                       ev_error_flag       = lv_error_flag ).
+
+        WHEN zpru_if_adf_type_and_constant=>cs_step_type-infer_ml_model.
+          CAST zpru_if_ml_model_inference( lo_executor )->get_machine_learning_inference(
+                                                         EXPORTING io_controller       = lo_controller
+                                                                   io_request          = lo_input
+                                                                   is_tool_master_data = <ls_tool_master_data>
+                                                                   is_execution_step   = <ls_execution_step>
+                                                         IMPORTING eo_response         = lo_output
+                                                                   ev_error_flag       = lv_error_flag ).
+
+        WHEN zpru_if_adf_type_and_constant=>cs_step_type-user_tool.
+          CAST zpru_if_user_tool( lo_executor )->execute_user_tool(
+                                                EXPORTING io_controller       = lo_controller
+                                                          io_request          = lo_input
+                                                          is_tool_master_data = <ls_tool_master_data>
+                                                          is_execution_step   = <ls_execution_step>
+                                                IMPORTING eo_response         = lo_output
+                                                          ev_error_flag       = lv_error_flag ).
+        WHEN OTHERS.
+          CONTINUE.
+      ENDCASE.
+
+      lv_input_prompt  = lo_input->get_data( )->*.
+      lv_output_prompt = lo_output->get_data( )->*.
+
+*      DATA(lv_input_tool_prompt_message) = |\{ "USER": "{ sy-uname }", "TOPIC" : "TOOL_INPUT_PROMPT", "TIMESTAMP" : "{ lv_now }",| &&
+*                                     | "CONTENT" : "{ lv_input_prompt }" \}|.
+*
+*      DATA(lv_output_tool_prompt_message) = |\{ "USER": "{ sy-uname }", "TOPIC" : "TOOL_OUTPUT_PROMPT", "TIMESTAMP" : "{ lv_now }",| &&
+*                                     | "CONTENT" : "{ lv_output_prompt }" \}|.
+*
+*      APPEND INITIAL LINE TO lt_message ASSIGNING FIELD-SYMBOL(<ls_message>).
+*      <ls_message> = VALUE #(
+*          message_cid  = |{ lv_now }-{ sy-uname }-PROCESS_EXECUTION_STEPS_{ lv_count }|
+*          stage        = 'PROCESS_EXECUTION_STEPS'
+*          sub_stage    = |STEP_{ <ls_execution_step>-execution_seq }|
+*          namespace    = |{ sy-uname }.{ is_agent-agent_name }.{ is_execution_header-run_id }.{ is_execution_query-query_number }|
+*          user_name    = sy-uname
+*          agent_uuid   = is_agent-agent_uuid
+*          run_uuid     = <ls_execution_step>-run_uuid
+*          query_uuid   = <ls_execution_step>-query_uuid
+*          step_uuid    = <ls_execution_step>-step_uuid
+*          message_time = lv_now
+*          content      = |\{ "RUN_ID" : "{ is_execution_header-run_id }", | &&
+*                         | "QUERY_NUMBER" : "{ is_execution_query-query_number }", | &&
+*                         | "STEP_NUMBER" : "{ <ls_execution_step>-step_number }", | &&
+*                         | "EXECUTION_SEQ" : "{ <ls_execution_step>-execution_seq }", | &&
+*                         | "TOOL_NAME" : "{ <ls_tool_master_data>-tool_name }", | &&
+*                         | "STEP_TYPE" : "{ <ls_tool_master_data>-step_type }", | &&
+*                         | "INPUT_PROMPT" : { lv_input_tool_prompt_message }, | &&
+*                         | "OUTPUT_PROMPT" : { lv_output_tool_prompt_message }, | &&
+*                         | "ERROR" : "{ lv_error_flag }"  \}|
+*          message_type = zpru_if_short_memory_provider=>cs_msg_type-step_output ).
+
+      lv_count += 1.
+
+      IF lv_error_flag = abap_true.
+        APPEND INITIAL LINE TO lt_step_update_imp ASSIGNING <ls_step_2_upd>.
+        <ls_step_2_upd>-step_uuid     = <ls_execution_step>-step_uuid.
+        <ls_step_2_upd>-query_uuid    = <ls_execution_step>-query_uuid.
+        <ls_step_2_upd>-run_uuid      = <ls_execution_step>-run_uuid.
+        <ls_step_2_upd>-step_status   = zpru_if_axc_type_and_constant=>sc_step_status-error.
+        <ls_step_2_upd>-end_timestamp = lv_now.
+        <ls_step_2_upd>-input_prompt  = lv_input_prompt.
+        <ls_step_2_upd>-output_prompt = lv_output_prompt.
+        <ls_step_2_upd>-control-step_status   = abap_true.
+        <ls_step_2_upd>-control-end_timestamp = abap_true.
+        <ls_step_2_upd>-control-input_prompt  = abap_true.
+        <ls_step_2_upd>-control-output_prompt = abap_true.
+
+        <ls_run_context>-execution_step-step_status = zpru_if_axc_type_and_constant=>sc_step_status-error.
+        <ls_run_context>-execution_step-end_timestamp = lv_now.
+        <ls_run_context>-execution_step-input_prompt = lv_input_prompt.
+        <ls_run_context>-execution_step-output_prompt = lv_output_prompt.
+
+        APPEND INITIAL LINE TO lt_query_update_imp ASSIGNING FIELD-SYMBOL(<ls_query_2_upd>).
+        <ls_query_2_upd>-query_uuid       = is_execution_query-query_uuid.
+        <ls_query_2_upd>-run_uuid         = is_execution_query-run_uuid.
+        <ls_query_2_upd>-execution_status = zpru_if_axc_type_and_constant=>sc_query_status-error.
+        <ls_query_2_upd>-end_timestamp    = lv_now.
+        <ls_query_2_upd>-control-execution_status = abap_true.
+        <ls_query_2_upd>-control-end_timestamp    = abap_true.
+
+        EXIT.
+      ENDIF.
+
+      APPEND INITIAL LINE TO lt_step_update_imp ASSIGNING <ls_step_2_upd>.
+      <ls_step_2_upd>-step_uuid     = <ls_execution_step>-step_uuid.
+      <ls_step_2_upd>-query_uuid    = <ls_execution_step>-query_uuid.
+      <ls_step_2_upd>-run_uuid      = <ls_execution_step>-run_uuid.
+      <ls_step_2_upd>-step_status   = zpru_if_axc_type_and_constant=>sc_step_status-complete.
+      <ls_step_2_upd>-end_timestamp = lv_now.
+      <ls_step_2_upd>-input_prompt  = lv_input_prompt.
+      <ls_step_2_upd>-output_prompt = lv_output_prompt.
+      <ls_step_2_upd>-control-step_status   = abap_true.
+      <ls_step_2_upd>-control-end_timestamp = abap_true.
+      <ls_step_2_upd>-control-input_prompt  = abap_true.
+      <ls_step_2_upd>-control-output_prompt = abap_true.
+
+      <ls_run_context>-execution_step-step_status = zpru_if_axc_type_and_constant=>sc_step_status-complete.
+      <ls_run_context>-execution_step-end_timestamp = lv_now.
+      <ls_run_context>-execution_step-input_prompt = lv_input_prompt.
+      <ls_run_context>-execution_step-output_prompt = lv_output_prompt.
+
+      IF lo_controller->mv_stop_agent = abap_true.
+        EXIT.
+      ENDIF.
+
+    ENDLOOP.
+
+    <ls_input_output>-run_context = lo_controller->mt_run_context.
+
+
+    DATA(lv_last_output) = lv_output_prompt.
+
+    TRY.
+        lo_last_output ?= zpru_cl_agent_service_mngr=>get_service(
+                              iv_service = `ZPRU_IF_PAYLOAD`
+                              iv_context = zpru_if_agent_frw=>cs_context-standard ).
+      CATCH zpru_cx_agent_core.
+        RAISE EXCEPTION NEW zpru_cx_agent_core( ).
+    ENDTRY.
+
+    lo_last_output->set_data( ir_data = NEW string( lv_last_output ) ).
+
+*    IF lt_message IS NOT INITIAL.
+*      lo_short_memory->save_message( it_message = lt_message ).
+*    ENDIF.
+
+    IF lt_step_update_imp IS NOT INITIAL.
+      lo_axc_service->update_step( EXPORTING it_step_update_imp = lt_step_update_imp
+                                   CHANGING  cs_reported        = cs_axc_reported
+                                             cs_failed          = cs_axc_failed ).
+    ENDIF.
+
+    IF lt_query_update_imp IS NOT INITIAL.
+      lo_axc_service->update_query( EXPORTING it_query_update_imp = lt_query_update_imp
+                                    CHANGING  cs_reported         = cs_axc_reported
+                                              cs_failed           = cs_axc_failed ).
+*    ELSE.
+*      lo_axc_service->rba_step( EXPORTING it_rba_step_k = VALUE #( ( query_uuid          = is_execution_query-query_uuid
+*                                                                     control-run_uuid    = abap_true
+*                                                                     control-query_uuid  = abap_true
+*                                                                     control-step_status = abap_true  ) )
+*                                IMPORTING et_axc_step   = DATA(lt_step_final_state)
+*                                CHANGING  cs_reported   = cs_axc_reported
+*                                          cs_failed     = cs_axc_failed ).
+*
+*      LOOP AT lt_step_final_state TRANSPORTING NO FIELDS WHERE step_status <> zpru_if_axc_type_and_constant=>sc_step_status-complete.
+*        EXIT.
+*      ENDLOOP.
+*      IF sy-subrc <> 0.
+*
+*        GET TIME STAMP FIELD lv_now.
+*
+*        APPEND INITIAL LINE TO lt_query_update_imp ASSIGNING <ls_query_2_upd>.
+*        <ls_query_2_upd>-query_uuid       = is_execution_query-query_uuid.
+*        <ls_query_2_upd>-run_uuid         = is_execution_query-run_uuid.
+*        <ls_query_2_upd>-execution_status = zpru_if_axc_type_and_constant=>sc_query_status-complete.
+*        <ls_query_2_upd>-end_timestamp    = lv_now.
+*        <ls_query_2_upd>-control-execution_status = abap_true.
+*        <ls_query_2_upd>-control-end_timestamp    = abap_true.
+
+*        CREATE OBJECT lo_decision_provider TYPE (is_agent-decision_provider).
+*
+*        TRY.
+*            eo_final_response ?= zpru_cl_agent_service_mngr=>get_service(
+*                                     iv_service = `ZPRU_IF_PAYLOAD`
+*                                     iv_context = zpru_if_agent_frw=>cs_context-standard ).
+*          CATCH zpru_cx_agent_core.
+*            RAISE EXCEPTION NEW zpru_cx_agent_core( ).
+*        ENDTRY.
+*
+*        lo_decision_provider->prepare_final_response( EXPORTING iv_run_uuid       = is_execution_query-run_uuid
+*                                                                iv_query_uuid     = is_execution_query-query_uuid
+*                                                                io_last_output    = lo_last_output
+*                                                      IMPORTING eo_final_response = eo_final_response
+*                                                      CHANGING  cs_axc_reported   = cs_axc_reported
+*                                                                cs_axc_failed     = cs_axc_failed
+*                                                                cs_adf_reported   = cs_adf_reported
+*                                                                cs_adf_failed     = cs_adf_failed   ).
+*        IF eo_final_response IS BOUND.
+*          <ls_query_2_upd>-output_response = eo_final_response->get_data( )->*.
+*          <ls_query_2_upd>-control-output_response = abap_true.
+*        ENDIF.
+
+*        lo_axc_service->update_query( EXPORTING it_query_update_imp = lt_query_update_imp
+*                                      CHANGING  cs_reported         = cs_axc_reported
+*                                                cs_failed           = cs_axc_failed ).
+*
+*        DATA(lv_final_response_message) = |\{ "USER": "{ sy-uname }", "TOPIC" : "FINAL_RESPONSE", "TIMESTAMP" : "{ lv_now }",| &&
+*                                       | "CONTENT" : "{ <ls_query_2_upd>-output_response }" \}|.
+*
+*        DATA(lv_last_number) = lines( lo_controller->mt_input_output ).
+*        ASSIGN lo_controller->mt_input_output[ number = lv_last_number ] TO <ls_input_output>.
+*        IF sy-subrc = 0.
+*          <ls_input_output>-output_response = lv_final_response_message.
+*        ENDIF.
+*
+*        lv_count += 1.
+*        APPEND INITIAL LINE TO lt_message ASSIGNING <ls_message>.
+*        <ls_message> = VALUE #(
+*            message_cid  = |{ lv_now }-{ sy-uname }-PROCESS_EXECUTION_STEPS_{ lv_count }|
+*            stage        = 'PROCESS_EXECUTION_STEPS'
+*            sub_stage    = |FINAL_RESPONSE|
+*            namespace    = |{ sy-uname }.{ is_agent-agent_name }.{ is_execution_header-run_id }.{ is_execution_query-query_number }|
+*            user_name    = sy-uname
+*            agent_uuid   = is_agent-agent_uuid
+*            run_uuid     = is_execution_query-run_uuid
+*            query_uuid   = is_execution_query-query_uuid
+*            message_time = lv_now
+*            content      = |\{ "RUN_ID" : "{ is_execution_header-run_id }", | &&
+*                           | "QUERY_NUMBER" : "{ is_execution_query-query_number }", | &&
+*                           | "FINAL_RESPONSE" : { lv_final_response_message }  \}|
+*            message_type = zpru_if_short_memory_provider=>cs_msg_type-step_output  ).
+*
+*        lo_short_memory->save_message( it_message = lt_message ).
+*
+*      ENDIF.
+    ENDIF.
+  ENDMETHOD.
+
 ENDCLASS.
