@@ -14,7 +14,7 @@ ENDCLASS.
 CLASS zpru_cl_nested_llm_schm_prvdr IMPLEMENTATION.
 
   METHOD zpru_if_tool_schema_provider~input_json_schema.
-
+ " check schema
   ENDMETHOD.
 
   METHOD zpru_if_tool_schema_provider~input_rtts_schema.
