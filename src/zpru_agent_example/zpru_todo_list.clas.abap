@@ -66,6 +66,9 @@ CLASS zpru_todo_list IMPLEMENTATION.
 
 *rework idea of input and output in a way that we have short_memory + long_memory + context(will gather during run) + small input + small output
 
+*DURING MINI LOOP WE CAN GET TOOLS IN EXECUTION WHICH HAS NO DEFINITION. TWO CASES( 1 BORROWED FROM ANOTHER DEFINITION 2 WITHOUT DEFINITION)
+
+
   ENDMETHOD.
 
 ENDCLASS.

@@ -14,8 +14,7 @@ CLASS zpru_cl_abap_executor DEFINITION
                 io_tool_schema_provider TYPE REF TO zpru_if_tool_schema_provider OPTIONAL
                 io_tool_info_provider   TYPE REF TO zpru_if_tool_info_provider   OPTIONAL
       EXPORTING eo_output               TYPE REF TO data
-                ev_error_flag           TYPE abap_boolean
-                ev_popping_agent        TYPE zpru_if_api_agent=>tv_agent_name.
+                ev_error_flag           TYPE abap_boolean.
 
   PRIVATE SECTION.
 ENDCLASS.
@@ -72,35 +71,12 @@ CLASS zpru_cl_abap_executor IMPLEMENTATION.
                                 io_tool_schema_provider = lo_tool_schema_provider
                                 io_tool_info_provider   = lo_tool_info_provider
                       IMPORTING eo_output               = lr_output
-                                ev_error_flag           = ev_error_flag
-                                ev_popping_agent       = DATA(lv_popping_agent) ).
+                                ev_error_flag           = ev_error_flag ).
 
     lo_util->convert_to_string( EXPORTING ir_abap   = lr_output
                                 CHANGING  cr_string = lv_output_json ).
 
-    IF lv_popping_agent IS NOT INITIAL.
-
-      TRY.
-          lo_popping_agent ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_UNIT_AGENT`
-                                                                       iv_context = zpru_if_agent_frw=>cs_context-standard ).
-        CATCH zpru_cx_agent_core.
-          " error
-          RETURN.
-      ENDTRY.
-
-      lo_popping_agent->execute_agent(
-        EXPORTING
-          iv_agent_name        = lv_popping_agent
-          iv_input_query       = lv_output_json
-          io_parent_controller = io_controller
-        IMPORTING
-          ev_final_response    = DATA(lv_popping_agent_response) ).
-
-      eo_response->set_data( NEW zpru_if_agent_frw=>ts_json( lv_output_json ) ).
-    ELSE.
-
-      eo_response->set_data( NEW zpru_if_agent_frw=>ts_json( lv_output_json ) ).
-    ENDIF.
+    eo_response->set_data( NEW zpru_if_agent_frw=>ts_json( lv_output_json ) ).
 
     ASSIGN io_controller->mt_run_context[ execution_step-step_uuid = is_execution_step-step_uuid ] TO FIELD-SYMBOL(<ls_current_run_context>).
     IF sy-subrc <> 0.
