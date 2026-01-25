@@ -15,7 +15,8 @@ CLASS zpru_cl_abap_executor DEFINITION
                 io_tool_info_provider   TYPE REF TO zpru_if_tool_info_provider   OPTIONAL
       EXPORTING eo_output               TYPE REF TO data
                 ev_error_flag           TYPE abap_boolean
-                et_additional_step      TYPE zpru_tt_additional_step.
+                et_additional_step      TYPE zpru_tt_additional_step
+      RAISING   zpru_cx_agent_core.
 
   PRIVATE SECTION.
 ENDCLASS.
@@ -31,19 +32,19 @@ CLASS zpru_cl_abap_executor IMPLEMENTATION.
     DATA lv_output_json          TYPE zpru_if_agent_frw=>ts_json.
     DATA lo_popping_agent TYPE REF TO zpru_if_unit_agent.
 
-    CLEAR:       et_additional_steps,
-      et_additional_tools.
+    CLEAR: et_additional_steps,
+           et_additional_tools.
     ev_error_flag = abap_false.
 
     CREATE OBJECT lo_tool_schema_provider TYPE (is_tool_master_data-tool_schema_provider).
     IF sy-subrc <> 0.
-      " error
+      ev_error_flag = abap_true.
       RETURN.
     ENDIF.
 
     CREATE OBJECT lo_tool_info_provider TYPE (is_tool_master_data-tool_info_provider).
     IF sy-subrc <> 0.
-      " error
+      ev_error_flag = abap_true.
       RETURN.
     ENDIF.
 
@@ -51,8 +52,7 @@ CLASS zpru_cl_abap_executor IMPLEMENTATION.
         lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
                                                             iv_context = zpru_if_agent_frw=>cs_context-standard ).
       CATCH zpru_cx_agent_core.
-        " error
-        RETURN.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
     ENDTRY.
 
     DATA(lo_structure_input) = lo_tool_schema_provider->input_rtts_schema( is_tool_master_data = is_tool_master_data
@@ -79,10 +79,16 @@ CLASS zpru_cl_abap_executor IMPLEMENTATION.
                                 ev_error_flag           = ev_error_flag
                                 et_additional_step      = DATA(lt_additional_step) ).
 
+    IF ev_error_flag = abap_true.
+      RETURN.
+    ENDIF.
+
     IF lt_additional_step IS NOT INITIAL.
-      validate_additional_steps(
+      prepare_additional_steps(
         EXPORTING
+          is_current_step    = is_execution_step
           it_step_4_validate = lt_additional_step
+          io_controller      = io_controller
         IMPORTING
           et_additional_steps = et_additional_steps
           et_additional_tools = et_additional_tools ).
@@ -95,11 +101,24 @@ CLASS zpru_cl_abap_executor IMPLEMENTATION.
 
     ASSIGN io_controller->mt_run_context[ execution_step-step_uuid = is_execution_step-step_uuid ] TO FIELD-SYMBOL(<ls_current_run_context>).
     IF sy-subrc <> 0.
-      " error
+      ev_error_flag = abap_true.
       RETURN.
     ENDIF.
+
+    DATA(ls_input_json_schema) = lo_tool_schema_provider->input_json_schema(
+      EXPORTING
+        is_tool_master_data = is_tool_master_data
+        is_execution_step   = is_execution_step ).
+
+    DATA(ls_output_json_schema) = lo_tool_schema_provider->output_json_schema(
+      EXPORTING
+        is_tool_master_data = is_tool_master_data
+        is_execution_step   = is_execution_step ).
+
     <ls_current_run_context>-abap_input_schema  = lo_structure_input.
+    <ls_current_run_context>-json_input_schema  = ls_input_json_schema.
     <ls_current_run_context>-abap_output_schema = lo_structure_output.
+    <ls_current_run_context>-json_output_schema = ls_output_json_schema.
     <ls_current_run_context>-abap_response      = lr_output.
     <ls_current_run_context>-json_response      = lv_output_json.
     <ls_current_run_context>-abap_request       = lr_input.

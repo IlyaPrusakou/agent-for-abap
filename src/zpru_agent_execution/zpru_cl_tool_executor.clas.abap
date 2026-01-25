@@ -7,31 +7,45 @@ CLASS zpru_cl_tool_executor DEFINITION
     INTERFACES zpru_if_tool_executor.
 
   PROTECTED SECTION.
-    METHODS validate_additional_steps
-      IMPORTING is_execution_step   TYPE zpru_if_axc_type_and_constant=>ts_axc_step
+    METHODS prepare_additional_steps
+      IMPORTING is_current_step     TYPE zpru_if_axc_type_and_constant=>ts_axc_step
                 it_step_4_validate  TYPE zpru_tt_additional_step
+                io_controller       TYPE REF TO zpru_if_agent_controller
       EXPORTING et_additional_steps TYPE zpru_if_axc_type_and_constant=>tt_axc_step
-                et_additional_tools TYPE zpru_if_adf_type_and_constant=>tt_agent_tool.
+                et_additional_tools TYPE zpru_if_adf_type_and_constant=>tt_agent_tool
+                    raising zpru_cx_agent_core.
 
   PRIVATE SECTION.
 ENDCLASS.
 
 
 CLASS zpru_cl_tool_executor IMPLEMENTATION.
-  METHOD validate_additional_steps.
-    DATA lo_axc_service TYPE REF TO zpru_if_axc_service.
-    DATA lo_adf_service TYPE REF TO zpru_if_adf_service.
+  METHOD prepare_additional_steps.
+    DATA lo_axc_service   TYPE REF TO zpru_if_axc_service.
+    DATA lo_adf_service   TYPE REF TO zpru_if_adf_service.
     DATA lo_adf_validator TYPE REF TO zpru_if_adf_validator.
+    DATA lt_message_in             TYPE zpru_if_short_memory_provider=>tt_message.
+    DATA lv_wrong_step_type TYPE abap_boolean.
+    DATA lv_wrong_tool_provider TYPE abap_boolean.
+    DATA lv_wrong_schema_provider TYPE abap_boolean.
+    DATA lv_wrong_info_provider TYPE abap_boolean.
+    DATA lv_wrong_agent_tool_comb TYPE abap_boolean.
+    DATA ls_last_step TYPE zpru_s_additional_step.
 
     CLEAR: et_additional_steps,
            et_additional_tools.
+
+    IF is_current_step IS INITIAL OR
+       it_step_4_validate IS INITIAL.
+      RETURN.
+    ENDIF.
 
     TRY.
         lo_axc_service ?= zpru_cl_agent_service_mngr=>get_service(
                               iv_service = `ZPRU_IF_AXC_SERVICE`
                               iv_context = zpru_if_agent_frw=>cs_context-standard ).
       CATCH zpru_cx_agent_core.
-
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
     ENDTRY.
 
     TRY.
@@ -39,7 +53,7 @@ CLASS zpru_cl_tool_executor IMPLEMENTATION.
                               iv_service = `ZPRU_IF_ADF_SERVICE`
                               iv_context = zpru_if_agent_frw=>cs_context-standard ).
       CATCH zpru_cx_agent_core.
-
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
     ENDTRY.
 
     TRY.
@@ -50,76 +64,120 @@ CLASS zpru_cl_tool_executor IMPLEMENTATION.
         RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
     ENDTRY.
 
-
     lo_adf_service->read_agent( EXPORTING it_agent_read_k = VALUE #( FOR <ls_a> IN it_step_4_validate
                                                                      ( agent_uuid         = <ls_a>-agentuuid
                                                                        control-agent_uuid = abap_true ) )
                                 IMPORTING et_agent        = DATA(lt_existing_agent) ).
 
+    lo_adf_service->read_agent( EXPORTING it_agent_read_k = VALUE #( ( agent_uuid = io_controller->mv_agent_uuid
+                                                                       control-agent_name = abap_true  ) )
+                                IMPORTING et_agent        = DATA(lt_current_agent) ).
+
+    DATA(ls_current_agent) = VALUE #( lt_current_agent[ 1 ] OPTIONAL ).
+
     lo_adf_service->read_tool( EXPORTING it_tool_read_k = VALUE #( FOR <ls_a2> IN it_step_4_validate
-                                                                   ( agent_uuid         = <ls_a2>-agentuuid
-                                                                     tool_uuid          = <ls_a2>-tooluuid
-                                                                     control-agent_uuid = abap_true
-                                                                     control-tool_uuid  = abap_true ) )
+                                                                   ( agent_uuid                   = <ls_a2>-agentuuid
+                                                                     tool_uuid                    = <ls_a2>-tooluuid
+                                                                     control-agent_uuid           = abap_true
+                                                                     control-tool_uuid            = abap_true
+                                                                     control-tool_name            = abap_true
+                                                                     control-tool_provider        = abap_true
+                                                                     control-step_type            = abap_true
+                                                                     control-tool_schema_provider = abap_true
+                                                                     control-tool_info_provider   = abap_true
+                                                                     control-is_borrowed          = abap_true
+                                                                     control-is_transient         = abap_true  ) )
                                IMPORTING et_tool        = DATA(lt_existing_tool) ).
+
+    lo_axc_service->read_header(
+      EXPORTING
+        it_head_read_k = VALUE #( ( run_uuid = is_current_step-run_uuid
+                                    control-run_id = abap_true ) )
+      IMPORTING
+        et_axc_head    = DATA(lt_current_run) ).
+
+    DATA(ls_current_run) = VALUE #( lt_current_run[ 1 ] OPTIONAL ).
+
+    lo_axc_service->read_query(
+      EXPORTING
+        it_query_read_k = VALUE #( ( query_uuid = is_current_step-query_uuid
+                                     control-query_number = abap_true ) )
+      IMPORTING
+        et_axc_query    = DATA(lt_current_query) ).
+
+    DATA(ls_current_query) = VALUE #( lt_current_query[ 1 ] OPTIONAL ).
 
     DATA(lo_elem) = CAST cl_abap_elemdescr( cl_abap_typedescr=>describe_by_name( 'ZPRU_DE_ADF_STEP_TYPE' ) ).
     DATA(lt_fixed_values) = lo_elem->get_ddic_fixed_values( ).
 
+    lv_wrong_step_type = abap_false.
+    lv_wrong_tool_provider = abap_false.
+    lv_wrong_schema_provider = abap_false.
+    lv_wrong_info_provider = abap_false.
+    lv_wrong_agent_tool_comb = abap_false.
+
     LOOP AT it_step_4_validate ASSIGNING FIELD-SYMBOL(<ls_step_4_validate>).
 
       IF line_exists( lt_fixed_values[ low = <ls_step_4_validate>-steptype ] ).
-        CONTINUE.
+        lv_wrong_step_type = abap_true.
+        ls_last_step = <ls_step_4_validate>.
+        EXIT.
       ENDIF.
 
-      lo_adf_validator->validate_provider_cls(
-        EXPORTING
-          iv_class            = <ls_step_4_validate>-toolprovider
-          iv_intf_2_be_impl_1 = 'ZPRU_IF_TOOL_PROVIDER'
-        IMPORTING
-          ev_type_not_exist   = DATA(lv_type_not_exist)
-          ev_type_not_class   = DATA(lv_type_not_class)
-          ev_intf_not_impl_1  = DATA(lv_intf_not_impl_1) ).
+      lo_adf_validator->validate_provider_cls( EXPORTING iv_class            = <ls_step_4_validate>-toolprovider
+                                                         iv_intf_2_be_impl_1 = 'ZPRU_IF_TOOL_PROVIDER'
+                                               IMPORTING ev_type_not_exist   = DATA(lv_type_not_exist)
+                                                         ev_type_not_class   = DATA(lv_type_not_class)
+                                                         ev_intf_not_impl_1  = DATA(lv_intf_not_impl_1) ).
 
-      IF lv_type_not_exist = abap_true OR
-         lv_type_not_class = abap_true OR
-         lv_intf_not_impl_1 = abap_true.
-        CONTINUE.
+      IF    lv_type_not_exist  = abap_true
+         OR lv_type_not_class  = abap_true
+         OR lv_intf_not_impl_1 = abap_true.
+        ls_last_step = <ls_step_4_validate>.
+        lv_wrong_tool_provider = abap_true.
+        EXIT.
       ENDIF.
 
-      lo_adf_validator->validate_provider_cls(
-        EXPORTING
-          iv_class            = <ls_step_4_validate>-toolprovider
-          iv_intf_2_be_impl_1 = 'ZPRU_IF_TOOL_SCHEMA_PROVIDER'
-        IMPORTING
-          ev_type_not_exist   = lv_type_not_exist
-          ev_type_not_class   = lv_type_not_class
-          ev_intf_not_impl_1  = lv_intf_not_impl_1 ).
+      lo_adf_validator->validate_provider_cls( EXPORTING iv_class            = <ls_step_4_validate>-toolschemaprovider
+                                                         iv_intf_2_be_impl_1 = 'ZPRU_IF_TOOL_SCHEMA_PROVIDER'
+                                               IMPORTING ev_type_not_exist   = lv_type_not_exist
+                                                         ev_type_not_class   = lv_type_not_class
+                                                         ev_intf_not_impl_1  = lv_intf_not_impl_1 ).
 
-      IF lv_type_not_exist = abap_true OR
-         lv_type_not_class = abap_true OR
-         lv_intf_not_impl_1 = abap_true.
-        CONTINUE.
+      IF    lv_type_not_exist  = abap_true
+         OR lv_type_not_class  = abap_true
+         OR lv_intf_not_impl_1 = abap_true.
+        ls_last_step = <ls_step_4_validate>.
+        lv_wrong_schema_provider = abap_true.
+        EXIT.
       ENDIF.
 
-      lo_adf_validator->validate_provider_cls(
-        EXPORTING
-          iv_class            = <ls_step_4_validate>-toolprovider
-          iv_intf_2_be_impl_1 = 'ZPRU_IF_TOOL_INFO_PROVIDER'
-        IMPORTING
-          ev_type_not_exist   = lv_type_not_exist
-          ev_type_not_class   = lv_type_not_class
-          ev_intf_not_impl_1  = lv_intf_not_impl_1 ).
+      lo_adf_validator->validate_provider_cls( EXPORTING iv_class            = <ls_step_4_validate>-toolinfoprovider
+                                                         iv_intf_2_be_impl_1 = 'ZPRU_IF_TOOL_INFO_PROVIDER'
+                                               IMPORTING ev_type_not_exist   = lv_type_not_exist
+                                                         ev_type_not_class   = lv_type_not_class
+                                                         ev_intf_not_impl_1  = lv_intf_not_impl_1 ).
 
-      IF lv_type_not_exist = abap_true OR
-         lv_type_not_class = abap_true OR
-         lv_intf_not_impl_1 = abap_true.
-        CONTINUE.
+      IF    lv_type_not_exist  = abap_true
+         OR lv_type_not_class  = abap_true
+         OR lv_intf_not_impl_1 = abap_true.
+        ls_last_step = <ls_step_4_validate>.
+        lv_wrong_info_provider = abap_true.
+        EXIT.
       ENDIF.
 
       TRY.
           ASSIGN lt_existing_agent[ agent_uuid = <ls_step_4_validate>-agentuuid ] TO FIELD-SYMBOL(<ls_existing_agent>).
           ASSIGN lt_existing_tool[ tool_uuid = <ls_step_4_validate>-tooluuid ] TO FIELD-SYMBOL(<ls_existing_tool>).
+
+          IF ( <ls_existing_agent> IS ASSIGNED AND
+               <ls_existing_tool> IS NOT ASSIGNED ) OR
+             ( <ls_existing_agent> IS NOT ASSIGNED AND
+               <ls_existing_tool>  IS ASSIGNED ).
+            ls_last_step = <ls_step_4_validate>.
+            lv_wrong_agent_tool_comb = abap_true.
+            EXIT.
+          ENDIF.
 
           APPEND INITIAL LINE TO et_additional_tools ASSIGNING FIELD-SYMBOL(<ls_additional_tool>).
 
@@ -131,7 +189,7 @@ CLASS zpru_cl_tool_executor IMPLEMENTATION.
             <ls_additional_tool>-tool_schema_provider = <ls_existing_tool>-tool_schema_provider.
             <ls_additional_tool>-tool_info_provider   = <ls_existing_tool>-tool_info_provider.
           ELSE.
-            DATA(lv_temp_tool_uuid)        = cl_system_uuid=>create_uuid_x16_static( ).
+            DATA(lv_temp_tool_uuid) = cl_system_uuid=>create_uuid_x16_static( ).
             <ls_additional_tool>-tool_uuid            = lv_temp_tool_uuid.
             <ls_additional_tool>-tool_name            = <ls_step_4_validate>-toolname.
             <ls_additional_tool>-tool_provider        = <ls_step_4_validate>-toolprovider.
@@ -141,10 +199,20 @@ CLASS zpru_cl_tool_executor IMPLEMENTATION.
           ENDIF.
 
           IF <ls_existing_agent> IS ASSIGNED.
-            <ls_additional_tool>-agent_uuid = <ls_step_4_validate>-agentuuid.
+            <ls_additional_tool>-agent_uuid = <ls_existing_agent>-agent_uuid.
           ELSE.
             DATA(lv_temp_agent_uuid) = cl_system_uuid=>create_uuid_x16_static( ).
             <ls_additional_tool>-agent_uuid = lv_temp_agent_uuid.
+          ENDIF.
+
+          IF <ls_existing_agent> IS NOT ASSIGNED AND
+             <ls_existing_tool> IS NOT ASSIGNED.
+            <ls_additional_tool>-is_transient = abap_true.
+          ENDIF.
+
+          IF <ls_existing_agent> IS ASSIGNED AND
+             <ls_existing_tool> IS ASSIGNED.
+            <ls_additional_tool>-is_borrowed = abap_true.
           ENDIF.
 
           APPEND INITIAL LINE TO et_additional_steps ASSIGNING FIELD-SYMBOL(<ls_additional_steps>).
@@ -152,18 +220,54 @@ CLASS zpru_cl_tool_executor IMPLEMENTATION.
           <ls_additional_steps>-step_uuid   = cl_system_uuid=>create_uuid_x16_static( ).
 
           <ls_additional_steps>-step_number = lo_axc_service->generate_step_number(
-                                                  iv_query_uuid = is_execution_step-query_uuid ).
-          <ls_additional_steps>-query_uuid  = is_execution_step-query_uuid.
-          <ls_additional_steps>-run_uuid    = is_execution_step-run_uuid.
+                                                  iv_query_uuid = is_current_step-query_uuid ).
+          <ls_additional_steps>-query_uuid  = is_current_step-query_uuid.
+          <ls_additional_steps>-run_uuid    = is_current_step-run_uuid.
           <ls_additional_steps>-tool_uuid   = <ls_additional_tool>-tool_uuid.
 
           CLEAR: lv_temp_tool_uuid,
                  lv_temp_agent_uuid.
 
         CATCH cx_uuid_error.
-          CONTINUE.
+          RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
       ENDTRY.
-
     ENDLOOP.
+
+    GET TIME STAMP FIELD DATA(lv_now).
+
+    IF lv_wrong_step_type      = abap_true OR
+       lv_wrong_tool_provider   = abap_true OR
+       lv_wrong_schema_provider = abap_true OR
+       lv_wrong_info_provider   = abap_true OR
+       lv_wrong_agent_tool_comb = abap_true .
+
+      DATA(lv_additional_error) = COND #( WHEN lv_wrong_step_type = abap_true
+                                          THEN |{ ls_last_step-toolname } has step type { ls_last_step-steptype } |
+                                          WHEN lv_wrong_tool_provider = abap_true
+                                          THEN |{ ls_last_step-toolname } has tool provider { ls_last_step-toolprovider }|
+                                          WHEN lv_wrong_schema_provider = abap_true
+                                          THEN |{ ls_last_step-toolname } has schema provider { ls_last_step-toolschemaprovider }|
+                                          WHEN lv_wrong_info_provider = abap_true
+                                          THEN |{ ls_last_step-toolname } has info provider { ls_last_step-toolinfoprovider }|
+                                          WHEN lv_wrong_agent_tool_comb = abap_true
+                                          THEN |Wrong combination of agent { ls_last_step-agentuuid } and tool { ls_last_step-tooluuid }| ).
+
+      lt_message_in = VALUE #( ( message_cid  = |{ lv_now }-{ sy-uname }-VALIDATE_ADDITIONAL_STEPS_{ is_current_step-step_uuid }|
+                                 stage        = 'VALIDATE_ADDITIONAL_STEPS'
+                                 sub_stage    = 'AFTER VALIDATION'
+                                 namespace    = |{ sy-uname }.{ ls_current_agent-agent_name }.{ ls_current_run-run_id }.{ ls_current_query-query_number }|
+                                 user_name    = sy-uname
+                                 agent_uuid   = ls_current_agent-agent_uuid
+                                 message_time = lv_now
+                                 content      = |\{ "AGENT_NAME" : "{ ls_current_agent-agent_name }", | &&
+                                                | "ADDITIONAL_STEP_ERROR" : "{ lv_additional_error }" \}|
+                                 message_type = zpru_if_short_memory_provider=>cs_msg_type-info ) ).
+      TRY.
+          io_controller->mo_short_memory->save_message( lt_message_in ).
+        CATCH zpru_cx_agent_core.
+          RETURN.
+      ENDTRY.
+    ENDIF.
+
   ENDMETHOD.
 ENDCLASS.

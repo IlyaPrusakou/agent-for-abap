@@ -11,6 +11,7 @@ INTERFACE zpru_if_abap_executor
       eo_response         TYPE REF TO zpru_if_payload
       ev_error_flag       TYPE abap_boolean
       et_additional_steps TYPE zpru_if_axc_type_and_constant=>tt_axc_step
-      et_additional_tools TYPE zpru_if_adf_type_and_constant=>tt_agent_tool.
+      et_additional_tools TYPE zpru_if_adf_type_and_constant=>tt_agent_tool
+        raising zpru_cx_agent_core.
 
 ENDINTERFACE.
