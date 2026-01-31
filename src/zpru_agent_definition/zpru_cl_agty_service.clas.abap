@@ -34,9 +34,14 @@ CLASS zpru_cl_agty_service DEFINITION
 
 ENDCLASS.
 
-CLASS zpru_cl_agty_service IMPLEMENTATION.
+
+
+CLASS ZPRU_CL_AGTY_SERVICE IMPLEMENTATION.
+
+
   METHOD zpru_if_agty_service~clean_up.
   ENDMETHOD.
+
 
   METHOD zpru_if_agty_service~create_agent_type.
     DATA ls_reported TYPE zpru_if_agent_frw=>ts_agty_bndl_reported.
@@ -125,6 +130,7 @@ CLASS zpru_cl_agty_service IMPLEMENTATION.
     ENDLOOP.
   ENDMETHOD.
 
+
   METHOD zpru_if_agty_service~delete_agent_type.
     DATA ls_reported TYPE zpru_if_agent_frw=>ts_agty_bndl_reported.
     DATA ls_failed   TYPE zpru_if_agent_frw=>ts_agty_bndl_failed.
@@ -168,11 +174,14 @@ CLASS zpru_cl_agty_service IMPLEMENTATION.
     ENDLOOP.
   ENDMETHOD.
 
+
   METHOD zpru_if_agty_service~determine.
   ENDMETHOD.
 
+
   METHOD zpru_if_agty_service~do_save.
   ENDMETHOD.
+
 
   METHOD zpru_if_agty_service~query_agent_type.
     CLEAR et_agty_k.
@@ -190,11 +199,12 @@ CLASS zpru_cl_agty_service IMPLEMENTATION.
       INTO TABLE @et_agty_k.
   ENDMETHOD.
 
+
   METHOD zpru_if_agty_service~read_agent_type.
     DATA ls_reported TYPE zpru_if_agent_frw=>ts_agty_bndl_reported.
     DATA ls_failed   TYPE zpru_if_agent_frw=>ts_agty_bndl_failed.
     DATA ls_out TYPE zpru_agent_type.
-    DATA lt_read_in TYPE TABLE FOR READ zr_pru_agent_type\\zrpruagenttype.
+    DATA lt_read_in TYPE TABLE FOR READ IMPORT zr_pru_agent_type\\ZrPruAgentType.
 
     CLEAR et_agty.
 
@@ -260,19 +270,20 @@ CLASS zpru_cl_agty_service IMPLEMENTATION.
 
     LOOP AT lt_result ASSIGNING FIELD-SYMBOL(<ls_res>).
         CLEAR ls_out.
-        ls_out-agent_type         = ls_res-agenttype.
-        ls_out-short_mem_volume   = ls_res-shortmemvolume.
-        ls_out-discard_strategy   = ls_res-discardstrategy.
-        ls_out-summary_strategy   = ls_res-summarystrategy.
-        ls_out-max_numb_loop      = ls_res-maxnumbloop.
-        ls_out-created_by         = ls_res-createdby .
-        ls_out-created_at         = ls_res-createdat .
-        ls_out-changed_by         = ls_res-changedby .
-        ls_out-last_changed       = ls_res-lastchanged .
-        ls_out-local_last_changed = ls_res-locallastchanged .
+        ls_out-agent_type         = <ls_res>-agenttype.
+        ls_out-short_mem_volume   = <ls_res>-shortmemvolume.
+        ls_out-discard_strategy   = <ls_res>-discardstrategy.
+        ls_out-summary_strategy   = <ls_res>-summarystrategy.
+        ls_out-max_numb_loop      = <ls_res>-maxnumbloop.
+        ls_out-created_by         = <ls_res>-createdby .
+        ls_out-created_at         = <ls_res>-createdat .
+        ls_out-changed_by         = <ls_res>-changedby .
+        ls_out-last_changed       = <ls_res>-lastchanged .
+        ls_out-local_last_changed = <ls_res>-locallastchanged .
         APPEND ls_out TO et_agty.
     ENDLOOP.
   ENDMETHOD.
+
 
   METHOD zpru_if_agty_service~update_agent_type.
     DATA ls_reported TYPE zpru_if_agent_frw=>ts_agty_bndl_reported.
@@ -344,7 +355,7 @@ CLASS zpru_cl_agty_service IMPLEMENTATION.
 
     MODIFY ENTITIES OF zr_pru_agent_type
            ENTITY zrpruagenttype
-           UPDATE WITH lt_update_in
+           UPDATE from lt_update_in
            FAILED DATA(ls_up_failed)
            REPORTED DATA(ls_up_reported).
 
@@ -362,8 +373,10 @@ CLASS zpru_cl_agty_service IMPLEMENTATION.
     ENDLOOP.
   ENDMETHOD.
 
+
   METHOD zpru_if_agty_service~validate.
   ENDMETHOD.
+
 
   METHOD precheck_create_agent_type.
     DATA lo_pre TYPE REF TO zpru_if_agty_precheck.
@@ -382,6 +395,7 @@ CLASS zpru_cl_agty_service IMPLEMENTATION.
                                                   cs_failed          = cs_failed ).
   ENDMETHOD.
 
+
   METHOD precheck_update_agent_type.
     DATA lo_pre TYPE REF TO zpru_if_agty_precheck.
 
@@ -398,6 +412,7 @@ CLASS zpru_cl_agty_service IMPLEMENTATION.
                                         CHANGING  cs_reported        = cs_reported
                                                   cs_failed          = cs_failed ).
   ENDMETHOD.
+
 
   METHOD precheck_delete_agent_type.
     DATA lo_pre TYPE REF TO zpru_if_agty_precheck.
@@ -416,6 +431,7 @@ CLASS zpru_cl_agty_service IMPLEMENTATION.
                                                   cs_failed          = cs_failed ).
   ENDMETHOD.
 
+
   METHOD precheck_read_agent_type.
     DATA lo_pre TYPE REF TO zpru_if_agty_precheck.
 
@@ -432,5 +448,4 @@ CLASS zpru_cl_agty_service IMPLEMENTATION.
                                       CHANGING  cs_reported    = cs_reported
                                                 cs_failed      = cs_failed ).
   ENDMETHOD.
-
 ENDCLASS.

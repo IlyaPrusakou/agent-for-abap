@@ -35,4 +35,6 @@ INTERFACE zpru_if_agent_controller
   DATA mo_long_memory       TYPE REF TO zpru_if_long_memory_provider.
   DATA mo_api_agent               TYPE REF TO zpru_cl_api_agent.
   DATA mt_input_output      TYPE tt_input_output.
+  DATA mv_max_number_of_loops TYPE i.
+    DATA mv_real_number_of_loops TYPE i.
 ENDINTERFACE.
