@@ -2100,6 +2100,7 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
     DATA lo_output           TYPE REF TO zpru_if_payload.
     DATA lo_last_output      TYPE REF TO zpru_if_payload.
     DATA lo_axc_service      TYPE REF TO zpru_if_axc_service.
+    DATA lo_agty_service      TYPE REF TO zpru_if_agty_service.
     DATA lt_query_update_imp TYPE zpru_if_axc_type_and_constant=>tt_query_update_imp.
     DATA lt_step_update_imp  TYPE zpru_if_axc_type_and_constant=>tt_step_update_imp.
     DATA lv_error_flag       TYPE abap_boolean.
@@ -2107,7 +2108,6 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
     DATA lv_input_prompt     TYPE string.
     DATA lv_output_prompt    TYPE string.
     DATA lo_short_memory     TYPE REF TO zpru_if_short_memory_provider.
-*    DATA lo_decision_provider TYPE REF TO zpru_if_decision_provider.
 
     TRY.
         lo_axc_service ?= zpru_cl_agent_service_mngr=>get_service(
@@ -2199,6 +2199,38 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
     ENDIF.
 
     <ls_input_output>-execution_steps = lt_step_before.
+
+
+    TRY.
+        lo_agty_service ?= zpru_cl_agent_service_mngr=>get_service(
+                              iv_service = `ZPRU_IF_AGTY_SERVICE`
+                              iv_context = zpru_if_agent_frw=>cs_context-standard ).
+      CATCH zpru_cx_agent_core.
+        RAISE EXCEPTION NEW zpru_cx_agent_core( ).
+    ENDTRY.
+
+    IF lo_controller->mv_max_number_of_loops IS INITIAL.
+      lo_agty_service->read_agent_type(
+        EXPORTING
+          it_agty_read_k = VALUE #( ( agent_type = is_agent-agent_type
+                                      control-max_numb_loop = abap_true ) )
+        IMPORTING
+          et_agty        = DATA(lt_agty) ).
+
+      DATA(lv_number_of_loops) = VALUE #( lt_agty[ 1 ]-max_numb_loop OPTIONAL ).
+      IF lv_number_of_loops IS INITIAL.
+        lv_number_of_loops = 4.
+      ENDIF.
+
+      lo_controller->mv_max_number_of_loops = lv_number_of_loops.
+    ENDIF.
+
+    lo_controller->mv_real_number_of_loops = lo_controller->mv_real_number_of_loops + 1.
+
+    IF lo_controller->mv_real_number_of_loops = lo_controller->mv_max_number_of_loops.
+      CLEAR: lo_controller->mv_real_number_of_loops.
+      RETURN.
+    ENDIF.
 
     DATA(lv_count) = 1.
     LOOP AT it_additional_steps ASSIGNING FIELD-SYMBOL(<ls_additional_step>).
