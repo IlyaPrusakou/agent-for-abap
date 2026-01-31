@@ -7,10 +7,6 @@ CLASS zpru_cl_axc_service DEFINITION
     INTERFACES zpru_if_axc_service.
 
   PROTECTED SECTION.
-    TYPES tt_axc_head  TYPE STANDARD TABLE OF zpru_axc_head WITH EMPTY KEY.
-    TYPES tt_axc_query TYPE STANDARD TABLE OF zpru_axc_query WITH EMPTY KEY.
-    TYPES tt_axc_step  TYPE STANDARD TABLE OF zpru_axc_step WITH EMPTY KEY.
-
     METHODS precheck_create_header
       IMPORTING it_head_create_imp TYPE zpru_if_axc_type_and_constant=>tt_head_create_imp
       EXPORTING et_entities        TYPE zpru_if_axc_type_and_constant=>tt_head_create_imp
@@ -95,10 +91,6 @@ CLASS zpru_cl_axc_service DEFINITION
       CHANGING  cs_reported        TYPE zpru_if_agent_frw=>ts_axc_reported
                 cs_failed          TYPE zpru_if_agent_frw=>ts_axc_failed.
 
-    METHODS fill_head_admin_fields
-      IMPORTING iv_during_create TYPE abap_boolean DEFAULT abap_false
-      CHANGING  cs_header        TYPE zpru_cl_axc_buffer=>ts_header.
-
     METHODS db_modify
       IMPORTING iv_do_commit    TYPE abap_boolean
       CHANGING  cs_reported     TYPE zpru_if_agent_frw=>ts_axc_reported
@@ -106,214 +98,16 @@ CLASS zpru_cl_axc_service DEFINITION
                 cs_mapped       TYPE zpru_if_agent_frw=>ts_axc_mapped
       RETURNING VALUE(rv_error) TYPE abap_boolean.
 
-    METHODS collect_changes
-      EXPORTING et_modify_head  TYPE tt_axc_head
-                et_modify_query TYPE tt_axc_query
-                et_modify_step  TYPE tt_axc_step
-                et_delete_head  TYPE tt_axc_head
-                et_delete_query TYPE tt_axc_query
-                et_delete_step  TYPE tt_axc_step.
-
-    METHODS cascade_deletes
-      CHANGING ct_delete_head  TYPE tt_axc_head
-               ct_delete_query TYPE tt_axc_query
-               ct_delete_step  TYPE tt_axc_step.
-
-    METHODS apply_db_changes
-      IMPORTING it_modify_head  TYPE tt_axc_head
-                it_modify_query TYPE tt_axc_query
-                it_modify_step  TYPE tt_axc_step
-                it_delete_head  TYPE tt_axc_head
-                it_delete_query TYPE tt_axc_query
-                it_delete_step  TYPE tt_axc_step
-      RETURNING VALUE(rv_error) TYPE abap_boolean.
-
 ENDCLASS.
 
 
 CLASS zpru_cl_axc_service IMPLEMENTATION.
-  METHOD fill_head_admin_fields.
-    GET TIME STAMP FIELD DATA(lv_now).
-
-    IF iv_during_create = abap_true.
-      cs_header-instance-created_by = COND #( WHEN cs_header-instance-created_by IS INITIAL
-                                              THEN sy-uname
-                                              ELSE cs_header-instance-created_by ).
-
-      cs_header-instance-created_at = COND #( WHEN cs_header-instance-created_at IS INITIAL
-                                              THEN lv_now
-                                              ELSE cs_header-instance-created_at ).
-    ENDIF.
-
-    cs_header-instance-changed_by   = COND #( WHEN cs_header-instance-changed_by IS INITIAL
-                                              THEN sy-uname
-                                              ELSE cs_header-instance-changed_by ).
-
-    cs_header-instance-last_changed = COND #( WHEN cs_header-instance-last_changed IS INITIAL
-                                              THEN lv_now
-                                              ELSE cs_header-instance-last_changed ).
-  ENDMETHOD.
-
   METHOD db_modify.
-    " TODO: parameter IV_DO_COMMIT is never used (ABAP cleaner)
-    " TODO: parameter CS_REPORTED is never used or assigned (ABAP cleaner)
-    " TODO: parameter CS_FAILED is never used or assigned (ABAP cleaner)
-    " TODO: parameter CS_MAPPED is never used or assigned (ABAP cleaner)
-
-    DATA lt_modify_head  TYPE tt_axc_head.
-    DATA lt_modify_query TYPE tt_axc_query.
-    DATA lt_modify_step  TYPE tt_axc_step.
-    DATA lt_delete_head  TYPE tt_axc_head.
-    DATA lt_delete_query TYPE tt_axc_query.
-    DATA lt_delete_step  TYPE tt_axc_step.
-
-    collect_changes( IMPORTING et_modify_head  = lt_modify_head
-                               et_modify_query = lt_modify_query
-                               et_modify_step  = lt_modify_step
-                               et_delete_head  = lt_delete_head
-                               et_delete_query = lt_delete_query
-                               et_delete_step  = lt_delete_step ).
-
-    cascade_deletes( CHANGING ct_delete_head  = lt_delete_head
-                              ct_delete_query = lt_delete_query
-                              ct_delete_step  = lt_delete_step ).
-
-    rv_error = apply_db_changes( it_modify_head  = lt_modify_head
-                                 it_modify_query = lt_modify_query
-                                 it_modify_step  = lt_modify_step
-                                 it_delete_head  = lt_delete_head
-                                 it_delete_query = lt_delete_query
-                                 it_delete_step  = lt_delete_step ).
-  ENDMETHOD.
-
-  METHOD collect_changes.
-    CLEAR: et_modify_head,
-           et_modify_query,
-           et_modify_step,
-           et_delete_head,
-           et_delete_query,
-           et_delete_step.
-
-    LOOP AT zpru_cl_axc_buffer=>step_buffer ASSIGNING FIELD-SYMBOL(<ls_s>) WHERE changed = abap_true.
-      IF <ls_s>-deleted = abap_true.
-        APPEND <ls_s>-instance TO et_delete_step.
-      ELSE.
-        APPEND <ls_s>-instance TO et_modify_step.
-      ENDIF.
-    ENDLOOP.
-
-    LOOP AT zpru_cl_axc_buffer=>query_buffer ASSIGNING FIELD-SYMBOL(<ls_q>) WHERE changed = abap_true.
-      IF <ls_q>-deleted = abap_true.
-        APPEND <ls_q>-instance TO et_delete_query.
-      ELSE.
-        APPEND <ls_q>-instance TO et_modify_query.
-      ENDIF.
-    ENDLOOP.
-
-    LOOP AT zpru_cl_axc_buffer=>header_buffer ASSIGNING FIELD-SYMBOL(<ls_h>) WHERE changed = abap_true.
-      IF <ls_h>-deleted = abap_true.
-        APPEND <ls_h>-instance TO et_delete_head.
-      ELSE.
-        APPEND <ls_h>-instance TO et_modify_head.
-      ENDIF.
-    ENDLOOP.
-  ENDMETHOD.
-
-  METHOD cascade_deletes.
-    " Cascade: if headers deleted, fetch their queries and steps
-    IF ct_delete_head IS NOT INITIAL.
-      DATA(lt_head_keys) = VALUE tt_axc_head( FOR <ls> IN ct_delete_head
-                                              ( run_uuid = <ls>-run_uuid ) ).
-
-      SELECT * FROM zpru_axc_query
-        FOR ALL ENTRIES IN @lt_head_keys
-        WHERE run_uuid = @lt_head_keys-run_uuid
-        INTO TABLE @DATA(lt_q_from_db).
-
-      IF sy-subrc = 0.
-        LOOP AT lt_q_from_db ASSIGNING FIELD-SYMBOL(<ls_qdb>).
-          IF NOT line_exists( ct_delete_query[ query_uuid = <ls_qdb>-query_uuid ] ).
-            APPEND <ls_qdb> TO ct_delete_query.
-          ENDIF.
-        ENDLOOP.
-      ENDIF.
-    ENDIF.
-
-    " Cascade: if queries deleted, fetch their steps
-    IF ct_delete_query IS NOT INITIAL.
-      DATA(lt_query_keys) = VALUE tt_axc_query( FOR <lq> IN ct_delete_query
-                                                ( query_uuid = <lq>-query_uuid ) ).
-
-      SELECT * FROM zpru_axc_step
-        FOR ALL ENTRIES IN @lt_query_keys
-        WHERE query_uuid = @lt_query_keys-query_uuid
-        INTO TABLE @DATA(lt_s_from_db).
-
-      IF sy-subrc = 0.
-        LOOP AT lt_s_from_db ASSIGNING FIELD-SYMBOL(<ls_sdb>).
-          IF NOT line_exists( ct_delete_step[ step_uuid = <ls_sdb>-step_uuid ] ).
-            APPEND <ls_sdb> TO ct_delete_step.
-          ENDIF.
-        ENDLOOP.
-      ENDIF.
-    ENDIF.
-  ENDMETHOD.
-
-  METHOD apply_db_changes.
+    " db_modify is kept for compatibility with do_save, but logic is now in CRUD methods via EML.
     rv_error = abap_false.
-
-    " Perform deletes first: steps -> queries -> headers
-    IF it_delete_step IS NOT INITIAL.
-      DELETE zpru_axc_step FROM TABLE @it_delete_step.
-      IF sy-subrc <> 0.
-        rv_error = abap_true.
-      ENDIF.
-    ENDIF.
-
-    IF rv_error = abap_false AND it_delete_query IS NOT INITIAL.
-      DELETE zpru_axc_query FROM TABLE @it_delete_query.
-      IF sy-subrc <> 0.
-        rv_error = abap_true.
-      ENDIF.
-    ENDIF.
-
-    IF rv_error = abap_false AND it_delete_head IS NOT INITIAL.
-      DELETE zpru_axc_head FROM TABLE @it_delete_head.
-      IF sy-subrc <> 0.
-        rv_error = abap_true.
-      ENDIF.
-    ENDIF.
-
-    " If any delete failed, return error
-    IF rv_error = abap_true.
-      RETURN.
-    ENDIF.
-
-    " Perform modifies/inserts: head -> query -> step
-    IF it_modify_head IS NOT INITIAL.
-      MODIFY zpru_axc_head FROM TABLE @it_modify_head.
-      IF sy-subrc <> 0.
-        rv_error = abap_true.
-        RETURN.
-      ENDIF.
-    ENDIF.
-
-    IF it_modify_query IS NOT INITIAL.
-      MODIFY zpru_axc_query FROM TABLE @it_modify_query.
-      IF sy-subrc <> 0.
-        rv_error = abap_true.
-        RETURN.
-      ENDIF.
-    ENDIF.
-
-    IF it_modify_step IS NOT INITIAL.
-      MODIFY zpru_axc_step FROM TABLE @it_modify_step.
-      IF sy-subrc <> 0.
-        rv_error = abap_true.
-        RETURN.
-      ENDIF.
-    ENDIF.
   ENDMETHOD.
+
+
 
   METHOD zpru_if_axc_service~cba_step.
     DATA lo_util TYPE REF TO zpru_if_agent_util.
@@ -883,97 +677,6 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     ENDLOOP.
   ENDMETHOD.
 
-  METHOD zpru_if_axc_service~delete_header.
-    DATA lt_fetched_query LIKE zpru_cl_axc_buffer=>query_buffer.
-    DATA lo_util          TYPE REF TO zpru_if_agent_util.
-
-    IF it_head_delete_imp IS INITIAL.
-      RETURN.
-    ENDIF.
-
-    TRY.
-        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
-                                                            iv_context = zpru_if_agent_frw=>cs_context-standard ).
-      CATCH zpru_cx_agent_core.
-        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
-    ENDTRY.
-
-    precheck_delete_header( EXPORTING it_head_delete_imp = it_head_delete_imp
-                            IMPORTING et_entities        = DATA(lt_entities)
-                            CHANGING  cs_reported        = cs_reported
-                                      cs_failed          = cs_failed ).
-
-    IF lt_entities IS INITIAL.
-      RETURN.
-    ENDIF.
-
-    zpru_cl_axc_buffer=>prep_header_buffer( VALUE #( FOR <ls_k>
-                                                     IN     lt_entities
-                                                     ( run_uuid = <ls_k>-run_uuid ) ) ).
-
-    zpru_cl_axc_buffer=>prep_query_buffer( VALUE #( FOR <ls_q>
-                                                    IN     lt_entities
-                                                    ( run_uuid = <ls_q>-run_uuid ) ) ).
-
-    LOOP AT lt_entities ASSIGNING FIELD-SYMBOL(<ls_prelim>).
-      LOOP AT zpru_cl_axc_buffer=>query_buffer ASSIGNING FIELD-SYMBOL(<ls_fq>) WHERE instance-run_uuid = <ls_prelim>-run_uuid.
-        APPEND INITIAL LINE TO lt_fetched_query ASSIGNING FIELD-SYMBOL(<ls_target_query>).
-        <ls_target_query> = <ls_fq>.
-      ENDLOOP.
-    ENDLOOP.
-
-    zpru_cl_axc_buffer=>prep_step_buffer( VALUE #( FOR <ls_s>
-                                                   IN lt_fetched_query
-                                                   ( query_uuid = <ls_s>-instance-query_uuid ) ) ).
-
-    LOOP AT lt_entities ASSIGNING FIELD-SYMBOL(<ls_delete>).
-
-      ASSIGN zpru_cl_axc_buffer=>header_buffer[ instance-run_uuid = <ls_delete>-run_uuid
-                                                deleted           = abap_false ] TO FIELD-SYMBOL(<ls_buffer>).
-      IF sy-subrc = 0.
-        <ls_buffer>-deleted = abap_true.
-        <ls_buffer>-changed = abap_true.
-
-        fill_head_admin_fields( EXPORTING iv_during_create = abap_false
-                                CHANGING  cs_header        = <ls_buffer> ).
-
-        APPEND VALUE #( msg      = lo_util->new_message(
-                                       iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                       iv_number   = `005`
-                                       iv_severity = zpru_if_agent_message=>sc_severity-success )
-                        run_uuid = <ls_delete>-run_uuid ) TO cs_reported-header.
-
-        LOOP AT zpru_cl_axc_buffer=>query_buffer ASSIGNING FIELD-SYMBOL(<ls_query_del>)
-             WHERE instance-run_uuid = <ls_delete>-run_uuid.
-          <ls_query_del>-changed = abap_true.
-          <ls_query_del>-deleted = abap_true.
-
-          LOOP AT zpru_cl_axc_buffer=>step_buffer ASSIGNING FIELD-SYMBOL(<ls_step_del>)
-               WHERE instance-query_uuid = <ls_query_del>-instance-query_uuid.
-            <ls_step_del>-changed = abap_true.
-            <ls_step_del>-deleted = abap_true.
-
-          ENDLOOP.
-        ENDLOOP.
-
-      ELSE.
-
-        APPEND VALUE #( run_uuid = <ls_delete>-run_uuid
-                        delete   = abap_true
-                        fail     = zpru_if_agent_frw=>cs_fail_cause-not_found )
-               TO cs_failed-header.
-
-        APPEND VALUE #( run_uuid = <ls_delete>-run_uuid
-                        delete   = abap_true
-                        msg      = lo_util->new_message(
-                                       iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                       iv_number   = `003`
-                                       iv_severity = zpru_if_agent_message=>sc_severity-error ) )
-               TO cs_reported-header.
-      ENDIF.
-    ENDLOOP.
-  ENDMETHOD.
-
   METHOD zpru_if_axc_service~lock.
   ENDMETHOD.
 
@@ -1319,185 +1022,179 @@ CLASS zpru_cl_axc_service IMPLEMENTATION.
     ENDLOOP.
   ENDMETHOD.
 
-  METHOD zpru_if_axc_service~update_header.
-    DATA lo_util TYPE REF TO zpru_if_agent_util.
-
-    IF it_head_update_imp IS INITIAL.
-      RETURN.
-    ENDIF.
-
-    precheck_update_header( EXPORTING it_head_update_imp = it_head_update_imp
-                            IMPORTING et_entities        = DATA(lt_entities)
-                            CHANGING  cs_reported        = cs_reported
-                                      cs_failed          = cs_failed ).
-
-    IF lt_entities IS INITIAL.
-      RETURN.
-    ENDIF.
-
-    TRY.
-        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
-                                                            iv_context = zpru_if_agent_frw=>cs_context-standard ).
-      CATCH zpru_cx_agent_core.
-        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
-    ENDTRY.
-
-    zpru_cl_axc_buffer=>prep_header_buffer( VALUE #( FOR <ls_k>
-                                                     IN     lt_entities
-                                                     ( run_uuid = <ls_k>-run_uuid ) ) ).
-
-    LOOP AT lt_entities ASSIGNING FIELD-SYMBOL(<ls_update>).
-
-      ASSIGN zpru_cl_axc_buffer=>header_buffer[ instance-run_uuid = <ls_update>-run_uuid
-                                                deleted           = abap_false ] TO FIELD-SYMBOL(<ls_buffer>).
-      IF sy-subrc = 0.
-        <ls_buffer>-instance-run_id          = COND #( WHEN <ls_update>-control-run_id = abap_true
-                                                       THEN <ls_update>-run_id
-                                                       ELSE <ls_buffer>-instance-run_id ).
-        <ls_buffer>-instance-agent_uuid      = COND #( WHEN <ls_update>-control-agent_uuid = abap_true
-                                                       THEN <ls_update>-agent_uuid
-                                                       ELSE <ls_buffer>-instance-agent_uuid ).
-        <ls_buffer>-instance-user_id         = COND #( WHEN <ls_update>-control-user_id = abap_true
-                                                       THEN <ls_update>-user_id
-                                                       ELSE <ls_buffer>-instance-user_id ).
-        <ls_buffer>-instance-start_timestamp = COND #( WHEN <ls_update>-control-start_timestamp = abap_true
-                                                       THEN <ls_update>-start_timestamp
-                                                       ELSE <ls_buffer>-instance-start_timestamp ).
-        <ls_buffer>-instance-end_timestamp   = COND #( WHEN <ls_update>-control-end_timestamp = abap_true
-                                                       THEN <ls_update>-end_timestamp
-                                                       ELSE <ls_buffer>-instance-end_timestamp ).
-        <ls_buffer>-instance-created_by      = COND #( WHEN <ls_update>-control-created_by = abap_true
-                                                       THEN <ls_update>-created_by
-                                                       ELSE <ls_buffer>-instance-created_by ).
-        <ls_buffer>-instance-created_at      = COND #( WHEN <ls_update>-control-created_at = abap_true
-                                                       THEN <ls_update>-created_at
-                                                       ELSE <ls_buffer>-instance-created_at ).
-        <ls_buffer>-instance-changed_by      = COND #( WHEN <ls_update>-control-changed_by = abap_true
-                                                       THEN <ls_update>-changed_by
-                                                       ELSE <ls_buffer>-instance-changed_by ).
-        <ls_buffer>-instance-last_changed    = COND #( WHEN <ls_update>-control-last_changed = abap_true
-                                                       THEN <ls_update>-last_changed
-                                                       ELSE <ls_buffer>-instance-last_changed ).
-        <ls_buffer>-changed = abap_true.
-        <ls_buffer>-deleted = abap_false.
-
-        fill_head_admin_fields( EXPORTING iv_during_create = abap_false
-                                CHANGING  cs_header        = <ls_buffer> ).
-
-      ELSE.
-
-        APPEND VALUE #( run_uuid = <ls_update>-run_uuid
-                        update   = abap_true
-                        fail     = zpru_if_agent_frw=>cs_fail_cause-not_found )
-               TO cs_failed-header.
-
-        APPEND VALUE #( run_uuid = <ls_update>-run_uuid
-                        update   = abap_true
-                        msg      = lo_util->new_message(
-                                       iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                       iv_number   = `012`
-                                       iv_severity = zpru_if_agent_message=>sc_severity-error
-                                       iv_v1       = <ls_update>-run_uuid ) )
-               TO cs_reported-header.
-      ENDIF.
-    ENDLOOP.
-  ENDMETHOD.
-
   METHOD zpru_if_axc_service~create_header.
-    DATA lo_util TYPE REF TO zpru_if_agent_util.
-
-    IF it_head_create_imp IS INITIAL.
-      RETURN.
-    ENDIF.
+    DATA ls_reported TYPE zpru_if_agent_frw=>ts_axc_reported.
+    DATA ls_failed   TYPE zpru_if_agent_frw=>ts_axc_failed.
+    DATA lt_create_in TYPE TABLE FOR CREATE zr_pru_axc_head.
 
     precheck_create_header( EXPORTING it_head_create_imp = it_head_create_imp
                             IMPORTING et_entities        = DATA(lt_entities)
-                            CHANGING  cs_reported        = cs_reported
-                                      cs_failed          = cs_failed ).
+                            CHANGING  cs_reported        = ls_reported
+                                      cs_failed          = ls_failed ).
 
-    IF lt_entities IS INITIAL.
+    cs_failed = CORRESPONDING #( DEEP ls_failed ).
+    cs_reported = CORRESPONDING #( DEEP ls_reported ).
+
+    IF    lt_entities       <> it_head_create_imp
+       OR ls_failed-header IS NOT INITIAL.
       RETURN.
     ENDIF.
 
-    TRY.
-        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
-                                                            iv_context = zpru_if_agent_frw=>cs_context-standard ).
-      CATCH zpru_cx_agent_core.
-        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
-    ENDTRY.
-
-    zpru_cl_axc_buffer=>prep_header_buffer( VALUE #( FOR <ls_k>
-                                                     IN lt_entities
-                                                     ( run_uuid = <ls_k>-run_uuid ) ) ).
-
     LOOP AT lt_entities ASSIGNING FIELD-SYMBOL(<ls_create>).
+      APPEND INITIAL LINE TO lt_create_in ASSIGNING FIELD-SYMBOL(<ls_create_in>).
+      <ls_create_in>-runuuid        = <ls_create>-run_uuid.
+      <ls_create_in>-runid          = COND #( WHEN <ls_create>-control-run_id = abap_true THEN <ls_create>-run_id ).
+      <ls_create_in>-agentuuid      = COND #( WHEN <ls_create>-control-agent_uuid = abap_true THEN <ls_create>-agent_uuid ).
+      <ls_create_in>-userid         = COND #( WHEN <ls_create>-control-user_id    = abap_true THEN <ls_create>-user_id ).
+      <ls_create_in>-starttimestamp = COND #( WHEN <ls_create>-control-start_timestamp = abap_true THEN <ls_create>-start_timestamp ).
+      <ls_create_in>-endtimestamp   = COND #( WHEN <ls_create>-control-end_timestamp   = abap_true THEN <ls_create>-end_timestamp ).
+      <ls_create_in>-createdby      = COND #( WHEN <ls_create>-control-created_by      = abap_true THEN <ls_create>-created_by ).
+      <ls_create_in>-createdat      = COND #( WHEN <ls_create>-control-created_at      = abap_true THEN <ls_create>-created_at ).
+      <ls_create_in>-changedby      = COND #( WHEN <ls_create>-control-changed_by      = abap_true THEN <ls_create>-changed_by ).
+      <ls_create_in>-lastchanged    = COND #( WHEN <ls_create>-control-last_changed    = abap_true THEN <ls_create>-last_changed ).
+      <ls_create_in>-locallastchanged = COND #( WHEN <ls_create>-control-local_last_changed = abap_true THEN <ls_create>-local_last_changed ).
 
-      IF    NOT line_exists( zpru_cl_axc_buffer=>header_buffer[ instance-run_uuid = <ls_create>-run_uuid ] )
-         OR     line_exists( zpru_cl_axc_buffer=>header_buffer[ instance-run_uuid = <ls_create>-run_uuid
-                                                                deleted           = abap_true ] ).
+      <ls_create_in>-%control-runid          = COND #( WHEN <ls_create>-control-run_id          = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_create_in>-%control-agentuuid      = COND #( WHEN <ls_create>-control-agent_uuid      = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_create_in>-%control-userid         = COND #( WHEN <ls_create>-control-user_id         = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_create_in>-%control-starttimestamp = COND #( WHEN <ls_create>-control-start_timestamp = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_create_in>-%control-endtimestamp   = COND #( WHEN <ls_create>-control-end_timestamp   = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_create_in>-%control-createdby      = COND #( WHEN <ls_create>-control-created_by      = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_create_in>-%control-createdat      = COND #( WHEN <ls_create>-control-created_at      = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_create_in>-%control-changedby      = COND #( WHEN <ls_create>-control-changed_by      = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_create_in>-%control-lastchanged    = COND #( WHEN <ls_create>-control-last_changed    = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_create_in>-%control-locallastchanged = COND #( WHEN <ls_create>-control-local_last_changed = abap_true THEN if_abap_behv=>mk-on ).
+    ENDLOOP.
 
-        ASSIGN zpru_cl_axc_buffer=>header_buffer[ instance-run_uuid = <ls_create>-run_uuid
-                                                  deleted           = abap_false ] TO FIELD-SYMBOL(<ls_buffer>).
-        IF sy-subrc = 0.
-          DELETE zpru_cl_axc_buffer=>header_buffer
-                 WHERE     instance-run_uuid = <ls_buffer>-instance-run_uuid
-                       AND deleted           = abap_true.
-        ENDIF.
+    MODIFY ENTITIES OF zr_pru_axc_head
+           ENTITY executionHeader
+           CREATE AUTO FILL CID WITH lt_create_in
+           MAPPED DATA(ls_mapped_eml)
+           FAILED DATA(ls_failed_eml)
+           REPORTED DATA(ls_reported_eml).
 
-        APPEND VALUE #(
-            instance-run_uuid           = <ls_create>-run_uuid
-            instance-run_id             = COND #( WHEN <ls_create>-control-run_id = abap_true
-                                                  THEN <ls_create>-run_id )
-            instance-agent_uuid         = COND #( WHEN <ls_create>-control-agent_uuid = abap_true
-                                                  THEN <ls_create>-agent_uuid )
-            instance-user_id            = COND #( WHEN <ls_create>-control-user_id = abap_true
-                                                  THEN <ls_create>-user_id )
-            instance-start_timestamp    = COND #( WHEN <ls_create>-control-start_timestamp = abap_true
-                                                  THEN <ls_create>-start_timestamp )
-            instance-end_timestamp      = COND #( WHEN <ls_create>-control-end_timestamp = abap_true
-                                                  THEN <ls_create>-end_timestamp )
-            instance-created_by         = COND #( WHEN <ls_create>-control-created_by = abap_true
-                                                  THEN <ls_create>-created_by )
-            instance-created_at         = COND #( WHEN <ls_create>-control-created_at = abap_true
-                                                  THEN <ls_create>-created_at )
-            instance-changed_by         = COND #( WHEN <ls_create>-control-changed_by <> if_abap_behv=>mk-off
-                                                  THEN <ls_create>-changed_by )
-            instance-last_changed       = COND #( WHEN <ls_create>-control-last_changed = abap_true
-                                                  THEN <ls_create>-last_changed )
-            instance-local_last_changed = COND #( WHEN <ls_create>-control-local_last_changed = abap_true
-                                                  THEN <ls_create>-local_last_changed )
-            changed                     = abap_true
-            deleted                     = abap_false ) TO zpru_cl_axc_buffer=>header_buffer ASSIGNING FIELD-SYMBOL(<ls_just_added>).
+    LOOP AT ls_failed_eml-executionheader ASSIGNING FIELD-SYMBOL(<ls_failed_header>).
+      APPEND INITIAL LINE TO cs_failed-header ASSIGNING FIELD-SYMBOL(<ls_failed_target>).
+      <ls_failed_target>-run_uuid = <ls_failed_header>-runuuid.
+      <ls_failed_target>-fail     = CONV #( <ls_failed_header>-%fail-cause ).
+    ENDLOOP.
 
-        fill_head_admin_fields( EXPORTING iv_during_create = abap_true
-                                CHANGING  cs_header        = <ls_just_added> ).
+    LOOP AT ls_reported_eml-executionheader ASSIGNING FIELD-SYMBOL(<ls_reported_header>).
+      APPEND INITIAL LINE TO cs_reported-header ASSIGNING FIELD-SYMBOL(<ls_reported_header_target>).
+      <ls_reported_header_target>-run_uuid = <ls_reported_header>-runuuid.
+*      <ls_reported_header_target>-msg      = <ls_reported_header>-%msg.
+    ENDLOOP.
 
-        INSERT VALUE #( run_uuid = <ls_create>-run_uuid ) INTO TABLE cs_mapped-header.
+    LOOP AT ls_mapped_eml-executionheader ASSIGNING FIELD-SYMBOL(<ls_mapped_header>).
+      APPEND INITIAL LINE TO cs_mapped-header ASSIGNING FIELD-SYMBOL(<ls_mapped_header_target>).
+      <ls_mapped_header_target>-run_uuid = <ls_mapped_header>-runuuid.
+    ENDLOOP.
+  ENDMETHOD.
 
-        APPEND VALUE #( msg      = lo_util->new_message(
-                                       iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                       iv_number   = `001`
-                                       iv_severity = zpru_if_agent_message=>sc_severity-success
-                                       iv_v1       = <ls_create>-run_uuid )
-                        run_uuid = <ls_create>-run_uuid  ) TO cs_reported-header.
 
-      ELSE.
+  METHOD zpru_if_axc_service~update_header.
+    DATA ls_reported TYPE zpru_if_agent_frw=>ts_axc_reported.
+    DATA ls_failed   TYPE zpru_if_agent_frw=>ts_axc_failed.
+    DATA lt_update_in TYPE TABLE FOR UPDATE zr_pru_axc_head.
 
-        APPEND VALUE #( run_uuid = <ls_create>-run_uuid
-                        create   = abap_true
-                        fail     = zpru_if_agent_frw=>cs_fail_cause-conflict )
-               TO cs_failed-header.
+    precheck_update_header( EXPORTING it_head_update_imp = it_head_update_imp
+                            IMPORTING et_entities        = DATA(lt_entities)
+                            CHANGING  cs_reported        = ls_reported
+                                      cs_failed          = ls_failed ).
 
-        APPEND VALUE #( run_uuid = <ls_create>-run_uuid
-                        create   = abap_true
-                        msg      = lo_util->new_message(
-                                       iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                       iv_number   = `002`
-                                       iv_severity = zpru_if_agent_message=>sc_severity-error
-                                       iv_v1       = <ls_create>-run_uuid ) )
-               TO cs_reported-header.
+    cs_failed = CORRESPONDING #( DEEP ls_failed ).
+    cs_reported = CORRESPONDING #( DEEP ls_reported ).
 
-      ENDIF.
+    IF    lt_entities       <> it_head_update_imp
+       OR ls_failed-header IS NOT INITIAL.
+      RETURN.
+    ENDIF.
+
+    LOOP AT lt_entities ASSIGNING FIELD-SYMBOL(<ls_update>).
+      APPEND INITIAL LINE TO lt_update_in ASSIGNING FIELD-SYMBOL(<ls_update_in>).
+      <ls_update_in>-runuuid        = <ls_update>-run_uuid.
+      <ls_update_in>-runid          = COND #( WHEN <ls_update>-control-run_id = abap_true THEN <ls_update>-run_id ).
+      <ls_update_in>-agentuuid      = COND #( WHEN <ls_update>-control-agent_uuid = abap_true THEN <ls_update>-agent_uuid ).
+      <ls_update_in>-userid         = COND #( WHEN <ls_update>-control-user_id    = abap_true THEN <ls_update>-user_id ).
+      <ls_update_in>-starttimestamp = COND #( WHEN <ls_update>-control-start_timestamp = abap_true THEN <ls_update>-start_timestamp ).
+      <ls_update_in>-endtimestamp   = COND #( WHEN <ls_update>-control-end_timestamp   = abap_true THEN <ls_update>-end_timestamp ).
+      <ls_update_in>-createdby      = COND #( WHEN <ls_update>-control-created_by      = abap_true THEN <ls_update>-created_by ).
+      <ls_update_in>-createdat      = COND #( WHEN <ls_update>-control-created_at      = abap_true THEN <ls_update>-created_at ).
+      <ls_update_in>-changedby      = COND #( WHEN <ls_update>-control-changed_by      = abap_true THEN <ls_update>-changed_by ).
+      <ls_update_in>-lastchanged    = COND #( WHEN <ls_update>-control-last_changed    = abap_true THEN <ls_update>-last_changed ).
+      <ls_update_in>-locallastchanged = COND #( WHEN <ls_update>-control-local_last_changed = abap_true THEN <ls_update>-local_last_changed ).
+
+      <ls_update_in>-%control-runid          = COND #( WHEN <ls_update>-control-run_id          = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_update_in>-%control-agentuuid      = COND #( WHEN <ls_update>-control-agent_uuid      = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_update_in>-%control-userid         = COND #( WHEN <ls_update>-control-user_id         = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_update_in>-%control-starttimestamp = COND #( WHEN <ls_update>-control-start_timestamp = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_update_in>-%control-endtimestamp   = COND #( WHEN <ls_update>-control-end_timestamp   = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_update_in>-%control-createdby      = COND #( WHEN <ls_update>-control-created_by      = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_update_in>-%control-createdat      = COND #( WHEN <ls_update>-control-created_at      = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_update_in>-%control-changedby      = COND #( WHEN <ls_update>-control-changed_by      = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_update_in>-%control-lastchanged    = COND #( WHEN <ls_update>-control-last_changed    = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_update_in>-%control-locallastchanged = COND #( WHEN <ls_update>-control-local_last_changed = abap_true THEN if_abap_behv=>mk-on ).
+    ENDLOOP.
+
+    MODIFY ENTITIES OF zr_pru_axc_head
+           ENTITY executionHeader
+           UPDATE FROM lt_update_in
+           FAILED DATA(ls_failed_eml)
+           REPORTED DATA(ls_reported_eml).
+
+    LOOP AT ls_failed_eml-executionheader ASSIGNING FIELD-SYMBOL(<ls_failed_header>).
+      APPEND INITIAL LINE TO cs_failed-header ASSIGNING FIELD-SYMBOL(<ls_failed_header_target>).
+      <ls_failed_header_target>-run_uuid = <ls_failed_header>-runuuid.
+      <ls_failed_header_target>-fail     = CONV #( <ls_failed_header>-%fail-cause ).
+    ENDLOOP.
+
+    LOOP AT ls_reported_eml-executionheader ASSIGNING FIELD-SYMBOL(<ls_reported_header>).
+      APPEND INITIAL LINE TO cs_reported-header ASSIGNING FIELD-SYMBOL(<ls_reported_header_target>).
+      <ls_reported_header_target>-run_uuid = <ls_reported_header>-runuuid.
+*      <ls_reported_header_target>-msg      = <ls_reported_header>-%msg.
+    ENDLOOP.
+  ENDMETHOD.
+
+
+  METHOD zpru_if_axc_service~delete_header.
+    DATA ls_reported TYPE zpru_if_agent_frw=>ts_axc_reported.
+    DATA ls_failed   TYPE zpru_if_agent_frw=>ts_axc_failed.
+    DATA lt_delete_in TYPE TABLE FOR DELETE zr_pru_axc_head.
+
+    precheck_delete_header( EXPORTING it_head_delete_imp = it_head_delete_imp
+                            IMPORTING et_entities        = DATA(lt_entities)
+                            CHANGING  cs_reported        = ls_reported
+                                      cs_failed          = ls_failed ).
+
+    cs_failed = CORRESPONDING #( DEEP ls_failed ).
+    cs_reported = CORRESPONDING #( DEEP ls_reported ).
+
+    IF    lt_entities       <> it_head_delete_imp
+       OR ls_failed-header IS NOT INITIAL.
+      RETURN.
+    ENDIF.
+
+    LOOP AT lt_entities ASSIGNING FIELD-SYMBOL(<ls_delete>).
+      APPEND INITIAL LINE TO lt_delete_in ASSIGNING FIELD-SYMBOL(<ls_delete_in>).
+      <ls_delete_in>-runuuid = <ls_delete>-run_uuid.
+    ENDLOOP.
+
+    MODIFY ENTITIES OF zr_pru_axc_head
+           ENTITY executionHeader
+           DELETE FROM lt_delete_in
+           FAILED DATA(ls_failed_eml)
+           REPORTED DATA(ls_reported_eml).
+
+    LOOP AT ls_failed_eml-executionheader ASSIGNING FIELD-SYMBOL(<ls_failed_header>).
+      APPEND INITIAL LINE TO cs_failed-header ASSIGNING FIELD-SYMBOL(<ls_failed_header_target>).
+      <ls_failed_header_target>-run_uuid = <ls_failed_header>-runuuid.
+      <ls_failed_header_target>-fail     = CONV #( <ls_failed_header>-%fail-cause ).
+    ENDLOOP.
+
+    LOOP AT ls_reported_eml-executionheader ASSIGNING FIELD-SYMBOL(<ls_reported_header>).
+      APPEND INITIAL LINE TO cs_reported-header ASSIGNING FIELD-SYMBOL(<ls_reported_header_target>).
+      <ls_reported_header_target>-run_uuid = <ls_reported_header>-runuuid.
+*      <ls_reported_header_target>-msg      = <ls_reported_header>-%msg.
     ENDLOOP.
   ENDMETHOD.
 
