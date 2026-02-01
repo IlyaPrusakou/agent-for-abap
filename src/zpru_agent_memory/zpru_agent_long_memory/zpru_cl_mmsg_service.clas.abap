@@ -5,7 +5,6 @@ CLASS zpru_cl_mmsg_service DEFINITION
   PUBLIC SECTION.
     INTERFACES zpru_if_agent_frw.
     INTERFACES zpru_if_mmsg_service.
-ENDCLASS.
 
   PROTECTED SECTION.
     METHODS precheck_create_mmsg
