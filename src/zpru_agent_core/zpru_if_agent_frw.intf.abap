@@ -288,6 +288,45 @@ INTERFACE zpru_if_agent_frw
            step   TYPE tt_step_mapped,
          END OF ts_axc_mapped.
 
+  " MMSG (Memory Message) types
+  TYPES: BEGIN OF ts_mmsg_reported,
+           message_uuid TYPE sysuuid_x16,
+           msg          TYPE REF TO zpru_if_agent_message,
+           create       TYPE abap_boolean,
+           update       TYPE abap_boolean,
+           delete       TYPE abap_boolean,
+         END OF ts_mmsg_reported.
+
+  TYPES tt_mmsg_reported TYPE STANDARD TABLE OF ts_mmsg_reported WITH EMPTY KEY.
+
+  TYPES: BEGIN OF ts_mmsg_failed,
+           message_uuid TYPE sysuuid_x16,
+           fail         TYPE i,
+           create       TYPE abap_boolean,
+           update       TYPE abap_boolean,
+           delete       TYPE abap_boolean,
+         END OF ts_mmsg_failed.
+
+  TYPES tt_mmsg_failed TYPE STANDARD TABLE OF ts_mmsg_failed WITH EMPTY KEY.
+
+  TYPES: BEGIN OF ts_mmsg_mapped,
+           message_uuid TYPE sysuuid_x16,
+         END OF ts_mmsg_mapped.
+
+  TYPES tt_mmsg_mapped TYPE STANDARD TABLE OF ts_mmsg_mapped WITH EMPTY KEY.
+
+  TYPES: BEGIN OF ts_mmsg_bndl_reported,
+           mmsg TYPE tt_mmsg_reported,
+         END OF ts_mmsg_bndl_reported.
+
+  TYPES: BEGIN OF ts_mmsg_bndl_failed,
+           mmsg TYPE tt_mmsg_failed,
+         END OF ts_mmsg_bndl_failed.
+
+  TYPES: BEGIN OF ts_mmsg_bndl_mapped,
+           mmsg TYPE tt_mmsg_mapped,
+         END OF ts_mmsg_bndl_mapped.
+
   TYPES ts_json       TYPE string.
   TYPES tt_agent_tool TYPE STANDARD TABLE OF zpru_agent_tool WITH EMPTY KEY.
 
