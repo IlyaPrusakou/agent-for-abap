@@ -31,10 +31,11 @@ CLASS zpru_cl_agent_service_mngr IMPLEMENTATION.
     IF sy-subrc = 0.
       ls_service = <ls_agent_serv>.
     ELSE.
-      SELECT SINGLE * FROM zpru_agent_serv
+      SELECT SINGLE *
+      FROM zpru_agent_serv
       WHERE service = @iv_service AND
       context = @iv_context
-      INTO @ls_service.
+      INTO corRESPONDING FIELDS OF @ls_service.
       IF sy-subrc <> 0.
         RAISE EXCEPTION NEW zpru_cx_agent_core( ).
       ENDIF.

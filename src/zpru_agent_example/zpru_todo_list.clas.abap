@@ -69,6 +69,9 @@ CLASS zpru_todo_list IMPLEMENTATION.
 *DURING MINI LOOP WE CAN GET TOOLS IN EXECUTION WHICH HAS NO DEFINITION. TWO CASES( 1 BORROWED FROM ANOTHER DEFINITION 2 WITHOUT DEFINITION)
 
 * rename fields in db and structures without underscore
+* create structures for db tables - done
+* remove usage of data base table
+* create RAP service classes for all tables
 
 * add field to tool def table is_borrowed, is_transient - DONE
 * add field to query table decision_log - DONE
