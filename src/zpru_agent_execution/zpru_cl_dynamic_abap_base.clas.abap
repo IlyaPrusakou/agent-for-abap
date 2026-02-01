@@ -1,20 +1,18 @@
 CLASS zpru_cl_dynamic_abap_base DEFINITION
   PUBLIC
+  INHERITING FROM zpru_cl_dynamic_abap_processor
   CREATE PUBLIC.
 
   PUBLIC SECTION.
-    INTERFACES zpru_if_agent_frw.
-    INTERFACES zpru_if_dynamic_abap_processor.
-    INTERFACES zpru_if_tool_executor.
 
   PROTECTED SECTION.
-
+    METHODS process_dynamic_abap_int REDEFINITION.
   PRIVATE SECTION.
 ENDCLASS.
 
 
 CLASS zpru_cl_dynamic_abap_base IMPLEMENTATION.
-  METHOD zpru_if_dynamic_abap_processor~process_dynamic_abap.
+  METHOD process_dynamic_abap_int.
     DATA lt_params                 TYPE abap_parmbind_tab.
     DATA ls_param                  TYPE abap_parmbind.
     DATA lo_instance               TYPE REF TO object.
@@ -31,7 +29,7 @@ CLASS zpru_cl_dynamic_abap_base IMPLEMENTATION.
         RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
     ENDTRY.
 
-    lv_input = io_request->get_data( )->*.
+    lv_input = io_input->*.
 
     DATA(lv_invokation_metadata) = lo_util->search_node_in_json( iv_json           = lv_input
                                                                  iv_field_2_search = 'dynamic_tool' ).
@@ -143,9 +141,9 @@ CLASS zpru_cl_dynamic_abap_base IMPLEMENTATION.
                                                         iv_json_4_append  = lv_invokation_result_json
                                                         iv_json_target    = lv_input  ).
 
-      eo_response->set_data( ir_data = NEW string( lv_new_json ) ).
+      er_output = NEW string( lv_new_json ).
     ELSE.
-      eo_response->set_data( ir_data = NEW string( lv_input ) ).
+      er_output = NEW string( lv_input ).
     ENDIF.
   ENDMETHOD.
 ENDCLASS.
