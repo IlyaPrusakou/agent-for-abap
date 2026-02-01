@@ -65,10 +65,15 @@ CLASS zpru_todo_list IMPLEMENTATION.
 *cleanup dummy agent from technical methods like get_input_prompt and readme.
 
 *rework idea of input and output in a way that we have short_memory + long_memory + context(will gather during run) + small input + small output
+* rework dynamic tool execution according to new output and input approach
+* the same as above for example
 
 *DURING MINI LOOP WE CAN GET TOOLS IN EXECUTION WHICH HAS NO DEFINITION. TWO CASES( 1 BORROWED FROM ANOTHER DEFINITION 2 WITHOUT DEFINITION)
 
 * rename fields in db and structures without underscore
+* create structures for db tables - done
+* remove usage of data base table
+* create RAP service classes for all tables
 
 * add field to tool def table is_borrowed, is_transient - DONE
 * add field to query table decision_log - DONE

@@ -1,32 +1,35 @@
-CLASS zpru_cl_http_request_sender DEFINITION
+CLASS zpru_cl_dynamic_abap_processor DEFINITION
   PUBLIC
-INHERITING FROM zpru_cl_tool_executor ABSTRACT
+  INHERITING FROM zpru_cl_tool_executor ABSTRACT
   CREATE PUBLIC .
 
   PUBLIC SECTION.
 
-    INTERFACES zpru_if_http_request_sender .
+    INTERFACES zpru_if_dynamic_abap_processor .
   PROTECTED SECTION.
-    METHODS send_http_int
+
+      METHODS process_dynamic_abap_int
       ABSTRACT
       IMPORTING io_controller           TYPE REF TO zpru_if_agent_controller
                 io_input                TYPE REF TO data
                 io_tool_schema_provider TYPE REF TO zpru_if_tool_schema_provider OPTIONAL
-                io_tool_info_provider   TYPE REF TO zpru_if_tool_info_provider   OPTIONAL
-      EXPORTING eo_output               TYPE REF TO data
+                io_tool_info_provider   TYPE REF TO zpru_if_tool_info_provider OPTIONAL
+      EXPORTING er_output               TYPE REF TO data
                 ev_error_flag           TYPE abap_boolean
                 et_additional_step      TYPE zpru_tt_additional_step
       RAISING   zpru_cx_agent_core.
+
+
   PRIVATE SECTION.
 ENDCLASS.
 
 
 
-CLASS zpru_cl_http_request_sender IMPLEMENTATION.
+CLASS zpru_cl_dynamic_abap_processor IMPLEMENTATION.
 
 
-  METHOD zpru_if_http_request_sender~send_http.
-    DATA lo_tool_schema_provider TYPE REF TO zpru_if_tool_schema_provider.
+  METHOD zpru_if_dynamic_abap_processor~process_dynamic_abap.
+   DATA lo_tool_schema_provider TYPE REF TO zpru_if_tool_schema_provider.
     DATA lo_tool_info_provider   TYPE REF TO zpru_if_tool_info_provider.
     DATA lr_input                TYPE REF TO data.
     DATA lr_output               TYPE REF TO data.
@@ -54,16 +57,13 @@ CLASS zpru_cl_http_request_sender IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    send_http_int(
-      EXPORTING
-        io_controller           = io_controller
-        io_input                = lr_input
-        io_tool_schema_provider = lo_tool_schema_provider
-        io_tool_info_provider   = lo_tool_info_provider
-      IMPORTING
-        eo_output               = lr_output
-        ev_error_flag           = ev_error_flag
-        et_additional_step      = DATA(lt_additional_step) ).
+    process_dynamic_abap_int( EXPORTING io_controller           = io_controller
+                                    io_input                = lr_input
+                                    io_tool_schema_provider = lo_tool_schema_provider
+                                    io_tool_info_provider   = lo_tool_info_provider
+                          IMPORTING er_output               = lr_output
+                                    ev_error_flag           = ev_error_flag
+                                    et_additional_step      = DATA(lt_additional_step) ).
 
     IF ev_error_flag = abap_true.
       RETURN.
@@ -92,5 +92,6 @@ CLASS zpru_cl_http_request_sender IMPLEMENTATION.
       IMPORTING
         eo_response             = eo_response
         ev_error_flag           = ev_error_flag ).
+
   ENDMETHOD.
 ENDCLASS.
