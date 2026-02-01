@@ -7,6 +7,7 @@ CLASS zpru_cl_mmsg_precheck DEFINITION
     INTERFACES zpru_if_mmsg_precheck.
 ENDCLASS.
 
+
 CLASS zpru_cl_mmsg_precheck IMPLEMENTATION.
   METHOD zpru_if_mmsg_precheck~precheck_create_mmsg.
     DATA ls_line TYPE zpru_if_mmsg_crud=>ts_mmsg_create_imp.
@@ -33,10 +34,10 @@ CLASS zpru_cl_mmsg_precheck IMPLEMENTATION.
         APPEND INITIAL LINE TO cs_reported-mmsg ASSIGNING FIELD-SYMBOL(<ls_mmsg_reported>).
         <ls_mmsg_reported>-message_uuid = ls_line-message_uuid.
         <ls_mmsg_reported>-create       = abap_true.
-        <ls_mmsg_reported>-msg        = lo_util->new_message(
-                                             iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_definition
-                                             iv_number   = `001`
-                                             iv_severity = zpru_if_agent_message=>sc_severity-error ).
+        <ls_mmsg_reported>-msg          = lo_util->new_message(
+                                              iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_definition
+                                              iv_number   = `001`
+                                              iv_severity = zpru_if_agent_message=>sc_severity-error ).
         CONTINUE.
       ENDIF.
 

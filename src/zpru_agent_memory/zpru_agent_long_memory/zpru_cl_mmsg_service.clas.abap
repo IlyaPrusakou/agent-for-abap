@@ -33,67 +33,80 @@ CLASS zpru_cl_mmsg_service DEFINITION
 
 ENDCLASS.
 
+
 CLASS zpru_cl_mmsg_service IMPLEMENTATION.
   METHOD zpru_if_mmsg_service~clean_up.
   ENDMETHOD.
 
   METHOD zpru_if_mmsg_service~create_mmsg.
-    DATA ls_reported TYPE zpru_if_agent_frw=>ts_mmsg_bndl_reported.
-    DATA ls_failed   TYPE zpru_if_agent_frw=>ts_mmsg_bndl_failed.
-    DATA lt_create_in TYPE TABLE FOR CREATE ZR_PRU_MEM_MSG\\ZrPruMemMsg.
+    DATA ls_reported  TYPE zpru_if_agent_frw=>ts_mmsg_bndl_reported.
+    DATA ls_failed    TYPE zpru_if_agent_frw=>ts_mmsg_bndl_failed.
+    DATA lt_create_in TYPE TABLE FOR CREATE zr_pru_mem_msg\\ZrPruMemMsg.
 
     precheck_create_mmsg( EXPORTING it_mmsg_create_imp = it_mmsg_create_imp
-                             IMPORTING et_entities        = DATA(lt_entities)
-                             CHANGING  cs_reported        = ls_reported
-                                       cs_failed          = ls_failed ).
+                          IMPORTING et_entities        = DATA(lt_entities)
+                          CHANGING  cs_reported        = ls_reported
+                                    cs_failed          = ls_failed ).
 
     cs_failed = CORRESPONDING #( DEEP ls_failed ).
     cs_reported = CORRESPONDING #( DEEP ls_reported ).
 
-    IF    lt_entities          <> it_mmsg_create_imp
+    IF    lt_entities    <> it_mmsg_create_imp
        OR ls_failed-mmsg IS NOT INITIAL.
       RETURN.
     ENDIF.
 
     LOOP AT lt_entities ASSIGNING FIELD-SYMBOL(<ls_create>).
       APPEND INITIAL LINE TO lt_create_in ASSIGNING FIELD-SYMBOL(<ls_create_in>).
-      <ls_create_in>-%cid = <ls_create>-message_uuid.
+      <ls_create_in>-%cid        = <ls_create>-message_uuid.
       <ls_create_in>-MessageUUID = <ls_create>-message_uuid.
-      <ls_create_in>-Content = COND #( WHEN <ls_create>-control-content = abap_true THEN <ls_create>-content ).
+      <ls_create_in>-Content     = COND #( WHEN <ls_create>-control-content = abap_true THEN <ls_create>-content ).
       <ls_create_in>-%control-Content = COND #( WHEN <ls_create>-control-content = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_create_in>-MessageType = COND #( WHEN <ls_create>-control-message_type = abap_true THEN <ls_create>-message_type ).
-      <ls_create_in>-%control-MessageType = COND #( WHEN <ls_create>-control-message_type = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_create_in>-MessageType = COND #( WHEN <ls_create>-control-message_type = abap_true
+                                           THEN <ls_create>-message_type ).
+      <ls_create_in>-%control-MessageType = COND #( WHEN <ls_create>-control-message_type = abap_true
+                                                    THEN if_abap_behv=>mk-on ).
       <ls_create_in>-MessageCid = COND #( WHEN <ls_create>-control-message_cid = abap_true THEN <ls_create>-message_cid ).
-      <ls_create_in>-%control-MessageCid = COND #( WHEN <ls_create>-control-message_cid = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_create_in>-%control-MessageCid = COND #( WHEN <ls_create>-control-message_cid = abap_true
+                                                   THEN if_abap_behv=>mk-on ).
       <ls_create_in>-Stage = COND #( WHEN <ls_create>-control-stage = abap_true THEN <ls_create>-stage ).
       <ls_create_in>-%control-Stage = COND #( WHEN <ls_create>-control-stage = abap_true THEN if_abap_behv=>mk-on ).
       <ls_create_in>-SubStage = COND #( WHEN <ls_create>-control-sub_stage = abap_true THEN <ls_create>-sub_stage ).
       <ls_create_in>-%control-SubStage = COND #( WHEN <ls_create>-control-sub_stage = abap_true THEN if_abap_behv=>mk-on ).
       <ls_create_in>-Namespace = COND #( WHEN <ls_create>-control-namespace = abap_true THEN <ls_create>-namespace ).
-      <ls_create_in>-%control-Namespace = COND #( WHEN <ls_create>-control-namespace = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_create_in>-%control-Namespace = COND #( WHEN <ls_create>-control-namespace = abap_true
+                                                  THEN if_abap_behv=>mk-on ).
       <ls_create_in>-UserName = COND #( WHEN <ls_create>-control-user_name = abap_true THEN <ls_create>-user_name ).
       <ls_create_in>-%control-UserName = COND #( WHEN <ls_create>-control-user_name = abap_true THEN if_abap_behv=>mk-on ).
       <ls_create_in>-AgentUUID = COND #( WHEN <ls_create>-control-agent_uuid = abap_true THEN <ls_create>-agent_uuid ).
-      <ls_create_in>-%control-AgentUUID = COND #( WHEN <ls_create>-control-agent_uuid = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_create_in>-%control-AgentUUID = COND #( WHEN <ls_create>-control-agent_uuid = abap_true
+                                                  THEN if_abap_behv=>mk-on ).
       <ls_create_in>-RunUUID = COND #( WHEN <ls_create>-control-run_uuid = abap_true THEN <ls_create>-run_uuid ).
       <ls_create_in>-%control-RunUUID = COND #( WHEN <ls_create>-control-run_uuid = abap_true THEN if_abap_behv=>mk-on ).
       <ls_create_in>-QueryUUID = COND #( WHEN <ls_create>-control-query_uuid = abap_true THEN <ls_create>-query_uuid ).
-      <ls_create_in>-%control-QueryUUID = COND #( WHEN <ls_create>-control-query_uuid = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_create_in>-%control-QueryUUID = COND #( WHEN <ls_create>-control-query_uuid = abap_true
+                                                  THEN if_abap_behv=>mk-on ).
       <ls_create_in>-StepUUID = COND #( WHEN <ls_create>-control-step_uuid = abap_true THEN <ls_create>-step_uuid ).
       <ls_create_in>-%control-StepUUID = COND #( WHEN <ls_create>-control-step_uuid = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_create_in>-MessageTime = COND #( WHEN <ls_create>-control-message_time = abap_true THEN <ls_create>-message_time ).
-      <ls_create_in>-%control-MessageTime = COND #( WHEN <ls_create>-control-message_time = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_create_in>-MessageTime = COND #( WHEN <ls_create>-control-message_time = abap_true
+                                           THEN <ls_create>-message_time ).
+      <ls_create_in>-%control-MessageTime = COND #( WHEN <ls_create>-control-message_time = abap_true
+                                                    THEN if_abap_behv=>mk-on ).
       <ls_create_in>-CreatedBy = COND #( WHEN <ls_create>-control-created_by = abap_true THEN <ls_create>-created_by ).
-      <ls_create_in>-%control-CreatedBy = COND #( WHEN <ls_create>-control-created_by = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_create_in>-%control-CreatedBy = COND #( WHEN <ls_create>-control-created_by = abap_true
+                                                  THEN if_abap_behv=>mk-on ).
       <ls_create_in>-CreatedAt = COND #( WHEN <ls_create>-control-created_at = abap_true THEN <ls_create>-created_at ).
-      <ls_create_in>-%control-CreatedAt = COND #( WHEN <ls_create>-control-created_at = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_create_in>-%control-CreatedAt = COND #( WHEN <ls_create>-control-created_at = abap_true
+                                                  THEN if_abap_behv=>mk-on ).
       <ls_create_in>-ChangedBy = COND #( WHEN <ls_create>-control-changed_by = abap_true THEN <ls_create>-changed_by ).
-      <ls_create_in>-%control-ChangedBy = COND #( WHEN <ls_create>-control-changed_by = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_create_in>-%control-ChangedBy = COND #( WHEN <ls_create>-control-changed_by = abap_true
+                                                  THEN if_abap_behv=>mk-on ).
       <ls_create_in>-ChangedAt = COND #( WHEN <ls_create>-control-changed_at = abap_true THEN <ls_create>-changed_at ).
-      <ls_create_in>-%control-ChangedAt = COND #( WHEN <ls_create>-control-changed_at = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_create_in>-%control-ChangedAt = COND #( WHEN <ls_create>-control-changed_at = abap_true
+                                                  THEN if_abap_behv=>mk-on ).
     ENDLOOP.
 
-    MODIFY ENTITIES OF ZR_PRU_MEM_MSG
+    MODIFY ENTITIES OF zr_pru_mem_msg
            ENTITY ZrPruMemMsg
            CREATE AUTO FILL CID WITH lt_create_in
            MAPPED DATA(ls_cr_mapped)
@@ -120,29 +133,29 @@ CLASS zpru_cl_mmsg_service IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD zpru_if_mmsg_service~delete_mmsg.
-    DATA ls_reported TYPE zpru_if_agent_frw=>ts_mmsg_bndl_reported.
-    DATA ls_failed   TYPE zpru_if_agent_frw=>ts_mmsg_bndl_failed.
-    DATA lt_delete_in TYPE TABLE FOR DELETE ZR_PRU_MEM_MSG\\ZrPruMemMsg.
+    DATA ls_reported  TYPE zpru_if_agent_frw=>ts_mmsg_bndl_reported.
+    DATA ls_failed    TYPE zpru_if_agent_frw=>ts_mmsg_bndl_failed.
+    DATA lt_delete_in TYPE TABLE FOR DELETE zr_pru_mem_msg\\ZrPruMemMsg.
 
     precheck_delete_mmsg( EXPORTING it_mmsg_delete_imp = it_mmsg_delete_imp
-                             IMPORTING et_entities        = DATA(lt_entities)
-                             CHANGING  cs_reported        = ls_reported
-                                       cs_failed          = ls_failed ).
+                          IMPORTING et_entities        = DATA(lt_entities)
+                          CHANGING  cs_reported        = ls_reported
+                                    cs_failed          = ls_failed ).
 
     cs_failed = CORRESPONDING #( DEEP ls_failed ).
     cs_reported = CORRESPONDING #( DEEP ls_reported ).
 
-    IF    lt_entities          <> it_mmsg_delete_imp
+    IF    lt_entities    <> it_mmsg_delete_imp
        OR ls_failed-mmsg IS NOT INITIAL.
       RETURN.
     ENDIF.
 
     LOOP AT lt_entities ASSIGNING FIELD-SYMBOL(<ls_delete>).
-       APPEND INITIAL LINE TO lt_delete_in ASSIGNING FIELD-SYMBOL(<ls_delete_in>).
-       <ls_delete_in>-MessageUUID = <ls_delete>-message_uuid.
+      APPEND INITIAL LINE TO lt_delete_in ASSIGNING FIELD-SYMBOL(<ls_delete_in>).
+      <ls_delete_in>-MessageUUID = <ls_delete>-message_uuid.
     ENDLOOP.
 
-    MODIFY ENTITIES OF ZR_PRU_MEM_MSG
+    MODIFY ENTITIES OF zr_pru_mem_msg
            ENTITY ZrPruMemMsg
            DELETE FROM lt_delete_in
            FAILED DATA(ls_del_failed)
@@ -188,8 +201,7 @@ CLASS zpru_cl_mmsg_service IMPLEMENTATION.
   METHOD zpru_if_mmsg_service~read_mmsg.
     DATA ls_reported TYPE zpru_if_agent_frw=>ts_mmsg_bndl_reported.
     DATA ls_failed   TYPE zpru_if_agent_frw=>ts_mmsg_bndl_failed.
-    DATA ls_out TYPE zpru_mem_msg.
-    DATA lt_read_in TYPE TABLE FOR READ IMPORT ZR_PRU_MEM_MSG\\ZrPruMemMsg.
+    DATA lt_read_in  TYPE TABLE FOR READ IMPORT zr_pru_mem_msg\\ZrPruMemMsg.
 
     CLEAR et_mmsg.
 
@@ -198,14 +210,14 @@ CLASS zpru_cl_mmsg_service IMPLEMENTATION.
     ENDIF.
 
     precheck_read_mmsg( EXPORTING it_mmsg_read_k = it_mmsg_read_k
-                           IMPORTING et_entities    = DATA(lt_entities)
-                           CHANGING  cs_reported    = ls_reported
-                                     cs_failed      = ls_failed ).
+                        IMPORTING et_entities    = DATA(lt_entities)
+                        CHANGING  cs_reported    = ls_reported
+                                  cs_failed      = ls_failed ).
 
     cs_failed = CORRESPONDING #( DEEP ls_failed ).
     cs_reported = CORRESPONDING #( DEEP ls_reported ).
 
-    IF    lt_entities       <> it_mmsg_read_k
+    IF    lt_entities    <> it_mmsg_read_k
        OR ls_failed-mmsg IS NOT INITIAL.
       RETURN.
     ENDIF.
@@ -214,25 +226,27 @@ CLASS zpru_cl_mmsg_service IMPLEMENTATION.
       APPEND INITIAL LINE TO lt_read_in ASSIGNING FIELD-SYMBOL(<ls_read_in>).
       <ls_read_in>-MessageUUID = <ls_req>-message_uuid.
 
-      <ls_read_in>-%control-Content = COND #( WHEN <ls_req>-control-content = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_read_in>-%control-MessageType = COND #( WHEN <ls_req>-control-message_type = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_read_in>-%control-MessageCid = COND #( WHEN <ls_req>-control-message_cid = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_read_in>-%control-Stage = COND #( WHEN <ls_req>-control-stage = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_read_in>-%control-SubStage = COND #( WHEN <ls_req>-control-sub_stage = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_read_in>-%control-Namespace = COND #( WHEN <ls_req>-control-namespace = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_read_in>-%control-UserName = COND #( WHEN <ls_req>-control-user_name = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_read_in>-%control-AgentUUID = COND #( WHEN <ls_req>-control-agent_uuid = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_read_in>-%control-RunUUID = COND #( WHEN <ls_req>-control-run_uuid = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_read_in>-%control-QueryUUID = COND #( WHEN <ls_req>-control-query_uuid = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_read_in>-%control-StepUUID = COND #( WHEN <ls_req>-control-step_uuid = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_read_in>-%control-MessageTime = COND #( WHEN <ls_req>-control-message_time = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_read_in>-%control-CreatedBy = COND #( WHEN <ls_req>-control-created_by = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_read_in>-%control-CreatedAt = COND #( WHEN <ls_req>-control-created_at = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_read_in>-%control-ChangedBy = COND #( WHEN <ls_req>-control-changed_by = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_read_in>-%control-ChangedAt = COND #( WHEN <ls_req>-control-changed_at = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_read_in>-%control-Content     = COND #( WHEN <ls_req>-control-content = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_read_in>-%control-MessageType = COND #( WHEN <ls_req>-control-message_type = abap_true
+                                                  THEN if_abap_behv=>mk-on ).
+      <ls_read_in>-%control-MessageCid  = COND #( WHEN <ls_req>-control-message_cid = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_read_in>-%control-Stage       = COND #( WHEN <ls_req>-control-stage = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_read_in>-%control-SubStage    = COND #( WHEN <ls_req>-control-sub_stage = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_read_in>-%control-Namespace   = COND #( WHEN <ls_req>-control-namespace = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_read_in>-%control-UserName    = COND #( WHEN <ls_req>-control-user_name = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_read_in>-%control-AgentUUID   = COND #( WHEN <ls_req>-control-agent_uuid = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_read_in>-%control-RunUUID     = COND #( WHEN <ls_req>-control-run_uuid = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_read_in>-%control-QueryUUID   = COND #( WHEN <ls_req>-control-query_uuid = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_read_in>-%control-StepUUID    = COND #( WHEN <ls_req>-control-step_uuid = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_read_in>-%control-MessageTime = COND #( WHEN <ls_req>-control-message_time = abap_true
+                                                  THEN if_abap_behv=>mk-on ).
+      <ls_read_in>-%control-CreatedBy   = COND #( WHEN <ls_req>-control-created_by = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_read_in>-%control-CreatedAt   = COND #( WHEN <ls_req>-control-created_at = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_read_in>-%control-ChangedBy   = COND #( WHEN <ls_req>-control-changed_by = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_read_in>-%control-ChangedAt   = COND #( WHEN <ls_req>-control-changed_at = abap_true THEN if_abap_behv=>mk-on ).
     ENDLOOP.
 
-    READ ENTITIES OF ZR_PRU_MEM_MSG
+    READ ENTITIES OF zr_pru_mem_msg
          ENTITY ZrPruMemMsg
          FROM lt_read_in
          RESULT DATA(lt_result)
@@ -273,19 +287,19 @@ CLASS zpru_cl_mmsg_service IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD zpru_if_mmsg_service~update_mmsg.
-    DATA ls_reported TYPE zpru_if_agent_frw=>ts_mmsg_bndl_reported.
-    DATA ls_failed   TYPE zpru_if_agent_frw=>ts_mmsg_bndl_failed.
-    DATA lt_update_in TYPE TABLE FOR UPDATE ZR_PRU_MEM_MSG\\ZrPruMemMsg.
+    DATA ls_reported  TYPE zpru_if_agent_frw=>ts_mmsg_bndl_reported.
+    DATA ls_failed    TYPE zpru_if_agent_frw=>ts_mmsg_bndl_failed.
+    DATA lt_update_in TYPE TABLE FOR UPDATE zr_pru_mem_msg\\ZrPruMemMsg.
 
     precheck_update_mmsg( EXPORTING it_mmsg_update_imp = it_mmsg_update_imp
-                             IMPORTING et_entities        = DATA(lt_entities)
-                             CHANGING  cs_reported        = ls_reported
-                                       cs_failed          = ls_failed ).
+                          IMPORTING et_entities        = DATA(lt_entities)
+                          CHANGING  cs_reported        = ls_reported
+                                    cs_failed          = ls_failed ).
 
     cs_failed = CORRESPONDING #( DEEP ls_failed ).
     cs_reported = CORRESPONDING #( DEEP ls_reported ).
 
-    IF    lt_entities          <> it_mmsg_update_imp
+    IF    lt_entities    <> it_mmsg_update_imp
        OR ls_failed-mmsg IS NOT INITIAL.
       RETURN.
     ENDIF.
@@ -294,43 +308,55 @@ CLASS zpru_cl_mmsg_service IMPLEMENTATION.
       APPEND INITIAL LINE TO lt_update_in ASSIGNING FIELD-SYMBOL(<ls_update_in>).
       <ls_update_in>-MessageUUID = <ls_update>-message_uuid.
 
-      <ls_update_in>-Content = COND #( WHEN <ls_update>-control-content = abap_true THEN <ls_update>-content ).
+      <ls_update_in>-Content     = COND #( WHEN <ls_update>-control-content = abap_true THEN <ls_update>-content ).
       <ls_update_in>-%control-Content = COND #( WHEN <ls_update>-control-content = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_update_in>-MessageType = COND #( WHEN <ls_update>-control-message_type = abap_true THEN <ls_update>-message_type ).
-      <ls_update_in>-%control-MessageType = COND #( WHEN <ls_update>-control-message_type = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_update_in>-MessageType = COND #( WHEN <ls_update>-control-message_type = abap_true
+                                           THEN <ls_update>-message_type ).
+      <ls_update_in>-%control-MessageType = COND #( WHEN <ls_update>-control-message_type = abap_true
+                                                    THEN if_abap_behv=>mk-on ).
       <ls_update_in>-MessageCid = COND #( WHEN <ls_update>-control-message_cid = abap_true THEN <ls_update>-message_cid ).
-      <ls_update_in>-%control-MessageCid = COND #( WHEN <ls_update>-control-message_cid = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_update_in>-%control-MessageCid = COND #( WHEN <ls_update>-control-message_cid = abap_true
+                                                   THEN if_abap_behv=>mk-on ).
       <ls_update_in>-Stage = COND #( WHEN <ls_update>-control-stage = abap_true THEN <ls_update>-stage ).
       <ls_update_in>-%control-Stage = COND #( WHEN <ls_update>-control-stage = abap_true THEN if_abap_behv=>mk-on ).
       <ls_update_in>-SubStage = COND #( WHEN <ls_update>-control-sub_stage = abap_true THEN <ls_update>-sub_stage ).
       <ls_update_in>-%control-SubStage = COND #( WHEN <ls_update>-control-sub_stage = abap_true THEN if_abap_behv=>mk-on ).
       <ls_update_in>-Namespace = COND #( WHEN <ls_update>-control-namespace = abap_true THEN <ls_update>-namespace ).
-      <ls_update_in>-%control-Namespace = COND #( WHEN <ls_update>-control-namespace = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_update_in>-%control-Namespace = COND #( WHEN <ls_update>-control-namespace = abap_true
+                                                  THEN if_abap_behv=>mk-on ).
       <ls_update_in>-UserName = COND #( WHEN <ls_update>-control-user_name = abap_true THEN <ls_update>-user_name ).
       <ls_update_in>-%control-UserName = COND #( WHEN <ls_update>-control-user_name = abap_true THEN if_abap_behv=>mk-on ).
       <ls_update_in>-AgentUUID = COND #( WHEN <ls_update>-control-agent_uuid = abap_true THEN <ls_update>-agent_uuid ).
-      <ls_update_in>-%control-AgentUUID = COND #( WHEN <ls_update>-control-agent_uuid = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_update_in>-%control-AgentUUID = COND #( WHEN <ls_update>-control-agent_uuid = abap_true
+                                                  THEN if_abap_behv=>mk-on ).
       <ls_update_in>-RunUUID = COND #( WHEN <ls_update>-control-run_uuid = abap_true THEN <ls_update>-run_uuid ).
       <ls_update_in>-%control-RunUUID = COND #( WHEN <ls_update>-control-run_uuid = abap_true THEN if_abap_behv=>mk-on ).
       <ls_update_in>-QueryUUID = COND #( WHEN <ls_update>-control-query_uuid = abap_true THEN <ls_update>-query_uuid ).
-      <ls_update_in>-%control-QueryUUID = COND #( WHEN <ls_update>-control-query_uuid = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_update_in>-%control-QueryUUID = COND #( WHEN <ls_update>-control-query_uuid = abap_true
+                                                  THEN if_abap_behv=>mk-on ).
       <ls_update_in>-StepUUID = COND #( WHEN <ls_update>-control-step_uuid = abap_true THEN <ls_update>-step_uuid ).
       <ls_update_in>-%control-StepUUID = COND #( WHEN <ls_update>-control-step_uuid = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_update_in>-MessageTime = COND #( WHEN <ls_update>-control-message_time = abap_true THEN <ls_update>-message_time ).
-      <ls_update_in>-%control-MessageTime = COND #( WHEN <ls_update>-control-message_time = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_update_in>-MessageTime = COND #( WHEN <ls_update>-control-message_time = abap_true
+                                           THEN <ls_update>-message_time ).
+      <ls_update_in>-%control-MessageTime = COND #( WHEN <ls_update>-control-message_time = abap_true
+                                                    THEN if_abap_behv=>mk-on ).
       <ls_update_in>-CreatedBy = COND #( WHEN <ls_update>-control-created_by = abap_true THEN <ls_update>-created_by ).
-      <ls_update_in>-%control-CreatedBy = COND #( WHEN <ls_update>-control-created_by = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_update_in>-%control-CreatedBy = COND #( WHEN <ls_update>-control-created_by = abap_true
+                                                  THEN if_abap_behv=>mk-on ).
       <ls_update_in>-CreatedAt = COND #( WHEN <ls_update>-control-created_at = abap_true THEN <ls_update>-created_at ).
-      <ls_update_in>-%control-CreatedAt = COND #( WHEN <ls_update>-control-created_at = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_update_in>-%control-CreatedAt = COND #( WHEN <ls_update>-control-created_at = abap_true
+                                                  THEN if_abap_behv=>mk-on ).
       <ls_update_in>-ChangedBy = COND #( WHEN <ls_update>-control-changed_by = abap_true THEN <ls_update>-changed_by ).
-      <ls_update_in>-%control-ChangedBy = COND #( WHEN <ls_update>-control-changed_by = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_update_in>-%control-ChangedBy = COND #( WHEN <ls_update>-control-changed_by = abap_true
+                                                  THEN if_abap_behv=>mk-on ).
       <ls_update_in>-ChangedAt = COND #( WHEN <ls_update>-control-changed_at = abap_true THEN <ls_update>-changed_at ).
-      <ls_update_in>-%control-ChangedAt = COND #( WHEN <ls_update>-control-changed_at = abap_true THEN if_abap_behv=>mk-on ).
+      <ls_update_in>-%control-ChangedAt = COND #( WHEN <ls_update>-control-changed_at = abap_true
+                                                  THEN if_abap_behv=>mk-on ).
     ENDLOOP.
 
-    MODIFY ENTITIES OF ZR_PRU_MEM_MSG
+    MODIFY ENTITIES OF zr_pru_mem_msg
            ENTITY ZrPruMemMsg
-           UPDATE from lt_update_in
+           UPDATE FROM lt_update_in
            FAILED DATA(ls_up_failed)
            REPORTED DATA(ls_up_reported).
 
@@ -355,67 +381,63 @@ CLASS zpru_cl_mmsg_service IMPLEMENTATION.
     DATA lo_pre TYPE REF TO zpru_if_mmsg_precheck.
 
     TRY.
-        lo_pre ?= zpru_cl_agent_service_mngr=>get_service(
-                      iv_service = `ZPRU_IF_MMSG_PRECHECK`
-                      iv_context = zpru_if_agent_frw=>cs_context-standard ).
+        lo_pre ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_MMSG_PRECHECK`
+                                                           iv_context = zpru_if_agent_frw=>cs_context-standard ).
       CATCH zpru_cx_agent_core.
         RETURN.
     ENDTRY.
 
     lo_pre->precheck_create_mmsg( EXPORTING it_mmsg_create_imp = it_mmsg_create_imp
-                                     IMPORTING et_entities        = et_entities
-                                     CHANGING  cs_reported        = cs_reported
-                                               cs_failed          = cs_failed ).
+                                  IMPORTING et_entities        = et_entities
+                                  CHANGING  cs_reported        = cs_reported
+                                            cs_failed          = cs_failed ).
   ENDMETHOD.
 
   METHOD precheck_delete_mmsg.
     DATA lo_pre TYPE REF TO zpru_if_mmsg_precheck.
 
     TRY.
-        lo_pre ?= zpru_cl_agent_service_mngr=>get_service(
-                      iv_service = `ZPRU_IF_MMSG_PRECHECK`
-                      iv_context = zpru_if_agent_frw=>cs_context-standard ).
+        lo_pre ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_MMSG_PRECHECK`
+                                                           iv_context = zpru_if_agent_frw=>cs_context-standard ).
       CATCH zpru_cx_agent_core.
         RETURN.
     ENDTRY.
 
     lo_pre->precheck_delete_mmsg( EXPORTING it_mmsg_delete_imp = it_mmsg_delete_imp
-                                     IMPORTING et_entities        = et_entities
-                                     CHANGING  cs_reported        = cs_reported
-                                               cs_failed          = cs_failed ).
+                                  IMPORTING et_entities        = et_entities
+                                  CHANGING  cs_reported        = cs_reported
+                                            cs_failed          = cs_failed ).
   ENDMETHOD.
 
   METHOD precheck_read_mmsg.
     DATA lo_pre TYPE REF TO zpru_if_mmsg_precheck.
 
     TRY.
-        lo_pre ?= zpru_cl_agent_service_mngr=>get_service(
-                      iv_service = `ZPRU_IF_MMSG_PRECHECK`
-                      iv_context = zpru_if_agent_frw=>cs_context-standard ).
+        lo_pre ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_MMSG_PRECHECK`
+                                                           iv_context = zpru_if_agent_frw=>cs_context-standard ).
       CATCH zpru_cx_agent_core.
         RETURN.
     ENDTRY.
 
     lo_pre->precheck_read_mmsg( EXPORTING it_mmsg_read_k = it_mmsg_read_k
-                                   IMPORTING et_entities    = et_entities
-                                   CHANGING  cs_reported    = cs_reported
-                                             cs_failed      = cs_failed ).
+                                IMPORTING et_entities    = et_entities
+                                CHANGING  cs_reported    = cs_reported
+                                          cs_failed      = cs_failed ).
   ENDMETHOD.
 
   METHOD precheck_update_mmsg.
     DATA lo_pre TYPE REF TO zpru_if_mmsg_precheck.
 
     TRY.
-        lo_pre ?= zpru_cl_agent_service_mngr=>get_service(
-                      iv_service = `ZPRU_IF_MMSG_PRECHECK`
-                      iv_context = zpru_if_agent_frw=>cs_context-standard ).
+        lo_pre ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_MMSG_PRECHECK`
+                                                           iv_context = zpru_if_agent_frw=>cs_context-standard ).
       CATCH zpru_cx_agent_core.
         RETURN.
     ENDTRY.
 
     lo_pre->precheck_update_mmsg( EXPORTING it_mmsg_update_imp = it_mmsg_update_imp
-                                     IMPORTING et_entities        = et_entities
-                                     CHANGING  cs_reported        = cs_reported
-                                               cs_failed          = cs_failed ).
+                                  IMPORTING et_entities        = et_entities
+                                  CHANGING  cs_reported        = cs_reported
+                                            cs_failed          = cs_failed ).
   ENDMETHOD.
 ENDCLASS.
