@@ -24,9 +24,86 @@ ENDCLASS.
 
 CLASS zpru_cl_long_memory_base IMPLEMENTATION.
   METHOD zpru_if_long_memory_provider~retrieve_summary.
+
+    DATA lo_msg_service TYPE REF TO zpru_if_msum_service.
+    DATA lo_util        TYPE REF TO zpru_if_agent_util.
+
+    TRY.
+        lo_msg_service ?= zpru_cl_agent_service_mngr=>get_service(
+                              iv_service = `ZPRU_IF_MSUM_SERVICE`
+                              iv_context = zpru_if_agent_frw=>cs_context-st_persistence_message ).
+
+        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = zpru_if_agent_frw=>cs_context-standard ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
+
+    lo_msg_service->read_msum( EXPORTING it_msum_read_k = it_msum_read_k
+                               IMPORTING et_msum        = DATA(lt_messages) ).
+
+    LOOP AT lt_messages ASSIGNING FIELD-SYMBOL(<ls_db_messages>).
+      APPEND INITIAL LINE TO et_mem_sum ASSIGNING FIELD-SYMBOL(<ls_target>).
+      <ls_target>-summaryuuid = <ls_db_messages>-summary_uuid.
+      <ls_target>-content     = lo_util->deserialize_xstring_2_json( <ls_db_messages>-content ).
+      <ls_target>-summarycid  = <ls_db_messages>-summary_cid.
+      <ls_target>-stage       = <ls_db_messages>-stage.
+      <ls_target>-substage    = <ls_db_messages>-sub_stage.
+      <ls_target>-namespace   = <ls_db_messages>-namespace.
+      <ls_target>-username    = <ls_db_messages>-user_name.
+      <ls_target>-agentuuid   = <ls_db_messages>-agent_uuid.
+      <ls_target>-runuuid     = <ls_db_messages>-run_uuid.
+      <ls_target>-queryuuid   = <ls_db_messages>-query_uuid.
+      <ls_target>-stepuuid    = <ls_db_messages>-step_uuid.
+      <ls_target>-messagetime = <ls_db_messages>-message_time.
+      <ls_target>-createdby   = <ls_db_messages>-created_by.
+      <ls_target>-createdat   = <ls_db_messages>-created_at.
+      <ls_target>-changedby   = <ls_db_messages>-changed_by.
+      <ls_target>-changedat   = <ls_db_messages>-changed_at.
+
+    ENDLOOP.
+
   ENDMETHOD.
 
   METHOD zpru_if_long_memory_provider~retrieve_message.
+    DATA lo_msg_service TYPE REF TO zpru_if_mmsg_service.
+    DATA lo_util        TYPE REF TO zpru_if_agent_util.
+
+    TRY.
+        lo_msg_service ?= zpru_cl_agent_service_mngr=>get_service(
+                              iv_service = `ZPRU_IF_MMSG_SERVICE`
+                              iv_context = zpru_if_agent_frw=>cs_context-st_persistence_message ).
+
+        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = zpru_if_agent_frw=>cs_context-standard ).
+      CATCH zpru_cx_agent_core.
+        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
+    ENDTRY.
+
+    lo_msg_service->read_mmsg( EXPORTING it_mmsg_read_k = it_mmsg_read_k
+                               IMPORTING et_mmsg        = DATA(lt_messages) ).
+
+    LOOP AT lt_messages ASSIGNING FIELD-SYMBOL(<ls_db_messages>).
+      APPEND INITIAL LINE TO et_mem_msg ASSIGNING FIELD-SYMBOL(<ls_target>).
+      <ls_target>-messageuuid = <ls_db_messages>-message_uuid.
+      <ls_target>-content     = lo_util->deserialize_xstring_2_json( <ls_db_messages>-content ).
+      <ls_target>-messagetype = <ls_db_messages>-message_type.
+      <ls_target>-messagecid  = <ls_db_messages>-message_cid.
+      <ls_target>-stage       = <ls_db_messages>-stage.
+      <ls_target>-substage    = <ls_db_messages>-sub_stage.
+      <ls_target>-namespace   = <ls_db_messages>-namespace.
+      <ls_target>-username    = <ls_db_messages>-user_name.
+      <ls_target>-agentuuid   = <ls_db_messages>-agent_uuid.
+      <ls_target>-runuuid     = <ls_db_messages>-run_uuid.
+      <ls_target>-queryuuid   = <ls_db_messages>-query_uuid.
+      <ls_target>-stepuuid    = <ls_db_messages>-step_uuid.
+      <ls_target>-messagetime = <ls_db_messages>-message_time.
+      <ls_target>-createdby   = <ls_db_messages>-created_by.
+      <ls_target>-createdat   = <ls_db_messages>-created_at.
+      <ls_target>-changedby   = <ls_db_messages>-changed_by.
+      <ls_target>-changedat   = <ls_db_messages>-changed_at.
+
+    ENDLOOP.
   ENDMETHOD.
 
   METHOD zpru_if_long_memory_provider~save_summary.
