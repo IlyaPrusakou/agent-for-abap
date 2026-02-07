@@ -1,7 +1,7 @@
 INTERFACE zpru_if_msum_crud
-  PUBLIC .
+  PUBLIC.
 
-  INTERFACES zpru_if_agent_frw .
+  INTERFACES zpru_if_agent_frw.
 
   TYPES: BEGIN OF ts_msum_control,
            summary_uuid TYPE abap_boolean,
@@ -28,8 +28,8 @@ INTERFACE zpru_if_msum_crud
 
   TYPES tt_msum_k TYPE STANDARD TABLE OF ts_msum_k WITH EMPTY KEY.
 
-  TYPES ts_msum        TYPE zpru_mem_sum.
-  TYPES tt_msum        TYPE STANDARD TABLE OF ts_msum WITH EMPTY KEY.
+  TYPES ts_msum   TYPE zpru_mem_sum.
+  TYPES tt_msum   TYPE STANDARD TABLE OF ts_msum WITH EMPTY KEY.
 
   TYPES: BEGIN OF ts_msum_create_imp.
            INCLUDE TYPE zpru_mem_sum.

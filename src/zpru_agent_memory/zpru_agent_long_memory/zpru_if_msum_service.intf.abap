@@ -1,7 +1,7 @@
 INTERFACE zpru_if_msum_service
-  PUBLIC .
+  PUBLIC.
 
-  INTERFACES zpru_if_agent_frw .
+  INTERFACES zpru_if_agent_frw.
 
   TYPES tt_summary_uuid TYPE RANGE OF sysuuid_x16.
   TYPES tt_agent_uuid   TYPE RANGE OF sysuuid_x16.
@@ -53,7 +53,7 @@ INTERFACE zpru_if_msum_service
              cs_mapped   TYPE zpru_if_agent_frw=>ts_msum_bndl_mapped   OPTIONAL.
 
   METHODS validate
-    IMPORTING it_check_msum_v TYPE zpru_if_msum_crud=>tt_msum_read_k OPTIONAL
+    IMPORTING it_check_msum_v TYPE zpru_if_msum_crud=>tt_msum_read_k        OPTIONAL
     CHANGING  cs_reported     TYPE zpru_if_agent_frw=>ts_msum_bndl_reported OPTIONAL
               cs_failed       TYPE zpru_if_agent_frw=>ts_msum_bndl_failed   OPTIONAL.
 
@@ -61,7 +61,7 @@ INTERFACE zpru_if_msum_service
     CHANGING cs_mapped TYPE zpru_if_agent_frw=>ts_msum_bndl_mapped OPTIONAL.
 
   METHODS do_save
-    IMPORTING iv_do_commit TYPE abap_boolean                              DEFAULT abap_true
+    IMPORTING iv_do_commit TYPE abap_boolean                             DEFAULT abap_true
     CHANGING  cs_reported  TYPE zpru_if_agent_frw=>ts_msum_bndl_reported OPTIONAL
               cs_failed    TYPE zpru_if_agent_frw=>ts_msum_bndl_failed   OPTIONAL
               cs_mapped    TYPE zpru_if_agent_frw=>ts_msum_bndl_mapped   OPTIONAL.

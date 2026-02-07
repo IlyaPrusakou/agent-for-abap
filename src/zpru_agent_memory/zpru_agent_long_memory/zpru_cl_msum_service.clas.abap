@@ -58,46 +58,46 @@ CLASS zpru_cl_msum_service IMPLEMENTATION.
 
     LOOP AT lt_entities ASSIGNING FIELD-SYMBOL(<ls_create>).
       APPEND INITIAL LINE TO lt_create_in ASSIGNING FIELD-SYMBOL(<ls_create_in>).
-      <ls_create_in>-%cid         = <ls_create>-summary_uuid.
-      <ls_create_in>-SummaryUUID  = <ls_create>-summary_uuid.
-      <ls_create_in>-Content      = COND #( WHEN <ls_create>-control-content = abap_true THEN <ls_create>-content ).
+      <ls_create_in>-%cid        = <ls_create>-summary_uuid.
+      <ls_create_in>-SummaryUUID = <ls_create>-summary_uuid.
+      <ls_create_in>-Content     = COND #( WHEN <ls_create>-control-content = abap_true THEN <ls_create>-content ).
       <ls_create_in>-%control-Content = COND #( WHEN <ls_create>-control-content = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_create_in>-SummaryCid   = COND #( WHEN <ls_create>-control-summary_cid = abap_true THEN <ls_create>-summary_cid ).
+      <ls_create_in>-SummaryCid = COND #( WHEN <ls_create>-control-summary_cid = abap_true THEN <ls_create>-summary_cid ).
       <ls_create_in>-%control-SummaryCid = COND #( WHEN <ls_create>-control-summary_cid = abap_true
                                                    THEN if_abap_behv=>mk-on ).
-      <ls_create_in>-Stage        = COND #( WHEN <ls_create>-control-stage = abap_true THEN <ls_create>-stage ).
+      <ls_create_in>-Stage = COND #( WHEN <ls_create>-control-stage = abap_true THEN <ls_create>-stage ).
       <ls_create_in>-%control-Stage = COND #( WHEN <ls_create>-control-stage = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_create_in>-SubStage     = COND #( WHEN <ls_create>-control-sub_stage = abap_true THEN <ls_create>-sub_stage ).
+      <ls_create_in>-SubStage = COND #( WHEN <ls_create>-control-sub_stage = abap_true THEN <ls_create>-sub_stage ).
       <ls_create_in>-%control-SubStage = COND #( WHEN <ls_create>-control-sub_stage = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_create_in>-Namespace    = COND #( WHEN <ls_create>-control-namespace = abap_true THEN <ls_create>-namespace ).
+      <ls_create_in>-Namespace = COND #( WHEN <ls_create>-control-namespace = abap_true THEN <ls_create>-namespace ).
       <ls_create_in>-%control-Namespace = COND #( WHEN <ls_create>-control-namespace = abap_true
                                                   THEN if_abap_behv=>mk-on ).
-      <ls_create_in>-UserName     = COND #( WHEN <ls_create>-control-user_name = abap_true THEN <ls_create>-user_name ).
+      <ls_create_in>-UserName = COND #( WHEN <ls_create>-control-user_name = abap_true THEN <ls_create>-user_name ).
       <ls_create_in>-%control-UserName = COND #( WHEN <ls_create>-control-user_name = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_create_in>-AgentUUID    = COND #( WHEN <ls_create>-control-agent_uuid = abap_true THEN <ls_create>-agent_uuid ).
+      <ls_create_in>-AgentUUID = COND #( WHEN <ls_create>-control-agent_uuid = abap_true THEN <ls_create>-agent_uuid ).
       <ls_create_in>-%control-AgentUUID = COND #( WHEN <ls_create>-control-agent_uuid = abap_true
                                                   THEN if_abap_behv=>mk-on ).
-      <ls_create_in>-RunUUID      = COND #( WHEN <ls_create>-control-run_uuid = abap_true THEN <ls_create>-run_uuid ).
+      <ls_create_in>-RunUUID = COND #( WHEN <ls_create>-control-run_uuid = abap_true THEN <ls_create>-run_uuid ).
       <ls_create_in>-%control-RunUUID = COND #( WHEN <ls_create>-control-run_uuid = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_create_in>-QueryUUID    = COND #( WHEN <ls_create>-control-query_uuid = abap_true THEN <ls_create>-query_uuid ).
+      <ls_create_in>-QueryUUID = COND #( WHEN <ls_create>-control-query_uuid = abap_true THEN <ls_create>-query_uuid ).
       <ls_create_in>-%control-QueryUUID = COND #( WHEN <ls_create>-control-query_uuid = abap_true
                                                   THEN if_abap_behv=>mk-on ).
-      <ls_create_in>-StepUUID     = COND #( WHEN <ls_create>-control-step_uuid = abap_true THEN <ls_create>-step_uuid ).
+      <ls_create_in>-StepUUID = COND #( WHEN <ls_create>-control-step_uuid = abap_true THEN <ls_create>-step_uuid ).
       <ls_create_in>-%control-StepUUID = COND #( WHEN <ls_create>-control-step_uuid = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_create_in>-MessageTime  = COND #( WHEN <ls_create>-control-message_time = abap_true
+      <ls_create_in>-MessageTime = COND #( WHEN <ls_create>-control-message_time = abap_true
                                            THEN <ls_create>-message_time ).
       <ls_create_in>-%control-MessageTime = COND #( WHEN <ls_create>-control-message_time = abap_true
                                                     THEN if_abap_behv=>mk-on ).
-      <ls_create_in>-CreatedBy    = COND #( WHEN <ls_create>-control-created_by = abap_true THEN <ls_create>-created_by ).
+      <ls_create_in>-CreatedBy = COND #( WHEN <ls_create>-control-created_by = abap_true THEN <ls_create>-created_by ).
       <ls_create_in>-%control-CreatedBy = COND #( WHEN <ls_create>-control-created_by = abap_true
                                                   THEN if_abap_behv=>mk-on ).
-      <ls_create_in>-CreatedAt    = COND #( WHEN <ls_create>-control-created_at = abap_true THEN <ls_create>-created_at ).
+      <ls_create_in>-CreatedAt = COND #( WHEN <ls_create>-control-created_at = abap_true THEN <ls_create>-created_at ).
       <ls_create_in>-%control-CreatedAt = COND #( WHEN <ls_create>-control-created_at = abap_true
                                                   THEN if_abap_behv=>mk-on ).
-      <ls_create_in>-ChangedBy    = COND #( WHEN <ls_create>-control-changed_by = abap_true THEN <ls_create>-changed_by ).
+      <ls_create_in>-ChangedBy = COND #( WHEN <ls_create>-control-changed_by = abap_true THEN <ls_create>-changed_by ).
       <ls_create_in>-%control-ChangedBy = COND #( WHEN <ls_create>-control-changed_by = abap_true
                                                   THEN if_abap_behv=>mk-on ).
-      <ls_create_in>-ChangedAt    = COND #( WHEN <ls_create>-control-changed_at = abap_true THEN <ls_create>-changed_at ).
+      <ls_create_in>-ChangedAt = COND #( WHEN <ls_create>-control-changed_at = abap_true THEN <ls_create>-changed_at ).
       <ls_create_in>-%control-ChangedAt = COND #( WHEN <ls_create>-control-changed_at = abap_true
                                                   THEN if_abap_behv=>mk-on ).
     ENDLOOP.
@@ -300,44 +300,44 @@ CLASS zpru_cl_msum_service IMPLEMENTATION.
       APPEND INITIAL LINE TO lt_update_in ASSIGNING FIELD-SYMBOL(<ls_update_in>).
       <ls_update_in>-SummaryUUID = <ls_update>-summary_uuid.
 
-      <ls_update_in>-Content      = COND #( WHEN <ls_update>-control-content = abap_true THEN <ls_update>-content ).
+      <ls_update_in>-Content     = COND #( WHEN <ls_update>-control-content = abap_true THEN <ls_update>-content ).
       <ls_update_in>-%control-Content = COND #( WHEN <ls_update>-control-content = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_update_in>-SummaryCid   = COND #( WHEN <ls_update>-control-summary_cid = abap_true THEN <ls_update>-summary_cid ).
+      <ls_update_in>-SummaryCid = COND #( WHEN <ls_update>-control-summary_cid = abap_true THEN <ls_update>-summary_cid ).
       <ls_update_in>-%control-SummaryCid = COND #( WHEN <ls_update>-control-summary_cid = abap_true
                                                    THEN if_abap_behv=>mk-on ).
-      <ls_update_in>-Stage        = COND #( WHEN <ls_update>-control-stage = abap_true THEN <ls_update>-stage ).
+      <ls_update_in>-Stage = COND #( WHEN <ls_update>-control-stage = abap_true THEN <ls_update>-stage ).
       <ls_update_in>-%control-Stage = COND #( WHEN <ls_update>-control-stage = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_update_in>-SubStage     = COND #( WHEN <ls_update>-control-sub_stage = abap_true THEN <ls_update>-sub_stage ).
+      <ls_update_in>-SubStage = COND #( WHEN <ls_update>-control-sub_stage = abap_true THEN <ls_update>-sub_stage ).
       <ls_update_in>-%control-SubStage = COND #( WHEN <ls_update>-control-sub_stage = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_update_in>-Namespace    = COND #( WHEN <ls_update>-control-namespace = abap_true THEN <ls_update>-namespace ).
+      <ls_update_in>-Namespace = COND #( WHEN <ls_update>-control-namespace = abap_true THEN <ls_update>-namespace ).
       <ls_update_in>-%control-Namespace = COND #( WHEN <ls_update>-control-namespace = abap_true
                                                   THEN if_abap_behv=>mk-on ).
-      <ls_update_in>-UserName     = COND #( WHEN <ls_update>-control-user_name = abap_true THEN <ls_update>-user_name ).
+      <ls_update_in>-UserName = COND #( WHEN <ls_update>-control-user_name = abap_true THEN <ls_update>-user_name ).
       <ls_update_in>-%control-UserName = COND #( WHEN <ls_update>-control-user_name = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_update_in>-AgentUUID    = COND #( WHEN <ls_update>-control-agent_uuid = abap_true THEN <ls_update>-agent_uuid ).
+      <ls_update_in>-AgentUUID = COND #( WHEN <ls_update>-control-agent_uuid = abap_true THEN <ls_update>-agent_uuid ).
       <ls_update_in>-%control-AgentUUID = COND #( WHEN <ls_update>-control-agent_uuid = abap_true
                                                   THEN if_abap_behv=>mk-on ).
-      <ls_update_in>-RunUUID      = COND #( WHEN <ls_update>-control-run_uuid = abap_true THEN <ls_update>-run_uuid ).
+      <ls_update_in>-RunUUID = COND #( WHEN <ls_update>-control-run_uuid = abap_true THEN <ls_update>-run_uuid ).
       <ls_update_in>-%control-RunUUID = COND #( WHEN <ls_update>-control-run_uuid = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_update_in>-QueryUUID    = COND #( WHEN <ls_update>-control-query_uuid = abap_true THEN <ls_update>-query_uuid ).
+      <ls_update_in>-QueryUUID = COND #( WHEN <ls_update>-control-query_uuid = abap_true THEN <ls_update>-query_uuid ).
       <ls_update_in>-%control-QueryUUID = COND #( WHEN <ls_update>-control-query_uuid = abap_true
                                                   THEN if_abap_behv=>mk-on ).
-      <ls_update_in>-StepUUID     = COND #( WHEN <ls_update>-control-step_uuid = abap_true THEN <ls_update>-step_uuid ).
+      <ls_update_in>-StepUUID = COND #( WHEN <ls_update>-control-step_uuid = abap_true THEN <ls_update>-step_uuid ).
       <ls_update_in>-%control-StepUUID = COND #( WHEN <ls_update>-control-step_uuid = abap_true THEN if_abap_behv=>mk-on ).
-      <ls_update_in>-MessageTime  = COND #( WHEN <ls_update>-control-message_time = abap_true
+      <ls_update_in>-MessageTime = COND #( WHEN <ls_update>-control-message_time = abap_true
                                            THEN <ls_update>-message_time ).
       <ls_update_in>-%control-MessageTime = COND #( WHEN <ls_update>-control-message_time = abap_true
                                                     THEN if_abap_behv=>mk-on ).
-      <ls_update_in>-CreatedBy    = COND #( WHEN <ls_update>-control-created_by = abap_true THEN <ls_update>-created_by ).
+      <ls_update_in>-CreatedBy = COND #( WHEN <ls_update>-control-created_by = abap_true THEN <ls_update>-created_by ).
       <ls_update_in>-%control-CreatedBy = COND #( WHEN <ls_update>-control-created_by = abap_true
                                                   THEN if_abap_behv=>mk-on ).
-      <ls_update_in>-CreatedAt    = COND #( WHEN <ls_update>-control-created_at = abap_true THEN <ls_update>-created_at ).
+      <ls_update_in>-CreatedAt = COND #( WHEN <ls_update>-control-created_at = abap_true THEN <ls_update>-created_at ).
       <ls_update_in>-%control-CreatedAt = COND #( WHEN <ls_update>-control-created_at = abap_true
                                                   THEN if_abap_behv=>mk-on ).
-      <ls_update_in>-ChangedBy    = COND #( WHEN <ls_update>-control-changed_by = abap_true THEN <ls_update>-changed_by ).
+      <ls_update_in>-ChangedBy = COND #( WHEN <ls_update>-control-changed_by = abap_true THEN <ls_update>-changed_by ).
       <ls_update_in>-%control-ChangedBy = COND #( WHEN <ls_update>-control-changed_by = abap_true
                                                   THEN if_abap_behv=>mk-on ).
-      <ls_update_in>-ChangedAt    = COND #( WHEN <ls_update>-control-changed_at = abap_true THEN <ls_update>-changed_at ).
+      <ls_update_in>-ChangedAt = COND #( WHEN <ls_update>-control-changed_at = abap_true THEN <ls_update>-changed_at ).
       <ls_update_in>-%control-ChangedAt = COND #( WHEN <ls_update>-control-changed_at = abap_true
                                                   THEN if_abap_behv=>mk-on ).
     ENDLOOP.
@@ -370,7 +370,7 @@ CLASS zpru_cl_msum_service IMPLEMENTATION.
 
     TRY.
         lo_pre ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_MSUM_PRECHECK`
-                                                            iv_context = zpru_if_agent_frw=>cs_context-standard ).
+                                                           iv_context = zpru_if_agent_frw=>cs_context-standard ).
       CATCH zpru_cx_agent_core.
         RETURN.
     ENDTRY.
@@ -386,7 +386,7 @@ CLASS zpru_cl_msum_service IMPLEMENTATION.
 
     TRY.
         lo_pre ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_MSUM_PRECHECK`
-                                                            iv_context = zpru_if_agent_frw=>cs_context-standard ).
+                                                           iv_context = zpru_if_agent_frw=>cs_context-standard ).
       CATCH zpru_cx_agent_core.
         RETURN.
     ENDTRY.
@@ -402,7 +402,7 @@ CLASS zpru_cl_msum_service IMPLEMENTATION.
 
     TRY.
         lo_pre ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_MSUM_PRECHECK`
-                                                            iv_context = zpru_if_agent_frw=>cs_context-standard ).
+                                                           iv_context = zpru_if_agent_frw=>cs_context-standard ).
       CATCH zpru_cx_agent_core.
         RETURN.
     ENDTRY.
@@ -418,7 +418,7 @@ CLASS zpru_cl_msum_service IMPLEMENTATION.
 
     TRY.
         lo_pre ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_MSUM_PRECHECK`
-                                                            iv_context = zpru_if_agent_frw=>cs_context-standard ).
+                                                           iv_context = zpru_if_agent_frw=>cs_context-standard ).
       CATCH zpru_cx_agent_core.
         RETURN.
     ENDTRY.
