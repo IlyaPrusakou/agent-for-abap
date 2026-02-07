@@ -170,7 +170,8 @@ CLASS zpru_cl_api_agent DEFINITION
     METHODS clear_internal_state.
 
     METHODS assign_controller_context
-      IMPORTING io_parent_controller TYPE REF TO zpru_if_agent_controller OPTIONAL.
+      IMPORTING io_parent_controller TYPE REF TO zpru_if_agent_controller OPTIONAL
+      RAISING   zpru_cx_agent_core.
 
     METHODS fetch_agent_configuration
       IMPORTING iv_agent_name TYPE zpru_if_api_agent=>tv_agent_name
@@ -206,7 +207,8 @@ CLASS zpru_cl_api_agent DEFINITION
     METHODS record_initialization_event
       IMPORTING is_agent        TYPE zpru_if_adf_type_and_constant=>ts_agent
                 it_tools        TYPE zpru_if_adf_type_and_constant=>tt_agent_tool
-                io_short_memory TYPE REF TO zpru_if_short_memory_provider.
+                io_short_memory TYPE REF TO zpru_if_short_memory_provider
+      RAISING   zpru_cx_agent_core.
 
     METHODS fetch_agent_definition_by_uuid
       IMPORTING iv_agent_uuid TYPE sysuuid_x16
@@ -220,15 +222,17 @@ CLASS zpru_cl_api_agent DEFINITION
       IMPORTING iv_input_query TYPE string.
 
     METHODS append_query_to_controller
-      IMPORTING iv_input_query TYPE string.
+      RAISING zpru_cx_agent_core.
 
     METHODS record_query_event
       IMPORTING is_agent        TYPE zpru_if_adf_type_and_constant=>ts_agent
-                io_short_memory TYPE REF TO zpru_if_short_memory_provider.
+                io_short_memory TYPE REF TO zpru_if_short_memory_provider
+      RAISING   zpru_cx_agent_core.
 
     METHODS initialize_run_controller
-      IMPORTING iv_agent_uuid     TYPE sysuuid_x16
-      RETURNING VALUE(ro_controller) TYPE REF TO zpru_if_agent_controller.
+      IMPORTING iv_agent_uuid        TYPE sysuuid_x16
+      RETURNING VALUE(ro_controller) TYPE REF TO zpru_if_agent_controller
+      RAISING   zpru_cx_agent_core.
 
     METHODS create_execution_header
       IMPORTING iv_agent_uuid       TYPE sysuuid_x16
@@ -268,7 +272,8 @@ CLASS zpru_cl_api_agent DEFINITION
                 iv_input_query      TYPE string
                 iv_decision_log_msg TYPE string
                 iv_stage            TYPE string
-                io_short_memory     TYPE REF TO zpru_if_short_memory_provider.
+                io_short_memory     TYPE REF TO zpru_if_short_memory_provider
+      RAISING   zpru_cx_agent_core.
 
   PRIVATE SECTION.
 
@@ -608,7 +613,7 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
 
     update_query_internal_state( iv_input_query ).
 
-    append_query_to_controller( iv_input_query ).
+    append_query_to_controller( ).
 
     prepare_memory_provider( EXPORTING iv_agent_uuid   = iv_agent_uuid
                              IMPORTING eo_short_memory = DATA(lo_short_memory)
@@ -634,8 +639,6 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
 
     fetch_agent_definition_by_uuid( EXPORTING iv_agent_uuid = iv_agent_uuid
                                     IMPORTING es_agent      = DATA(ls_agent)
-                                    " TODO: variable is assigned but never used (ABAP cleaner)
-                                              eo_service    = DATA(lo_adf_service)
                                     CHANGING  cs_reported   = cs_reported
                                               cs_failed     = cs_failed ).
 
@@ -2189,8 +2192,6 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD append_query_to_controller.
-    " TODO: parameter IV_INPUT_QUERY is never used (ABAP cleaner)
-
     DATA(lo_controller) = get_controller( ).
     DATA(lv_last_number) = lines( lo_controller->mt_input_output ).
     APPEND INITIAL LINE TO lo_controller->mt_input_output ASSIGNING FIELD-SYMBOL(<ls_input_output>).
@@ -2227,28 +2228,27 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
   METHOD create_execution_header.
     GET TIME STAMP FIELD DATA(lv_now).
     TRY.
-        es_execution_header = VALUE #(
-                                  run_uuid           = cl_system_uuid=>create_uuid_x16_static( )
-                                  run_id             = io_axc_service->generate_run_id( )
-                                  agent_uuid         = iv_agent_uuid
-                                  user_id            = sy-uname
-                                  start_timestamp    = lv_now
-                                  created_by         = sy-uname
-                                  created_at         = lv_now
-                                  changed_by         = sy-uname
-                                  last_changed       = lv_now
-                                  local_last_changed = lv_now
-                                  control            = VALUE #( run_uuid           = abap_true
-                                                                run_id             = abap_true
-                                                                agent_uuid         = abap_true
-                                                                user_id            = abap_true
-                                                                start_timestamp    = abap_true
-                                                                end_timestamp      = abap_true
-                                                                created_by         = abap_true
-                                                                created_at         = abap_true
-                                                                changed_by         = abap_true
-                                                                last_changed       = abap_true
-                                                                local_last_changed = abap_true ) ).
+        es_execution_header = VALUE #( run_uuid           = cl_system_uuid=>create_uuid_x16_static( )
+                                       run_id             = io_axc_service->generate_run_id( )
+                                       agent_uuid         = iv_agent_uuid
+                                       user_id            = sy-uname
+                                       start_timestamp    = lv_now
+                                       created_by         = sy-uname
+                                       created_at         = lv_now
+                                       changed_by         = sy-uname
+                                       last_changed       = lv_now
+                                       local_last_changed = lv_now
+                                       control            = VALUE #( run_uuid           = abap_true
+                                                                     run_id             = abap_true
+                                                                     agent_uuid         = abap_true
+                                                                     user_id            = abap_true
+                                                                     start_timestamp    = abap_true
+                                                                     end_timestamp      = abap_true
+                                                                     created_by         = abap_true
+                                                                     created_at         = abap_true
+                                                                     changed_by         = abap_true
+                                                                     last_changed       = abap_true
+                                                                     local_last_changed = abap_true ) ).
 
         io_axc_service->create_header( EXPORTING it_head_create_imp = VALUE #( ( es_execution_header ) )
                                        CHANGING  cs_reported        = cs_axc_reported
