@@ -2293,9 +2293,8 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
 
   METHOD fetch_agent_definition_by_uuid.
     TRY.
-        eo_service ?= zpru_cl_agent_service_mngr=>get_service(
-                               iv_service = `ZPRU_IF_ADF_SERVICE`
-                               iv_context = zpru_if_agent_frw=>cs_context-standard ).
+        eo_service ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_ADF_SERVICE`
+                                                               iv_context = zpru_if_agent_frw=>cs_context-standard ).
       CATCH zpru_cx_agent_core.
         RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDTRY.
@@ -2327,6 +2326,8 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD append_query_to_controller.
+    " TODO: parameter IV_INPUT_QUERY is never used (ABAP cleaner)
+
     DATA(lo_controller) = get_controller( ).
     DATA(lv_last_number) = lines( lo_controller->mt_input_output ).
     APPEND INITIAL LINE TO lo_controller->mt_input_output ASSIGNING FIELD-SYMBOL(<ls_input_output>).
@@ -2336,6 +2337,7 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
 
   METHOD record_query_event.
     DATA lt_message TYPE zpru_if_short_memory_provider=>tt_message.
+
     GET TIME STAMP FIELD DATA(lv_now).
 
     lt_message = VALUE #( ( message_cid  = |{ lv_now }-{ sy-uname }-SET_INPUT_QUERY_{ 1 }|
@@ -2353,5 +2355,4 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
 
     io_short_memory->save_message( lt_message ).
   ENDMETHOD.
-
 ENDCLASS.
