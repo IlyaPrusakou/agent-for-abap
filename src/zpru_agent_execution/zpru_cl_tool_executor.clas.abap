@@ -116,14 +116,14 @@ CLASS zpru_cl_tool_executor IMPLEMENTATION.
                                                                      control-istransient        = abap_true  ) )
                                IMPORTING et_tool        = DATA(lt_existing_tool) ).
 
-    lo_axc_service->read_header( EXPORTING it_head_read_k = VALUE #( ( run_uuid       = is_current_step-run_uuid
-                                                                       control-run_id = abap_true ) )
+    lo_axc_service->read_header( EXPORTING it_head_read_k = VALUE #( ( runuuid       = is_current_step-runuuid
+                                                                       control-runid = abap_true ) )
                                  IMPORTING et_axc_head    = DATA(lt_current_run) ).
 
     DATA(ls_current_run) = VALUE #( lt_current_run[ 1 ] OPTIONAL ).
 
-    lo_axc_service->read_query( EXPORTING it_query_read_k = VALUE #( ( query_uuid           = is_current_step-query_uuid
-                                                                       control-query_number = abap_true ) )
+    lo_axc_service->read_query( EXPORTING it_query_read_k = VALUE #( ( queryuuid           = is_current_step-queryuuid
+                                                                       control-querynumber = abap_true ) )
                                 IMPORTING et_axc_query    = DATA(lt_current_query) ).
 
     DATA(ls_current_query) = VALUE #( lt_current_query[ 1 ] OPTIONAL ).
@@ -238,13 +238,13 @@ CLASS zpru_cl_tool_executor IMPLEMENTATION.
 
           APPEND INITIAL LINE TO et_additional_steps ASSIGNING FIELD-SYMBOL(<ls_additional_steps>).
 
-          <ls_additional_steps>-step_uuid   = cl_system_uuid=>create_uuid_x16_static( ).
+          <ls_additional_steps>-stepuuid   = cl_system_uuid=>create_uuid_x16_static( ).
 
-          <ls_additional_steps>-step_number = lo_axc_service->generate_step_number(
-                                                  iv_query_uuid = is_current_step-query_uuid ).
-          <ls_additional_steps>-query_uuid  = is_current_step-query_uuid.
-          <ls_additional_steps>-run_uuid    = is_current_step-run_uuid.
-          <ls_additional_steps>-tool_uuid   = <ls_additional_tool>-tooluuid.
+          <ls_additional_steps>-stepnumber = lo_axc_service->generate_step_number(
+                                                 iv_query_uuid = is_current_step-queryuuid ).
+          <ls_additional_steps>-queryuuid  = is_current_step-queryuuid.
+          <ls_additional_steps>-runuuid    = is_current_step-runuuid.
+          <ls_additional_steps>-tooluuid   = <ls_additional_tool>-tooluuid.
 
           CLEAR: lv_temp_tool_uuid,
                  lv_temp_agent_uuid.
@@ -274,10 +274,10 @@ CLASS zpru_cl_tool_executor IMPLEMENTATION.
                                             |Wrong combination of agent { ls_last_step-agentuuid } and tool { ls_last_step-tooluuid }| ).
 
       lt_message_in = VALUE #(
-          ( message_cid  = |{ lv_now }-{ sy-uname }-VALIDATE_ADDITIONAL_STEPS_{ is_current_step-step_uuid }|
+          ( message_cid  = |{ lv_now }-{ sy-uname }-VALIDATE_ADDITIONAL_STEPS_{ is_current_step-stepuuid }|
             stage        = 'VALIDATE_ADDITIONAL_STEPS'
             sub_stage    = 'AFTER VALIDATION'
-            namespace    = |{ sy-uname }.{ ls_current_agent-agentname }.{ ls_current_run-run_id }.{ ls_current_query-query_number }|
+            namespace    = |{ sy-uname }.{ ls_current_agent-agentname }.{ ls_current_run-runid }.{ ls_current_query-querynumber }|
             user_name    = sy-uname
             agent_uuid   = ls_current_agent-agentuuid
             message_time = lv_now
@@ -361,7 +361,7 @@ CLASS zpru_cl_tool_executor IMPLEMENTATION.
 
     eo_response->set_data( NEW zpru_if_agent_frw=>ts_json( lv_output_json ) ).
 
-    ASSIGN io_controller->mt_run_context[ execution_step-step_uuid = is_execution_step-step_uuid ] TO FIELD-SYMBOL(<ls_current_run_context>).
+    ASSIGN io_controller->mt_run_context[ execution_step-stepuuid = is_execution_step-stepuuid ] TO FIELD-SYMBOL(<ls_current_run_context>).
     IF sy-subrc <> 0.
       ev_error_flag = abap_true.
       RETURN.

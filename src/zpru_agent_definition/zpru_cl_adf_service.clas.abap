@@ -7,8 +7,8 @@ CLASS zpru_cl_adf_service DEFINITION
     INTERFACES zpru_if_adf_service.
 
   PROTECTED SECTION.
-    TYPES tt_agent      TYPE STANDARD TABLE OF zpru_agent WITH EMPTY KEY.
-    TYPES tt_agent_tool TYPE STANDARD TABLE OF zpru_agent_tool WITH EMPTY KEY.
+    TYPES tt_agent      TYPE STANDARD TABLE OF zpru_s_agent WITH EMPTY KEY.
+    TYPES tt_agent_tool TYPE STANDARD TABLE OF zpru_s_agent_tool WITH EMPTY KEY.
 
     METHODS calculate_triggers
       EXPORTING et_check_decision_provider_v TYPE zpru_if_adf_type_and_constant=>tt_agent_read_k
@@ -280,9 +280,9 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
     ENDIF.
 
     IF et_tool_agent_link IS SUPPLIED.
-      SELECT agent_uuid, tool_uuid FROM zpru_agent_tool
+      SELECT agentuuid, tooluuid FROM zi_pru_agent_tool
         FOR ALL ENTRIES IN @et_agent_k
-        WHERE agent_uuid = @et_agent_k-agentuuid
+        WHERE agentuuid = @et_agent_k-agentuuid
         INTO TABLE @et_tool_agent_link.
     ENDIF.
   ENDMETHOD.
@@ -1105,292 +1105,292 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD cascade_deletes.
-    LOOP AT ct_delete_agent ASSIGNING FIELD-SYMBOL(<ls_agent>).
-      zpru_cl_adf_buffer=>prep_tool_buffer( VALUE #( ( agent_uuid = <ls_agent>-agent_uuid ) ) ).
-
-      LOOP AT zpru_cl_adf_buffer=>tool_buffer ASSIGNING FIELD-SYMBOL(<ls_buf_tool>) WHERE instance-agent_uuid = <ls_agent>-agent_uuid.
-        IF NOT line_exists( ct_delete_tool[ tool_uuid = <ls_buf_tool>-instance-tool_uuid ] ).
-          APPEND <ls_buf_tool>-instance TO ct_delete_tool.
-        ENDIF.
-      ENDLOOP.
-    ENDLOOP.
+*    LOOP AT ct_delete_agent ASSIGNING FIELD-SYMBOL(<ls_agent>).
+*      zpru_cl_adf_buffer=>prep_tool_buffer( VALUE #( ( agent_uuid = <ls_agent>-agent_uuid ) ) ).
+*
+*      LOOP AT zpru_cl_adf_buffer=>tool_buffer ASSIGNING FIELD-SYMBOL(<ls_buf_tool>) WHERE instance-agent_uuid = <ls_agent>-agent_uuid.
+*        IF NOT line_exists( ct_delete_tool[ tool_uuid = <ls_buf_tool>-instance-tool_uuid ] ).
+*          APPEND <ls_buf_tool>-instance TO ct_delete_tool.
+*        ENDIF.
+*      ENDLOOP.
+*    ENDLOOP.
   ENDMETHOD.
 
   METHOD collect_changes.
-    LOOP AT zpru_cl_adf_buffer=>agent_buffer ASSIGNING FIELD-SYMBOL(<ls_agent>) WHERE changed = abap_true.
-      IF <ls_agent>-deleted = abap_true.
-        APPEND <ls_agent>-instance TO et_delete_agent.
-      ELSE.
-        APPEND <ls_agent>-instance TO et_modify_agent.
-      ENDIF.
-    ENDLOOP.
-
-    LOOP AT zpru_cl_adf_buffer=>tool_buffer ASSIGNING FIELD-SYMBOL(<ls_tool>) WHERE changed = abap_true.
-      IF <ls_tool>-deleted = abap_true.
-        APPEND <ls_tool>-instance TO et_delete_tool.
-      ELSE.
-        APPEND <ls_tool>-instance TO et_modify_tool.
-      ENDIF.
-    ENDLOOP.
+*    LOOP AT zpru_cl_adf_buffer=>agent_buffer ASSIGNING FIELD-SYMBOL(<ls_agent>) WHERE changed = abap_true.
+*      IF <ls_agent>-deleted = abap_true.
+*        APPEND <ls_agent>-instance TO et_delete_agent.
+*      ELSE.
+*        APPEND <ls_agent>-instance TO et_modify_agent.
+*      ENDIF.
+*    ENDLOOP.
+*
+*    LOOP AT zpru_cl_adf_buffer=>tool_buffer ASSIGNING FIELD-SYMBOL(<ls_tool>) WHERE changed = abap_true.
+*      IF <ls_tool>-deleted = abap_true.
+*        APPEND <ls_tool>-instance TO et_delete_tool.
+*      ELSE.
+*        APPEND <ls_tool>-instance TO et_modify_tool.
+*      ENDIF.
+*    ENDLOOP.
   ENDMETHOD.
 
   METHOD apply_db_changes.
-    rv_error = abap_false.
-
-    IF it_modify_agent IS NOT INITIAL.
-      MODIFY zpru_agent FROM TABLE @it_modify_agent.
-      IF sy-subrc <> 0.
-        rv_error = abap_true.
-      ENDIF.
-    ENDIF.
-
-    IF it_delete_agent IS NOT INITIAL.
-      DELETE zpru_agent FROM TABLE @it_delete_agent.
-      IF sy-subrc <> 0.
-        rv_error = abap_true.
-      ENDIF.
-    ENDIF.
-
-    IF it_modify_tool IS NOT INITIAL.
-      MODIFY zpru_agent_tool FROM TABLE @it_modify_tool.
-      IF sy-subrc <> 0.
-        rv_error = abap_true.
-      ENDIF.
-    ENDIF.
-
-    IF it_delete_tool IS NOT INITIAL.
-      DELETE zpru_agent_tool FROM TABLE @it_delete_tool.
-      IF sy-subrc <> 0.
-        rv_error = abap_true.
-      ENDIF.
-    ENDIF.
+*    rv_error = abap_false.
+*
+*    IF it_modify_agent IS NOT INITIAL.
+*      MODIFY zpru_agent FROM TABLE @it_modify_agent.
+*      IF sy-subrc <> 0.
+*        rv_error = abap_true.
+*      ENDIF.
+*    ENDIF.
+*
+*    IF it_delete_agent IS NOT INITIAL.
+*      DELETE zpru_agent FROM TABLE @it_delete_agent.
+*      IF sy-subrc <> 0.
+*        rv_error = abap_true.
+*      ENDIF.
+*    ENDIF.
+*
+*    IF it_modify_tool IS NOT INITIAL.
+*      MODIFY zpru_agent_tool FROM TABLE @it_modify_tool.
+*      IF sy-subrc <> 0.
+*        rv_error = abap_true.
+*      ENDIF.
+*    ENDIF.
+*
+*    IF it_delete_tool IS NOT INITIAL.
+*      DELETE zpru_agent_tool FROM TABLE @it_delete_tool.
+*      IF sy-subrc <> 0.
+*        rv_error = abap_true.
+*      ENDIF.
+*    ENDIF.
   ENDMETHOD.
 
   METHOD fill_agent_admin_fields.
-    GET TIME STAMP FIELD DATA(lv_now).
-
-    IF iv_during_create = abap_true.
-      cs_agent-instance-created_by = COND #( WHEN cs_agent-instance-created_by IS INITIAL
-                                             THEN sy-uname
-                                             ELSE cs_agent-instance-created_by ).
-      cs_agent-instance-created_at = COND #( WHEN cs_agent-instance-created_at IS INITIAL
-                                             THEN lv_now
-                                             ELSE cs_agent-instance-created_at ).
-    ENDIF.
-
-    cs_agent-instance-last_changed       = lv_now.
-    cs_agent-instance-changed_by         = sy-uname.
-    cs_agent-instance-local_last_changed = lv_now.
+*    GET TIME STAMP FIELD DATA(lv_now).
+*
+*    IF iv_during_create = abap_true.
+*      cs_agent-instance-created_by = COND #( WHEN cs_agent-instance-created_by IS INITIAL
+*                                             THEN sy-uname
+*                                             ELSE cs_agent-instance-created_by ).
+*      cs_agent-instance-created_at = COND #( WHEN cs_agent-instance-created_at IS INITIAL
+*                                             THEN lv_now
+*                                             ELSE cs_agent-instance-created_at ).
+*    ENDIF.
+*
+*    cs_agent-instance-last_changed       = lv_now.
+*    cs_agent-instance-changed_by         = sy-uname.
+*    cs_agent-instance-local_last_changed = lv_now.
   ENDMETHOD.
 
   METHOD calculate_triggers.
-    " TODO: parameter CS_REPORTED is never used or assigned (ABAP cleaner)
-    " TODO: parameter CS_FAILED is never used or assigned (ABAP cleaner)
-
-    DATA lt_agent_2_proc              LIKE zpru_cl_adf_buffer=>agent_buffer.
-    DATA lt_tool_2_proc               LIKE zpru_cl_adf_buffer=>tool_buffer.
-    DATA lo_agent_descr               TYPE REF TO cl_abap_structdescr.
-    DATA lo_tool_descr                TYPE REF TO cl_abap_structdescr.
-    DATA lt_check_decision_provider_v TYPE zpru_if_adf_type_and_constant=>tt_agent_read_k. " create and update field "decision_provider"
-    " TODO: variable is assigned but never used (ABAP cleaner)
-    DATA lt_check_short_memory_v      TYPE zpru_if_adf_type_and_constant=>tt_agent_read_k. " create and update field "short_memory_provider"
-    " TODO: variable is assigned but never used (ABAP cleaner)
-    DATA lt_check_long_memory_v       TYPE zpru_if_adf_type_and_constant=>tt_agent_read_k. " create and update field "long_memory_provider"
-    " TODO: variable is assigned but never used (ABAP cleaner)
-    DATA lt_check_agent_info_v        TYPE zpru_if_adf_type_and_constant=>tt_agent_read_k. " create and update field "agent_info_provider"
-
-    CLEAR et_check_decision_provider_v.
-    CLEAR et_check_short_memory_v.
-    CLEAR et_check_long_memory_v.
-    CLEAR et_check_agent_info_v.
-
-    LOOP AT zpru_cl_adf_buffer=>agent_buffer ASSIGNING FIELD-SYMBOL(<ls_agent_buffer>).
-      APPEND INITIAL LINE TO lt_agent_2_proc ASSIGNING FIELD-SYMBOL(<ls_agent_2_process>).
-      <ls_agent_2_process>-instance = CORRESPONDING #( <ls_agent_buffer>-instance ).
-      <ls_agent_2_process>-deleted  = <ls_agent_buffer>-deleted.
-
-      LOOP AT zpru_cl_adf_buffer=>tool_buffer ASSIGNING FIELD-SYMBOL(<ls_tool_buffer>)
-           WHERE instance-agent_uuid = <ls_agent_buffer>-instance-agent_uuid.
-        APPEND INITIAL LINE TO lt_tool_2_proc ASSIGNING FIELD-SYMBOL(<ls_tool_2_process>).
-        <ls_tool_2_process>-instance = CORRESPONDING #( <ls_tool_buffer>-instance ).
-        <ls_tool_2_process>-deleted  = <ls_tool_buffer>-deleted.
-      ENDLOOP.
-    ENDLOOP.
-
-    IF lt_agent_2_proc IS INITIAL AND lt_tool_2_proc IS INITIAL.
-      RETURN.
-    ENDIF.
-
-    IF lt_agent_2_proc IS NOT INITIAL.
-      SELECT * FROM zpru_agent AS agent
-        FOR ALL ENTRIES IN @lt_agent_2_proc
-        WHERE agent~agent_uuid = @lt_agent_2_proc-instance-agent_uuid
-        INTO TABLE @DATA(lt_agent_db_state).
-    ENDIF.
-
-    IF lt_tool_2_proc IS NOT INITIAL.
-      SELECT * FROM zpru_agent_tool AS tool
-        FOR ALL ENTRIES IN @lt_tool_2_proc
-        WHERE tool~tool_uuid = @lt_tool_2_proc-instance-tool_uuid
-        INTO TABLE @DATA(lt_tool_db_state).
-    ENDIF.
-
-    lo_agent_descr ?= cl_abap_structdescr=>describe_by_name( 'ZPRU_AGENT' ).
-    DATA(lt_agent_fields) = lo_agent_descr->get_symbols( ).
-    lo_tool_descr ?= cl_abap_structdescr=>describe_by_name( 'ZPRU_AGENT_TOOL' ).
-    DATA(lt_tool_fields) = lo_tool_descr->get_symbols( ).
-
-    LOOP AT lt_agent_2_proc ASSIGNING <ls_agent_2_process>.
-
-      " calculate CREATE trigger
-      IF     NOT line_exists( lt_agent_db_state[ agent_uuid = <ls_agent_2_process>-instance-agent_uuid ] )
-         AND     <ls_agent_2_process>-deleted = abap_false.
-        APPEND INITIAL LINE TO lt_check_decision_provider_v ASSIGNING FIELD-SYMBOL(<ls_check_decision_provider_v>).
-        <ls_check_decision_provider_v> = CORRESPONDING #( <ls_agent_2_process>-instance ).
-
-        APPEND INITIAL LINE TO lt_check_short_memory_v ASSIGNING FIELD-SYMBOL(<ls_check_short_memory_v>).
-        <ls_check_short_memory_v> = CORRESPONDING #( <ls_agent_2_process>-instance ).
-
-        APPEND INITIAL LINE TO lt_check_long_memory_v ASSIGNING FIELD-SYMBOL(<ls_check_long_memory_v>).
-        <ls_check_long_memory_v> = CORRESPONDING #( <ls_agent_2_process>-instance ).
-
-        APPEND INITIAL LINE TO lt_check_agent_info_v ASSIGNING FIELD-SYMBOL(<ls_check_agent_info_v>).
-        <ls_check_agent_info_v> = CORRESPONDING #( <ls_agent_2_process>-instance ).
-      ENDIF.
-
-      ASSIGN lt_agent_db_state[ agent_uuid = <ls_agent_2_process>-instance-agent_uuid ] TO FIELD-SYMBOL(<ls_agent_db_state>).
-      IF sy-subrc <> 0.
-        CONTINUE.
-      ENDIF.
-
-      " calculate DELETE trigger before update
-      " just skip deleted entries
-      IF <ls_agent_2_process>-deleted = abap_true.
-        CONTINUE.
-      ENDIF.
-
-      " calculate UPDATE trigger
-      LOOP AT lt_agent_fields ASSIGNING FIELD-SYMBOL(<lv_agent_fields>).
-
-        ASSIGN COMPONENT <lv_agent_fields>-name OF STRUCTURE <ls_agent_2_process>-instance TO FIELD-SYMBOL(<lv_buffer_value>).
-        IF sy-subrc <> 0.
-          CONTINUE.
-        ENDIF.
-
-        ASSIGN COMPONENT <lv_agent_fields>-name OF STRUCTURE <ls_agent_db_state> TO FIELD-SYMBOL(<lv_db_value>).
-        IF sy-subrc <> 0.
-          CONTINUE.
-        ENDIF.
-
-        IF <lv_buffer_value> <> <lv_db_value>.
-*          APPEND INITIAL LINE TO validation / determination
-          EXIT.
-        ENDIF.
-      ENDLOOP.
-
-      " FIELD decision_provider
-      ASSIGN COMPONENT 'DECISION_PROVIDER' OF STRUCTURE <ls_agent_2_process>-instance TO <lv_buffer_value>.
-      IF sy-subrc = 0.
-        ASSIGN COMPONENT 'DECISION_PROVIDER' OF STRUCTURE <ls_agent_db_state> TO <lv_db_value>.
-        IF sy-subrc = 0.
-          IF <lv_buffer_value> <> <lv_db_value>.
-            APPEND INITIAL LINE TO lt_check_decision_provider_v ASSIGNING <ls_check_decision_provider_v>.
-            <ls_check_decision_provider_v> = CORRESPONDING #( <ls_agent_2_process>-instance ).
-          ENDIF.
-        ENDIF.
-      ENDIF.
-
-      " FIELD short_memory_provider
-      ASSIGN COMPONENT 'SHORT_MEMORY_PROVIDER' OF STRUCTURE <ls_agent_2_process>-instance TO <lv_buffer_value>.
-      IF sy-subrc = 0.
-        ASSIGN COMPONENT 'SHORT_MEMORY_PROVIDER' OF STRUCTURE <ls_agent_db_state> TO <lv_db_value>.
-        IF sy-subrc = 0.
-          IF <lv_buffer_value> <> <lv_db_value>.
-            APPEND INITIAL LINE TO lt_check_short_memory_v ASSIGNING <ls_check_short_memory_v>.
-            <ls_check_short_memory_v> = CORRESPONDING #( <ls_agent_2_process>-instance ).
-          ENDIF.
-        ENDIF.
-      ENDIF.
-
-      " FIELD long_memory_provider
-      ASSIGN COMPONENT 'LONG_MEMORY_PROVIDER' OF STRUCTURE <ls_agent_2_process>-instance TO <lv_buffer_value>.
-      IF sy-subrc = 0.
-        ASSIGN COMPONENT 'LONG_MEMORY_PROVIDER' OF STRUCTURE <ls_agent_db_state> TO <lv_db_value>.
-        IF sy-subrc = 0.
-          IF <lv_buffer_value> <> <lv_db_value>.
-            APPEND INITIAL LINE TO lt_check_long_memory_v ASSIGNING <ls_check_long_memory_v>.
-            <ls_check_long_memory_v> = CORRESPONDING #( <ls_agent_2_process>-instance ).
-          ENDIF.
-        ENDIF.
-      ENDIF.
-
-      " FIELD agent_info_provider
-      ASSIGN COMPONENT 'AGENT_INFO_PROVIDER' OF STRUCTURE <ls_agent_2_process>-instance TO <lv_buffer_value>.
-      IF sy-subrc = 0.
-        ASSIGN COMPONENT 'AGENT_INFO_PROVIDER' OF STRUCTURE <ls_agent_db_state> TO <lv_db_value>.
-        IF sy-subrc = 0.
-          IF <lv_buffer_value> <> <lv_db_value>.
-            APPEND INITIAL LINE TO lt_check_agent_info_v ASSIGNING <ls_check_agent_info_v>.
-            <ls_check_agent_info_v> = CORRESPONDING #( <ls_agent_2_process>-instance ).
-          ENDIF.
-        ENDIF.
-      ENDIF.
-
-    ENDLOOP.
-
-    LOOP AT lt_tool_2_proc ASSIGNING <ls_tool_2_process>.
-
-      " CREATE
-      IF     NOT line_exists( lt_tool_db_state[ tool_uuid = <ls_tool_2_process>-instance-tool_uuid ] )
-         AND     <ls_tool_2_process>-deleted = abap_false.
-*        APPEND INITIAL LINE TO validation / determination
-      ENDIF.
-
-      ASSIGN lt_tool_db_state[ tool_uuid = <ls_tool_2_process>-instance-tool_uuid ] TO FIELD-SYMBOL(<ls_tool_db_state>).
-      IF sy-subrc <> 0.
-        CONTINUE.
-      ENDIF.
-
-      " calc DELETE trigger before update
-      " just skip deleted entries
-      IF <ls_tool_2_process>-deleted = abap_true.
-        CONTINUE.
-      ENDIF.
-
-      " UPDATE
-      LOOP AT lt_tool_fields ASSIGNING FIELD-SYMBOL(<ls_tool_fields>).
-
-        ASSIGN COMPONENT <ls_tool_fields>-name OF STRUCTURE <ls_tool_2_process>-instance TO <lv_buffer_value>.
-        IF sy-subrc <> 0.
-          CONTINUE.
-        ENDIF.
-
-        ASSIGN COMPONENT <ls_tool_fields>-name OF STRUCTURE <ls_tool_db_state> TO <lv_db_value>.
-        IF sy-subrc <> 0.
-          CONTINUE.
-        ENDIF.
-
-        IF <lv_buffer_value> <> <lv_db_value>.
-*          APPEND INITIAL LINE TO validation / determination
-          EXIT.
-        ENDIF.
-      ENDLOOP.
-
-*      " FIELD field
-*      ASSIGN COMPONENT 'FIELD' OF STRUCTURE <ls_tool_2_PROCESS>-instance TO <lv_buffer_value>.
+*    " TODO: parameter CS_REPORTED is never used or assigned (ABAP cleaner)
+*    " TODO: parameter CS_FAILED is never used or assigned (ABAP cleaner)
+*
+*    DATA lt_agent_2_proc              LIKE zpru_cl_adf_buffer=>agent_buffer.
+*    DATA lt_tool_2_proc               LIKE zpru_cl_adf_buffer=>tool_buffer.
+*    DATA lo_agent_descr               TYPE REF TO cl_abap_structdescr.
+*    DATA lo_tool_descr                TYPE REF TO cl_abap_structdescr.
+*    DATA lt_check_decision_provider_v TYPE zpru_if_adf_type_and_constant=>tt_agent_read_k. " create and update field "decision_provider"
+*    " TODO: variable is assigned but never used (ABAP cleaner)
+*    DATA lt_check_short_memory_v      TYPE zpru_if_adf_type_and_constant=>tt_agent_read_k. " create and update field "short_memory_provider"
+*    " TODO: variable is assigned but never used (ABAP cleaner)
+*    DATA lt_check_long_memory_v       TYPE zpru_if_adf_type_and_constant=>tt_agent_read_k. " create and update field "long_memory_provider"
+*    " TODO: variable is assigned but never used (ABAP cleaner)
+*    DATA lt_check_agent_info_v        TYPE zpru_if_adf_type_and_constant=>tt_agent_read_k. " create and update field "agent_info_provider"
+*
+*    CLEAR et_check_decision_provider_v.
+*    CLEAR et_check_short_memory_v.
+*    CLEAR et_check_long_memory_v.
+*    CLEAR et_check_agent_info_v.
+*
+**    LOOP AT zpru_cl_adf_buffer=>agent_buffer ASSIGNING FIELD-SYMBOL(<ls_agent_buffer>).
+**      APPEND INITIAL LINE TO lt_agent_2_proc ASSIGNING FIELD-SYMBOL(<ls_agent_2_process>).
+**      <ls_agent_2_process>-instance = CORRESPONDING #( <ls_agent_buffer>-instance ).
+**      <ls_agent_2_process>-deleted  = <ls_agent_buffer>-deleted.
+**
+**      LOOP AT zpru_cl_adf_buffer=>tool_buffer ASSIGNING FIELD-SYMBOL(<ls_tool_buffer>)
+**           WHERE instance-agent_uuid = <ls_agent_buffer>-instance-agent_uuid.
+**        APPEND INITIAL LINE TO lt_tool_2_proc ASSIGNING FIELD-SYMBOL(<ls_tool_2_process>).
+**        <ls_tool_2_process>-instance = CORRESPONDING #( <ls_tool_buffer>-instance ).
+**        <ls_tool_2_process>-deleted  = <ls_tool_buffer>-deleted.
+**      ENDLOOP.
+**    ENDLOOP.
+*
+*    IF lt_agent_2_proc IS INITIAL AND lt_tool_2_proc IS INITIAL.
+*      RETURN.
+*    ENDIF.
+*
+*    IF lt_agent_2_proc IS NOT INITIAL.
+*      SELECT * FROM ZI_PRU_AGENT AS agent
+*        FOR ALL ENTRIES IN @lt_agent_2_proc
+*        WHERE agent~agentuuid = @lt_agent_2_proc-instance-agent_uuid
+*        INTO TABLE @DATA(lt_agent_db_state).
+*    ENDIF.
+*
+*    IF lt_tool_2_proc IS NOT INITIAL.
+*      SELECT * FROM zpru_agent_tool AS tool
+*        FOR ALL ENTRIES IN @lt_tool_2_proc
+*        WHERE tool~tool_uuid = @lt_tool_2_proc-instance-tool_uuid
+*        INTO TABLE @DATA(lt_tool_db_state).
+*    ENDIF.
+*
+*    lo_agent_descr ?= cl_abap_structdescr=>describe_by_name( 'ZPRU_AGENT' ).
+*    DATA(lt_agent_fields) = lo_agent_descr->get_symbols( ).
+*    lo_tool_descr ?= cl_abap_structdescr=>describe_by_name( 'ZPRU_AGENT_TOOL' ).
+*    DATA(lt_tool_fields) = lo_tool_descr->get_symbols( ).
+*
+*    LOOP AT lt_agent_2_proc ASSIGNING fIELD-SYMBOL(<ls_agent_2_process>).
+*
+*      " calculate CREATE trigger
+*      IF     NOT line_exists( lt_agent_db_state[ agentuuid = <ls_agent_2_process>-instance-agent_uuid ] )
+*         AND     <ls_agent_2_process>-deleted = abap_false.
+*        APPEND INITIAL LINE TO lt_check_decision_provider_v ASSIGNING FIELD-SYMBOL(<ls_check_decision_provider_v>).
+*        <ls_check_decision_provider_v> = CORRESPONDING #( <ls_agent_2_process>-instance ).
+*
+*        APPEND INITIAL LINE TO lt_check_short_memory_v ASSIGNING FIELD-SYMBOL(<ls_check_short_memory_v>).
+*        <ls_check_short_memory_v> = CORRESPONDING #( <ls_agent_2_process>-instance ).
+*
+*        APPEND INITIAL LINE TO lt_check_long_memory_v ASSIGNING FIELD-SYMBOL(<ls_check_long_memory_v>).
+*        <ls_check_long_memory_v> = CORRESPONDING #( <ls_agent_2_process>-instance ).
+*
+*        APPEND INITIAL LINE TO lt_check_agent_info_v ASSIGNING FIELD-SYMBOL(<ls_check_agent_info_v>).
+*        <ls_check_agent_info_v> = CORRESPONDING #( <ls_agent_2_process>-instance ).
+*      ENDIF.
+*
+*      ASSIGN lt_agent_db_state[ agentuuid = <ls_agent_2_process>-instance-agent_uuid ] TO FIELD-SYMBOL(<ls_agent_db_state>).
+*      IF sy-subrc <> 0.
+*        CONTINUE.
+*      ENDIF.
+*
+*      " calculate DELETE trigger before update
+*      " just skip deleted entries
+*      IF <ls_agent_2_process>-deleted = abap_true.
+*        CONTINUE.
+*      ENDIF.
+*
+*      " calculate UPDATE trigger
+*      LOOP AT lt_agent_fields ASSIGNING FIELD-SYMBOL(<lv_agent_fields>).
+*
+*        ASSIGN COMPONENT <lv_agent_fields>-name OF STRUCTURE <ls_agent_2_process>-instance TO FIELD-SYMBOL(<lv_buffer_value>).
+*        IF sy-subrc <> 0.
+*          CONTINUE.
+*        ENDIF.
+*
+*        ASSIGN COMPONENT <lv_agent_fields>-name OF STRUCTURE <ls_agent_db_state> TO FIELD-SYMBOL(<lv_db_value>).
+*        IF sy-subrc <> 0.
+*          CONTINUE.
+*        ENDIF.
+*
+*        IF <lv_buffer_value> <> <lv_db_value>.
+**          APPEND INITIAL LINE TO validation / determination
+*          EXIT.
+*        ENDIF.
+*      ENDLOOP.
+*
+*      " FIELD decision_provider
+*      ASSIGN COMPONENT 'DECISION_PROVIDER' OF STRUCTURE <ls_agent_2_process>-instance TO <lv_buffer_value>.
 *      IF sy-subrc = 0.
-*        ASSIGN COMPONENT 'FIELD' OF STRUCTURE <ls_tool_db_state> TO <lv_db_value>.
+*        ASSIGN COMPONENT 'DECISION_PROVIDER' OF STRUCTURE <ls_agent_db_state> TO <lv_db_value>.
 *        IF sy-subrc = 0.
 *          IF <lv_buffer_value> <> <lv_db_value>.
-*            APPEND INITIAL LINE TO validation / determination
+*            APPEND INITIAL LINE TO lt_check_decision_provider_v ASSIGNING <ls_check_decision_provider_v>.
+*            <ls_check_decision_provider_v> = CORRESPONDING #( <ls_agent_2_process>-instance ).
 *          ENDIF.
 *        ENDIF.
 *      ENDIF.
-    ENDLOOP.
-
-    SORT lt_check_decision_provider_v BY table_line.
-    DELETE ADJACENT DUPLICATES FROM lt_check_decision_provider_v COMPARING table_line.
-
-    et_check_decision_provider_v = lt_check_decision_provider_v.
+*
+*      " FIELD short_memory_provider
+*      ASSIGN COMPONENT 'SHORT_MEMORY_PROVIDER' OF STRUCTURE <ls_agent_2_process>-instance TO <lv_buffer_value>.
+*      IF sy-subrc = 0.
+*        ASSIGN COMPONENT 'SHORT_MEMORY_PROVIDER' OF STRUCTURE <ls_agent_db_state> TO <lv_db_value>.
+*        IF sy-subrc = 0.
+*          IF <lv_buffer_value> <> <lv_db_value>.
+*            APPEND INITIAL LINE TO lt_check_short_memory_v ASSIGNING <ls_check_short_memory_v>.
+*            <ls_check_short_memory_v> = CORRESPONDING #( <ls_agent_2_process>-instance ).
+*          ENDIF.
+*        ENDIF.
+*      ENDIF.
+*
+*      " FIELD long_memory_provider
+*      ASSIGN COMPONENT 'LONG_MEMORY_PROVIDER' OF STRUCTURE <ls_agent_2_process>-instance TO <lv_buffer_value>.
+*      IF sy-subrc = 0.
+*        ASSIGN COMPONENT 'LONG_MEMORY_PROVIDER' OF STRUCTURE <ls_agent_db_state> TO <lv_db_value>.
+*        IF sy-subrc = 0.
+*          IF <lv_buffer_value> <> <lv_db_value>.
+*            APPEND INITIAL LINE TO lt_check_long_memory_v ASSIGNING <ls_check_long_memory_v>.
+*            <ls_check_long_memory_v> = CORRESPONDING #( <ls_agent_2_process>-instance ).
+*          ENDIF.
+*        ENDIF.
+*      ENDIF.
+*
+*      " FIELD agent_info_provider
+*      ASSIGN COMPONENT 'AGENT_INFO_PROVIDER' OF STRUCTURE <ls_agent_2_process>-instance TO <lv_buffer_value>.
+*      IF sy-subrc = 0.
+*        ASSIGN COMPONENT 'AGENT_INFO_PROVIDER' OF STRUCTURE <ls_agent_db_state> TO <lv_db_value>.
+*        IF sy-subrc = 0.
+*          IF <lv_buffer_value> <> <lv_db_value>.
+*            APPEND INITIAL LINE TO lt_check_agent_info_v ASSIGNING <ls_check_agent_info_v>.
+*            <ls_check_agent_info_v> = CORRESPONDING #( <ls_agent_2_process>-instance ).
+*          ENDIF.
+*        ENDIF.
+*      ENDIF.
+*
+*    ENDLOOP.
+*
+*    LOOP AT lt_tool_2_proc ASSIGNING fiELD-SYMBOL(<ls_tool_2_process>).
+*
+*      " CREATE
+*      IF     NOT line_exists( lt_tool_db_state[ tool_uuid = <ls_tool_2_process>-instance-tool_uuid ] )
+*         AND     <ls_tool_2_process>-deleted = abap_false.
+**        APPEND INITIAL LINE TO validation / determination
+*      ENDIF.
+*
+*      ASSIGN lt_tool_db_state[ tool_uuid = <ls_tool_2_process>-instance-tool_uuid ] TO FIELD-SYMBOL(<ls_tool_db_state>).
+*      IF sy-subrc <> 0.
+*        CONTINUE.
+*      ENDIF.
+*
+*      " calc DELETE trigger before update
+*      " just skip deleted entries
+*      IF <ls_tool_2_process>-deleted = abap_true.
+*        CONTINUE.
+*      ENDIF.
+*
+*      " UPDATE
+*      LOOP AT lt_tool_fields ASSIGNING FIELD-SYMBOL(<ls_tool_fields>).
+*
+*        ASSIGN COMPONENT <ls_tool_fields>-name OF STRUCTURE <ls_tool_2_process>-instance TO <lv_buffer_value>.
+*        IF sy-subrc <> 0.
+*          CONTINUE.
+*        ENDIF.
+*
+*        ASSIGN COMPONENT <ls_tool_fields>-name OF STRUCTURE <ls_tool_db_state> TO <lv_db_value>.
+*        IF sy-subrc <> 0.
+*          CONTINUE.
+*        ENDIF.
+*
+*        IF <lv_buffer_value> <> <lv_db_value>.
+**          APPEND INITIAL LINE TO validation / determination
+*          EXIT.
+*        ENDIF.
+*      ENDLOOP.
+*
+**      " FIELD field
+**      ASSIGN COMPONENT 'FIELD' OF STRUCTURE <ls_tool_2_PROCESS>-instance TO <lv_buffer_value>.
+**      IF sy-subrc = 0.
+**        ASSIGN COMPONENT 'FIELD' OF STRUCTURE <ls_tool_db_state> TO <lv_db_value>.
+**        IF sy-subrc = 0.
+**          IF <lv_buffer_value> <> <lv_db_value>.
+**            APPEND INITIAL LINE TO validation / determination
+**          ENDIF.
+**        ENDIF.
+**      ENDIF.
+*    ENDLOOP.
+*
+*    SORT lt_check_decision_provider_v BY table_line.
+*    DELETE ADJACENT DUPLICATES FROM lt_check_decision_provider_v COMPARING table_line.
+*
+*    et_check_decision_provider_v = lt_check_decision_provider_v.
   ENDMETHOD.
 ENDCLASS.

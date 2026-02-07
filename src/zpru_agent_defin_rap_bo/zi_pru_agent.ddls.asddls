@@ -5,6 +5,7 @@
 @VDM.viewType: #BASIC
 define view entity ZI_PRU_AGENT
   as select from zpru_agent
+  association to many ZI_PRU_AGENT_TOOL as _tool on _tool.AgentUuid = $projection.AgentUuid
 {
   key agent_uuid             as AgentUuid,
       agent_type             as AgentType,
@@ -19,5 +20,6 @@ define view entity ZI_PRU_AGENT
       created_at             as CreatedAt,
       changed_by             as ChangedBy,
       last_changed           as LastChanged,
-      local_last_changed     as LocalLastChanged
+      local_last_changed     as LocalLastChanged,
+      _tool
 }

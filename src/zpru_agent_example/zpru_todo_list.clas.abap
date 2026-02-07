@@ -87,6 +87,17 @@ CLASS zpru_todo_list IMPLEMENTATION.
 
 * add new parameters into minifyed implmentation for retreive messages
 
+* add service for class ZPRU_DISC_STRAT and for ZPRU_SUMM_STRAT
+
+* add rap bo and service for for ZPRU_DYN_LIST + ZPRU_DYN_LIST_PR
+
+* nested agent will return context and we will attach it to parent agent
+
+* rework input parameter as structure
+
+* make normal numbering for execution business object and delete usage of buffer from generate id method
+
+*add messages into code
 
   ENDMETHOD.
 
