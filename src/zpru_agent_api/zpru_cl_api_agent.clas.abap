@@ -653,30 +653,13 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
       RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDIF.
 
-    TRY.
-        lo_adf_service ?= zpru_cl_agent_service_mngr=>get_service(
-                              iv_service = `ZPRU_IF_ADF_SERVICE`
-                              iv_context = zpru_if_agent_frw=>cs_context-standard ).
-      CATCH zpru_cx_agent_core.
-        RAISE EXCEPTION NEW zpru_cx_agent_core( ).
-    ENDTRY.
+    fetch_agent_definition_by_uuid( EXPORTING iv_agent_uuid = iv_agent_uuid
+                                    IMPORTING es_agent      = DATA(ls_agent)
+                                              eo_service    = DATA(lo_adf_service)
+                                    CHANGING  cs_reported   = cs_reported
+                                              cs_failed     = cs_failed ).
 
-    lo_adf_service->read_agent( EXPORTING it_agent_read_k = VALUE #( ( agent_uuid                    = iv_agent_uuid
-                                                                       control-agent_uuid            = abap_true
-                                                                       control-agent_name            = abap_true
-                                                                       control-agent_type            = abap_true
-                                                                       control-short_memory_provider = abap_true
-                                                                       control-long_memory_provider  = abap_true ) )
-                                IMPORTING et_agent        = DATA(lt_agent)
-                                CHANGING  cs_reported     = cs_reported
-                                          cs_failed       = cs_failed ).
-
-    ASSIGN lt_agent[ 1 ] TO FIELD-SYMBOL(<ls_agent>).
-    IF sy-subrc <> 0.
-      RAISE EXCEPTION NEW zpru_cx_agent_core( ).
-    ENDIF.
-
-    CREATE OBJECT mo_short_memory TYPE (<ls_agent>-short_memory_provider).
+    CREATE OBJECT mo_short_memory TYPE (ls_agent-short_memory_provider).
     IF sy-subrc <> 0.
       RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDIF.
@@ -768,7 +751,7 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
         RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDTRY.
 
-    get_short_memory( EXPORTING iv_agent_uuid   = is_agent-agent_uuid
+    prepare_memory_provider( EXPORTING iv_agent_uuid   = is_agent-agent_uuid
                       IMPORTING eo_short_memory = lo_short_memory
                       CHANGING  cs_reported     = cs_adf_reported
                                 cs_failed       = cs_adf_failed ).
@@ -1069,38 +1052,11 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
       RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDIF.
 
-    TRY.
-        lo_adf_service ?= zpru_cl_agent_service_mngr=>get_service(
-                              iv_service = `ZPRU_IF_ADF_SERVICE`
-                              iv_context = zpru_if_agent_frw=>cs_context-standard ).
-      CATCH zpru_cx_agent_core.
-        RAISE EXCEPTION NEW zpru_cx_agent_core( ).
-    ENDTRY.
-
-    lo_adf_service->read_agent(
-      EXPORTING it_agent_read_k = VALUE #( ( agent_uuid                     = ls_execution_header-agent_uuid
-                                             control-agent_uuid             = abap_true
-                                             control-agent_name             = abap_true
-                                             control-agent_type             = abap_true
-                                             control-decision_provider      = abap_true
-                                             control-short_memory_provider  = abap_true
-                                             control-long_memory_provider   = abap_true
-                                             control-agent_info_provider    = abap_true
-                                             control-system_prompt_provider = abap_true
-                                             control-status                 = abap_true
-                                             control-created_by             = abap_true
-                                             control-created_at             = abap_true
-                                             control-changed_by             = abap_true
-                                             control-last_changed           = abap_true
-                                             control-local_last_changed     = abap_true ) )
-      IMPORTING et_agent        = DATA(lt_agent)
-      CHANGING  cs_reported     = cs_adf_reported
-                cs_failed       = cs_adf_failed ).
-
-    es_agent = VALUE #( lt_agent[ 1 ] OPTIONAL ).
-    IF es_agent IS INITIAL.
-      RAISE EXCEPTION NEW zpru_cx_agent_core( ).
-    ENDIF.
+    fetch_agent_definition_by_uuid( EXPORTING iv_agent_uuid = ls_execution_header-agent_uuid
+                                    IMPORTING es_agent      = es_agent
+                                              eo_service    = lo_adf_service
+                                    CHANGING  cs_reported   = cs_adf_reported
+                                              cs_failed     = cs_adf_failed ).
 
     IF es_agent-status <> zpru_if_adf_type_and_constant=>cs_agent_status-active.
       RAISE EXCEPTION NEW zpru_cx_agent_core( ).
@@ -1277,10 +1233,10 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
       RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDIF.
 
-    get_short_memory( EXPORTING iv_agent_uuid   = iv_agent_uuid
-                      IMPORTING eo_short_memory = DATA(lo_short_memory)
-                      CHANGING  cs_reported     = cs_reported
-                                cs_failed       = cs_failed ).
+    prepare_memory_provider( EXPORTING iv_agent_uuid   = iv_agent_uuid
+                             IMPORTING eo_short_memory = lo_short_memory
+                             CHANGING  cs_reported     = cs_reported
+                                       cs_failed       = cs_failed ).
 
     IF lo_short_memory IS NOT BOUND.
       RAISE EXCEPTION NEW zpru_cx_agent_core( ).
@@ -1328,7 +1284,7 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
         RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDTRY.
 
-    get_short_memory( EXPORTING iv_agent_uuid   = is_agent-agent_uuid
+    prepare_memory_provider( EXPORTING iv_agent_uuid   = is_agent-agent_uuid
                       IMPORTING eo_short_memory = lo_short_memory
                       CHANGING  cs_reported     = cs_adf_reported
                                 cs_failed       = cs_adf_failed ).
@@ -1853,37 +1809,11 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
   METHOD setup_agent_context.
     DATA lo_adf_service TYPE REF TO zpru_if_adf_service.
 
-    TRY.
-        lo_adf_service ?= zpru_cl_agent_service_mngr=>get_service(
-                              iv_service = `ZPRU_IF_ADF_SERVICE`
-                              iv_context = zpru_if_agent_frw=>cs_context-standard ).
-      CATCH zpru_cx_agent_core.
-        RAISE EXCEPTION NEW zpru_cx_agent_core( ).
-    ENDTRY.
-
-    lo_adf_service->read_agent( EXPORTING it_agent_read_k = VALUE #( ( agent_uuid                     = iv_agent_uuid
-                                                                       control-agent_uuid             = abap_true
-                                                                       control-agent_name             = abap_true
-                                                                       control-agent_type             = abap_true
-                                                                       control-decision_provider      = abap_true
-                                                                       control-short_memory_provider  = abap_true
-                                                                       control-long_memory_provider   = abap_true
-                                                                       control-agent_info_provider    = abap_true
-                                                                       control-system_prompt_provider = abap_true
-                                                                       control-status                 = abap_true
-                                                                       control-created_by             = abap_true
-                                                                       control-created_at             = abap_true
-                                                                       control-changed_by             = abap_true
-                                                                       control-last_changed           = abap_true
-                                                                       control-local_last_changed     = abap_true ) )
-                                IMPORTING et_agent        = DATA(lt_agent)
-                                CHANGING  cs_reported     = cs_adf_reported
-                                          cs_failed       = cs_adf_failed ).
-
-    es_agent = VALUE #( lt_agent[ 1 ] OPTIONAL ).
-    IF es_agent IS INITIAL.
-      RAISE EXCEPTION NEW zpru_cx_agent_core( ).
-    ENDIF.
+    fetch_agent_definition_by_uuid( EXPORTING iv_agent_uuid = iv_agent_uuid
+                                    IMPORTING es_agent      = es_agent
+                                              eo_service    = lo_adf_service
+                                    CHANGING  cs_reported   = cs_adf_reported
+                                              cs_failed     = cs_adf_failed ).
 
     IF es_agent-status <> zpru_if_adf_type_and_constant=>cs_agent_status-active.
       RAISE EXCEPTION NEW zpru_cx_agent_core( ).
@@ -1905,10 +1835,10 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
 
     CREATE OBJECT eo_decision_provider TYPE (es_agent-decision_provider).
 
-    get_short_memory( EXPORTING iv_agent_uuid   = es_agent-agent_uuid
-                      IMPORTING eo_short_memory = eo_short_memory
-                      CHANGING  cs_reported     = cs_adf_reported
-                                cs_failed       = cs_adf_failed ).
+    prepare_memory_provider( EXPORTING iv_agent_uuid   = es_agent-agent_uuid
+                             IMPORTING eo_short_memory = eo_short_memory
+                             CHANGING  cs_reported     = cs_adf_reported
+                                       cs_failed       = cs_adf_failed ).
 
     get_long_memory( EXPORTING iv_agent_uuid  = es_agent-agent_uuid
                      IMPORTING eo_long_memory = eo_long_memory
@@ -2304,8 +2234,16 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
                                                                    control-agent_name             = abap_true
                                                                    control-agent_type             = abap_true
                                                                    control-decision_provider      = abap_true
+                                                                   control-short_memory_provider  = abap_true
+                                                                   control-long_memory_provider   = abap_true
+                                                                   control-agent_info_provider    = abap_true
                                                                    control-system_prompt_provider = abap_true
-                                                                   control-status                 = abap_true  ) )
+                                                                   control-status                 = abap_true
+                                                                   control-created_by             = abap_true
+                                                                   control-created_at             = abap_true
+                                                                   control-changed_by             = abap_true
+                                                                   control-last_changed           = abap_true
+                                                                   control-local_last_changed     = abap_true  ) )
                             IMPORTING et_agent        = DATA(lt_agent)
                             CHANGING  cs_reported     = cs_reported
                                       cs_failed       = cs_failed ).
