@@ -6,10 +6,22 @@ The name is inspired by famous **Business Object Processing Framework (BOPF)**
 
 **Disclaimer**: SAP, ABAP, BTP, and BOPF are trademarks or registered trademarks of SAP SE in Germany and other countries. AIPF is an independent open-source project and is not affiliated with, sponsored by, or endorsed by SAP SE.
 
-### The "Why"
-Standard AI calls in ABAP are stateless—they send a prompt and get a response. **AIPF** adds the **Brain and Muscles**:
-* **Brain:** State management, long-term memory, and self-reflection loops.
-* **Muscles:** The ability to execute BAPIs, RAP Actions, and OData services autonomously.
+### Long Story Short
+Standard AI calls in ABAP are stateless—they send a prompt and get a response. AIPF adds the Brain and Muscles:
+**Decision Platform:** ABAP-based Decision Engine, ABAP-based Short-Term Memory Management, ABAP-based Long-Term Memory Framework, etc.
+**Actionables:** Various ABAP-based Tools, etc.
+The framework requires writing a significant amount of ABAP code. It is designed for developers and implies that you are proficient in writing ABAP code and have a solid understanding of concepts like APIs, HTTP, and integration patterns. You must be capable of integrating different types of APIs, such as LLMs, Machine Learning models, and various external services. Moreover, you must know how to execute these integrations within the constraints and architecture of the SAP landscape. 
+
+### Supported Tools
+1 ABAP Code, you write ABAP class to be executed by AIPF framework;
+2 Knowledge Source, you write ABAP class which returns any peace of data to processed;
+3 Nested Agent, you write ABAP class to invoke others agents as a tool for you current agent;
+4 HTTP Request, you write ABAP class sending HTTP request to any source and return payload to agent processing loop;
+5 Service Consumption Model, basically the same as HTTP tool, but using another request technik;
+6 Call LLM, you write ABAP class sending prompt to LLM and returning its response;
+7 Dynamic ABAP code, the tool has default implementation which just dynamicaly invoke method which you saved into data base tables ZPRU_DYN_LIST and ZPRU_DYN_LIST_PR
+8 Inference Machin Learning Model, you write ABAP class which call ML API
+9 User Tool, you write ABAP class where you can invoke screens if you work in onpremise or private cloid systems to provide pattern Human-In-The-Loop.
 
 ### Key Features
 * **Agentic Orchestration:** Define multi-step reasoning loops directly in ABAP.
@@ -64,8 +76,6 @@ To build your agent, you implement the following interfaces:
 * **Planning Logic:** Implement `ZPRU_IF_DECISION_PROVIDER` to define how the agent reasons and selects steps.
 * **Tool Definition:** Implement `ZPRU_IF_TOOL_PROVIDER` to describe the tool's capabilities.
 * **Tool Execution:** Implement `ZPRU_IF_TOOL_EXECUTOR` to write the actual ABAP code the agent will trigger.
-
----
 
 ### Persistence & Dynamic Execution
 
