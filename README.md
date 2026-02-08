@@ -30,7 +30,7 @@ Standard AI calls in ABAP are stateless—they send a prompt and get a response.
 2. Create a new Online Repo with the URL: `https://github.com/IlyaPrusakou/aipf`
 3. Pull the objects into the system.
 
-### :mechanical_arm: Technical Overview
+### Technical Overview
 
 At its core, an agent is a single-threaded process that starts with an initial decision, loops through tool executions, and concludes with a final decision call. It is designed to be simple: it receives a **string input** and returns a **string output**.
 
