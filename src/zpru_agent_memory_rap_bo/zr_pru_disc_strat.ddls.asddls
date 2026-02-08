@@ -6,7 +6,7 @@ define root view entity ZR_PRU_DISC_STRAT
   as select from zpru_disc_strat
 {
   key discardstrategy  as AIPF7DiscardStrategy,
-      strategyprovider as AIPF7DiscardProvider,
+      DiscardProvider as AIPF7DiscardProvider,
       createdby        as AIPF7CreatedBy,
       createdat        as AIPF7CreatedAt,
       changedby        as AIPF7ChangedBy,

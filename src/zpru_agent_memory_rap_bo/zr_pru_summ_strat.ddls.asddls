@@ -6,7 +6,7 @@ define root view entity ZR_PRU_SUMM_STRAT
   as select from zpru_summ_strat
 {
   key summarystrategy  as AIPF7SummaryStrategy,
-      strategyprovider as AIPF7SummaryProvider,
+      SummaryProvider as AIPF7SummaryProvider,
       createdby        as AIPF7CreatedBy,
       createdat        as AIPF7CreatedAt,
       changedby        as AIPF7ChangedBy,

@@ -7,7 +7,7 @@ define root view entity ZR_PRU_MEM_SUM
 {
   key summaryuuid as AIPF7SummaryUUID,
       content     as AIPF7Content,
-      summarycid  as AIPF7SummaryContentId,
+      SummaryContentId  as AIPF7SummaryContentId,
       stage       as AIPF7Stage,
       substage    as AIPF7SubStage,
       namespace   as AIPF7Namespace,
@@ -16,7 +16,7 @@ define root view entity ZR_PRU_MEM_SUM
       runuuid     as AIPF7RunUUID,
       queryuuid   as AIPF7QueryUUID,
       stepuuid    as AIPF7StepUUID,
-      messagetime as AIPF7MessageDateTime,
+      MessageDateTime as AIPF7MessageDateTime,
       createdby   as AIPF7CreatedBy,
       createdat   as AIPF7CreatedAt,
       changedby   as AIPF7ChangedBy,
