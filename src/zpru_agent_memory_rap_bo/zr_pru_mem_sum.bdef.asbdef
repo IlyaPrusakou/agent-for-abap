@@ -22,7 +22,7 @@ authorization master ( global )
     {
       AIPF7SummaryUUID      = summaryuuid;
       AIPF7Content          = content;
-      AIPF7SummaryContentId = summarycid;
+      AIPF7SummaryContentId = SummaryContentId;
       AIPF7Stage            = stage;
       AIPF7SubStage         = substage;
       AIPF7Namespace        = namespace;
@@ -31,7 +31,7 @@ authorization master ( global )
       AIPF7RunUUID          = runuuid;
       AIPF7QueryUUID        = queryuuid;
       AIPF7StepUUID         = stepuuid;
-      AIPF7MessageDateTime  = messagetime;
+      AIPF7MessageDateTime  = MessageDateTime;
       AIPF7CreatedBy        = createdby;
       AIPF7CreatedAt        = createdat;
       AIPF7ChangedBy        = changedby;

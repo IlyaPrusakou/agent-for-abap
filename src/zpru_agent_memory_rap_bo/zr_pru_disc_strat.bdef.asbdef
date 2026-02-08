@@ -34,7 +34,7 @@ authorization master ( global )
   mapping for zpru_disc_strat corresponding extensible
     {
       AIPF7DiscardStrategy  = discardstrategy;
-      AIPF7DiscardProvider  = strategyprovider;
+      AIPF7DiscardProvider  = DiscardProvider;
       AIPF7CreatedBy        = createdby;
       AIPF7CreatedAt        = createdat;
       AIPF7ChangedBy        = changedby;

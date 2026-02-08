@@ -34,7 +34,7 @@ authorization master( global )
   mapping for ZPRU_SUMM_STRAT corresponding extensible
   {
      AIPF7SummaryStrategy = summarystrategy;
-     AIPF7SummaryProvider = strategyprovider;
+     AIPF7SummaryProvider = SummaryProvider;
      AIPF7CreatedBy = createdby;
      AIPF7CreatedAt = createdat;
     AIPF7ChangedBy = changedby;
