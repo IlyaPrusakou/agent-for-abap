@@ -10,7 +10,7 @@ define view entity ZI_PRU_AGENT_TYPE
       ShortMemoryVolume   as AIPF7ShortMemoryVolume,
       discardstrategy  as AIPF7DiscardStrategy,
       summarystrategy  as AIPF7SummaryStrategy,
-      MaxNumberOfLoop      as AIPF7MaxNumberOfLoop,
+      MaximumNumberOfLoop      as AIPF7MaximumNumberOfLoop,
       createdby        as AIPF7CreatedBy,
       createdat        as AIPF7CreatedAt,
       changedby        as AIPF7ChangedBy,

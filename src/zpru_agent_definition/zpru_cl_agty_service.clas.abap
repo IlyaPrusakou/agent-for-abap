@@ -72,9 +72,9 @@ CLASS zpru_cl_agty_service IMPLEMENTATION.
                                                THEN <ls_create>-summarystrategy ).
       <ls_create_in>-%control-aipf7summarystrategy = COND #( WHEN <ls_create>-control-summarystrategy = abap_true
                                                         THEN if_abap_behv=>mk-on ).
-      <ls_create_in>-aipf7maxnumberofloop = COND #( WHEN <ls_create>-control-maxnumberofloop = abap_true
-                                           THEN <ls_create>-maxnumberofloop ).
-      <ls_create_in>-%control-aipf7maxnumberofloop = COND #( WHEN <ls_create>-control-maxnumberofloop = abap_true
+      <ls_create_in>-AIPF7MaximumNumberOfLoop = COND #( WHEN <ls_create>-control-MaximumNumberOfLoop = abap_true
+                                           THEN <ls_create>-MaximumNumberOfLoop ).
+      <ls_create_in>-%control-AIPF7MaximumNumberOfLoop = COND #( WHEN <ls_create>-control-MaximumNumberOfLoop = abap_true
                                                     THEN if_abap_behv=>mk-on ).
       <ls_create_in>-aipf7createdby = COND #( WHEN <ls_create>-control-createdby = abap_true
                                          THEN <ls_create>-createdby ).
@@ -182,7 +182,7 @@ CLASS zpru_cl_agty_service IMPLEMENTATION.
         AND aipf7shortmemoryvolume IN @it_short_mem_volume
         AND aipf7discardstrategy IN @it_discard_strategy
         AND aipf7summarystrategy IN @it_summary_strategy
-        AND aipf7maxnumberofloop    IN @it_max_numb_loop
+        AND AIPF7MaximumNumberOfLoop    IN @it_max_numb_loop
         AND aipf7createdby       IN @it_created_by
         AND aipf7createdat       IN @it_created_at
         AND aipf7changedby       IN @it_changed_by
@@ -225,7 +225,7 @@ CLASS zpru_cl_agty_service IMPLEMENTATION.
                                                        THEN if_abap_behv=>mk-on ).
       <ls_read_in>-%control-aipf7summarystrategy  = COND #( WHEN <ls_req>-control-summarystrategy = abap_true
                                                        THEN if_abap_behv=>mk-on ).
-      <ls_read_in>-%control-aipf7maxnumberofloop      = COND #( WHEN <ls_req>-control-maxnumberofloop = abap_true
+      <ls_read_in>-%control-AIPF7MaximumNumberOfLoop      = COND #( WHEN <ls_req>-control-MaximumNumberOfLoop = abap_true
                                                        THEN if_abap_behv=>mk-on ).
       <ls_read_in>-%control-aipf7createdby        = COND #( WHEN <ls_req>-control-createdby = abap_true
                                                        THEN if_abap_behv=>mk-on ).
@@ -264,7 +264,7 @@ CLASS zpru_cl_agty_service IMPLEMENTATION.
       ls_out-shortmemoryvolume   = <ls_res>-aipf7shortmemoryvolume.
       ls_out-discardstrategy  = <ls_res>-aipf7discardstrategy.
       ls_out-summarystrategy  = <ls_res>-aipf7summarystrategy.
-      ls_out-maxnumberofloop      = <ls_res>-aipf7maxnumberofloop.
+      ls_out-MaximumNumberOfLoop      = <ls_res>-AIPF7MaximumNumberOfLoop.
       ls_out-createdby        = <ls_res>-aipf7createdby.
       ls_out-createdat        = <ls_res>-aipf7createdat.
       ls_out-changedby        = <ls_res>-aipf7changedby.
@@ -311,9 +311,9 @@ CLASS zpru_cl_agty_service IMPLEMENTATION.
       <ls_update_in>-%control-aipf7summarystrategy = COND #( WHEN <ls_update>-control-summarystrategy = abap_true
                                                         THEN if_abap_behv=>mk-on ).
 
-      <ls_update_in>-aipf7maxnumberofloop = COND #( WHEN <ls_update>-control-maxnumberofloop = abap_true
-                                           THEN <ls_update>-maxnumberofloop ).
-      <ls_update_in>-%control-aipf7maxnumberofloop = COND #( WHEN <ls_update>-control-maxnumberofloop = abap_true
+      <ls_update_in>-AIPF7MaximumNumberOfLoop = COND #( WHEN <ls_update>-control-MaximumNumberOfLoop = abap_true
+                                           THEN <ls_update>-MaximumNumberOfLoop ).
+      <ls_update_in>-%control-AIPF7MaximumNumberOfLoop = COND #( WHEN <ls_update>-control-MaximumNumberOfLoop = abap_true
                                                     THEN if_abap_behv=>mk-on ).
 
       <ls_update_in>-aipf7createdby = COND #( WHEN <ls_update>-control-createdby = abap_true

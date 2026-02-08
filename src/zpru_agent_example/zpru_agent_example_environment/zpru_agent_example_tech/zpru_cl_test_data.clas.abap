@@ -312,7 +312,7 @@ CLASS zpru_cl_test_data IMPLEMENTATION.
                                shortmemORYvolume   = '8'
                                discardstrategy   = 'SUM1'
                                summarystrategy   = 'SUM1'
-                               maxnumbEROFloop      = '3'
+                               MaximumNumberOfLoop      = '3'
                                createdby         = ''
                                createdat         = '0.0000000'
                                changedby         = ''

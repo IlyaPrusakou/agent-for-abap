@@ -464,8 +464,8 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
       RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDIF.
 
-    IF    ls_execution_query-QueryStatus = zpru_if_axc_type_and_constant=>sc_query_status-new
-       OR ls_execution_query-QueryStatus = zpru_if_axc_type_and_constant=>sc_query_status-complete.
+    IF    ls_execution_query-querystatus = zpru_if_axc_type_and_constant=>sc_query_status-new
+       OR ls_execution_query-querystatus = zpru_if_axc_type_and_constant=>sc_query_status-complete.
       RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDIF.
 
@@ -506,7 +506,7 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
       RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDIF.
 
-    IF ls_execution_query-QueryStatus = zpru_if_axc_type_and_constant=>sc_query_status-complete.
+    IF ls_execution_query-querystatus = zpru_if_axc_type_and_constant=>sc_query_status-complete.
       RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDIF.
 
@@ -577,8 +577,8 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
       RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDIF.
 
-    IF    ls_execution_query-QueryStatus = zpru_if_axc_type_and_constant=>sc_query_status-complete
-       OR ls_execution_query-QueryStatus = zpru_if_axc_type_and_constant=>sc_query_status-error.
+    IF    ls_execution_query-querystatus = zpru_if_axc_type_and_constant=>sc_query_status-complete
+       OR ls_execution_query-querystatus = zpru_if_axc_type_and_constant=>sc_query_status-error.
       RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDIF.
 
@@ -676,7 +676,7 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
                                             control-shortmemoryvolume = abap_true
                                             control-discardstrategy   = abap_true
                                             control-summarystrategy   = abap_true
-                                            control-maxnumberofloop   = abap_true
+                                            control-maximumnumberofloop   = abap_true
                                             control-createdby         = abap_true
                                             control-createdat         = abap_true
                                             control-changedby         = abap_true
@@ -1279,10 +1279,10 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
     IF lo_controller->mv_max_number_of_loops IS INITIAL.
       lo_agty_service->read_agent_type(
         EXPORTING it_agty_read_k = VALUE #( ( agenttype               = is_agent-agenttype
-                                              control-maxnumberofloop = abap_true ) )
+                                              control-maximumnumberofloop = abap_true ) )
         IMPORTING et_agty        = DATA(lt_agty) ).
 
-      DATA(lv_number_of_loops) = VALUE #( lt_agty[ 1 ]-maxnumberofloop OPTIONAL ).
+      DATA(lv_number_of_loops) = VALUE #( lt_agty[ 1 ]-maximumnumberofloop OPTIONAL ).
       IF lv_number_of_loops IS INITIAL.
         lv_number_of_loops = 4.
       ENDIF.
