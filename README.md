@@ -13,15 +13,18 @@ Standard AI calls in ABAP are stateless—they send a prompt and get a response.
 The framework requires writing a significant amount of ABAP code. It is designed for developers and implies that you are proficient in writing ABAP code and have a solid understanding of concepts like APIs, HTTP, and integration patterns. You must be capable of integrating different types of APIs, such as LLMs, Machine Learning models, and various external services. Moreover, you must know how to execute these integrations within the constraints and architecture of the SAP landscape. 
 
 ### Supported Tools
-1 ABAP Code, you write ABAP class to be executed by AIPF framework;
-2 Knowledge Source, you write ABAP class which returns any peace of data to processed;
-3 Nested Agent, you write ABAP class to invoke others agents as a tool for you current agent;
-4 HTTP Request, you write ABAP class sending HTTP request to any source and return payload to agent processing loop;
-5 Service Consumption Model, basically the same as HTTP tool, but using another request technik;
-6 Call LLM, you write ABAP class sending prompt to LLM and returning its response;
-7 Dynamic ABAP code, the tool has default implementation which just dynamicaly invoke method which you saved into data base tables ZPRU_DYN_LIST and ZPRU_DYN_LIST_PR
-8 Inference Machin Learning Model, you write ABAP class which call ML API
-9 User Tool, you write ABAP class where you can invoke screens if you work in onpremise or private cloid systems to provide pattern Human-In-The-Loop.
+
+| # | Tool Type | Description |
+| :--- | :--- | :--- |
+| 1 | ABAP Code | You write an ABAP class to be executed by the AIPF framework. |
+| 2 | Knowledge Source | You write an ABAP class which returns any piece of data to be processed. |
+| 3 | Nested Agent | You write an ABAP class to invoke other agents as a tool for your current agent. |
+| 4 | HTTP Request | You write an ABAP class sending an HTTP request to any source and returning the payload to the agent processing loop. |
+| 5 | Service Consumption Model | Basically the same as the HTTP tool, but using another request technique. |
+| 6 | Call LLM | You write an ABAP class sending a prompt to an LLM and returning its response. |
+| 7 | Dynamic ABAP Code | The tool has a default implementation which just dynamically invokes a method which you saved into database tables `ZPRU_DYN_LIST` and `ZPRU_DYN_LIST_PR`. |
+| 8 | Inference Machine Learning Model | You write an ABAP class which calls a Machine Learning API. |
+| 9 | User Tool | You write an ABAP class where you can invoke screens if you work in on-premise or private cloud systems to provide the Human-In-The-Loop pattern. |
 
 ### Key Features
 * **Agentic Orchestration:** Define multi-step reasoning loops directly in ABAP.
