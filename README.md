@@ -125,41 +125,6 @@ Long Memory is an ABAP class handling different strategies for saving messages i
 ### Summarize Strategy
 
 ### Key Features
-* **Agentic Orchestration:** Define multi-step reasoning loops directly in ABAP.
-* **Clean Core Ready:** Built for S/4HANA Cloud using released APIs.
-* **Memory Management:** Persistence layer for conversation history and "thinking" states.
-* **Tool Integration:** Seamless binding between LLM reasoning and ABAP executable logic.
-
-### Architecture: ABAP Cloud & SAP BTP
-
-**AIPF** follows a **side-by-side extension pattern** and **clean core** design, bridging the gap between high-level AI reasoning and on-stack business execution:
-
-* **Orchestration Layer**: Runs on **ABAP Cloud** (S/4HANA Public or Private Cloud and BTP), managing the state of the agentic loop, memory persistence, and tool dispatching.
-* **Intelligence Layer**: Connects to **SAP BTP (Generative AI Hub)** to securely access Large Language Models (LLMs) such as GPT-4, Claude, or Mistral.
-* **Communication**: Leverages the **ABAP AI SDK** for secure, authenticated, and "Clean Core" compliant communication between the SAP backend and BTP AI services.
-
-### Technical Overview
-
-At its core, an agent is a single-threaded process that starts with an initial decision, loops through tool executions, and concludes with a final decision call. It is designed to be simple: it receives a **string input** and returns a **string output**.
-
-```mermaid
-
-flowchart TD
-    Start(["User Input: Prompt String + Agent Name"]) --> Init["Initialize Agent and Query Object"]
-    Init --> Decision1{"Invoke Decision Engine<br/>(LLM, ML, IF-ELSE)"}
-    Decision1 --> Plan["Generate Step Plan"]
-    Plan --> Build["Build Execution Run + Query + Steps"]
-    Build --> Exec["Execute Steps according to Step Plan"]
-    Exec --> Decision2{"Invoke Decision Engine"}
-    Decision2 --> Response["Generate Final Response"]
-    Response --> End(["Return Final Response String to User"])
-
-    style Start fill:#f9f,stroke:#333,stroke-width:2px
-    style End fill:#f9f,stroke:#333,stroke-width:2px
-    style Decision1 fill:#fff4dd,stroke:#d4a017,stroke-width:2px
-    style Decision2 fill:#fff4dd,stroke:#d4a017,stroke-width:2px
-
-```
 
 ### Developer Experience
 
@@ -196,7 +161,7 @@ Agent configurations and their assigned tools are stored in the framework's data
 | **TOOL_PROVIDER** | `ZPRU_IF_TOOL_PROVIDER` | Class implementing the tool definition and execution. |
 
 
-### Agent Types
+### Agent Categories
 
 AIPF is designed to be model-agnostic. You can choose the "Intelligence Level" of your agent based on the complexity of the business task:
 
