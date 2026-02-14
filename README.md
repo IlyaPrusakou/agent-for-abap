@@ -18,16 +18,16 @@ Core idea expressed in pseudo ABAP:
 " select tool metadata from agent database table
 " feed tools metadata to LLM to get execution plan
 LOOP AT lt_execution_plan ASSIGNING TO FIELD-SYMBOL(<ls_execution_plan>).
-ASSIGN lt_agent_tool[ tool_name = <ls_execution_plan>-tool_name ] TO FIELD-SYMBOL(<ls_agent_tool>).
-""""
-""""
-CREATE OBJECT lo_tool TYPE (<ls_agent_tool>-classname).
-""""
-""""
-lo_tool->execute_tool( EXPORTING is_input = ls_input
-                       IMPORTING es_output = ls_output ).
-""""
-""""
+  ASSIGN lt_agent_tool[ tool_name = <ls_execution_plan>-tool_name ] TO FIELD-SYMBOL(<ls_agent_tool>).
+  """"
+  """"
+  CREATE OBJECT lo_tool TYPE (<ls_agent_tool>-classname).
+  """"
+  """"
+  lo_tool->execute_tool( EXPORTING is_input = ls_input
+                         IMPORTING es_output = ls_output ).
+  """"
+  """"
 ENDLOOP.
 " feed LLM last output to get final response
 " return final response to consumer
@@ -163,30 +163,40 @@ Basically, this differiantion are made based on how developer provides implement
 
 ```abap
 METHOD zpru_if_decision_provider~call_decision_engine.
-IF ls_input-strategy_name = `CREATE_INBOUND_DELIVERY`.
-APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
-<ls_execution_plan>-tool_name = `GET_PO_DETAILS`.
-"""""
-"""""
-APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
-<ls_execution_plan>-tool_name = `POST_INBOUND_DELIVERY`
-
-ELSEIF ls_input-strategy_name = `COMPLETE_WAREHOUSE_ORDER`.
-APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
-<ls_execution_plan>-tool_name = `CONFIRM_PICKING_WTS`.
-""""
-""""
-APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
-<ls_execution_plan>-tool_name = `SET_WO_STATUS_COMPLETE`.
-
-ELSE.
-APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
-<ls_execution_plan>-tool_name = `SEND_EMAIL_WRONG_STRATEGY`.
-ENDIF.
+  IF ls_input-strategy_name = `CREATE_INBOUND_DELIVERY`.
+    APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname = `GET_PO_DETAILS`.
+ 
+    APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname = `POST_INBOUND_DELIVERY`
+  ELSEIF ls_input-strategy_name = `COMPLETE_WAREHOUSE_ORDER`.
+    APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname = `CONFIRM_PICKING_WTS`.
+ 
+    APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname = `SET_WO_STATUS_COMPLETE`.
+  ELSE.
+    APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname = `SEND_EMAIL_WRONG_STRATEGY`.
+  ENDIF.
 ENDMETHOD. 
 ```
 #### LLM Agent
 
+```abap
+METHOD zpru_if_decision_provider~call_decision_engine.
+  FINAL(lo_api) = cl_aic_islm_compl_api_factory=>get( )->create_instance( 'ST-GEMINI-3.0' ).
+  FINAL(lv_response) = lo_api->execute_for_string( 'I got CMR N1234562KL. How to procced?' )->get_completion( ).
+
+  /ui2/cl_json=>deserialize( EXPORTING json = lv_response
+                             CHANGING  data = ls_parsed_response ).
+
+  LOOP AT ls_parsed_response-content ASSIGNING TO FIELD-SYMBOL(<ls_candidate>).
+    APPEND INITIAL LINE TO lt_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname  = <ls_candidate>-toolname.
+  ENDLOOP.
+ENDMETHOD. 
+```
 
 * **Decision Agent:** Acts as a meta-orchestrator. It can use an LLM to "think," an ML model to "calculate," and BRF+ to "verify" against corporate policy before executing a BAPI.
 
