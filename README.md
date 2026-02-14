@@ -313,6 +313,52 @@ ls_agent-longmemoryprovider   = `ZPRU_CL_LONG_MEMORY_BASE`.
 ls_agent-agentinfoprovider    = `ZCL_AGENT_INFO_PROVIDER`.
 ls_agent-systempromptprovider = `ZCL_SYST_PROMPT_PROVIDER`.
 ```
+### Implement your first tool - ABAP code tool
+Developer has two options. First is to create new class and implement common tool interface ZPRU_IF_TOOL_EXECUTOR and specific tool interface ZPRU_IF_ABAP_EXECUTOR. The second option is just inherit from basic class ZPRU_CL_ABAP_EXECUTOR and implement only abstract method EXECUTE_CODE_INT. In both variants developer must additionally implement interface ZPRU_IF_TOOL_PROVIDER to provide logic to instantiate tool.
+For sure you can make separate class for interface ZPRU_IF_TOOL_PROVIDER if you need make some fancy instantiating logic. In our simple example we just return self reference ME.
+
+#### Tool from scratch
+```abap
+CLASS ZCL_ABAP_CODE_TOOL1 DEFINTION CREATE PUBLIC.
+  PUBLIC SECTION.
+    INTERFACES zpru_if_tool_executor.
+    INTERFACES zpru_if_abap_executor.
+    INTERFACES zpru_if_tool_provider
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+CLASS ZCL_ABAP_CODE_TOOL1 IMPLEMENTATION.
+METHOD zpru_if_abap_executor~execute_code.
+  DATA lv_tool_output TYPE string.
+  lv_tool_output = `My tool is executed`.
+ENDMETHOD.
+METHOD zpru_if_tool_provider~get_tool.
+  ro_executor = me.
+ENDMETHOD.
+ENDCLASS.
+```
+
+#### Tool via inheriting
+```abap
+CLASS ZCL_ABAP_CODE_TOOL2 DEFINTION INHERITING FROM zpru_cl_abap_executor CREATE PUBLIC.
+  PUBLIC SECTION.
+  INTERFACES zpru_if_tool_provider.
+  PROTECTED SECTION.
+   METHODS execute_code_int REDEFINITION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+CLASS ZCL_ABAP_CODE_TOOL2 IMPLEMENTATION.
+METHOD  execute_code_int.
+  DATA lv_tool_output TYPE string.
+  lv_tool_output = `My tool is executed`.
+ENDMETHOD.
+METHOD zpru_if_tool_provider~get_tool.
+  ro_executor = me.
+ENDMETHOD.
+ENDCLASS.
+```
 
 
 
