@@ -12,6 +12,11 @@ Standard AI calls in ABAP are stateless—they send a prompt and get a response.
 **Actionables:** Various ABAP-based Tools, etc.
 The framework requires writing a significant amount of ABAP code. It is designed for developers and implies that you are proficient in writing ABAP code and have a solid understanding of concepts like APIs, HTTP, and integration patterns. You must be capable of integrating different types of APIs, such as LLMs, Machine Learning models, and various external services. Moreover, you must know how to execute these integrations within the constraints and architecture of the SAP landscape. 
 
+### Installation
+1. Install [abapGit](https://abapgit.org/).
+2. Create a new Online Repo with the URL: `https://github.com/IlyaPrusakou/aipf`
+3. Pull the objects into the system.
+
 ### Agent Definition
 
 Agent Definition is a combination of data base tables, containing names of main ABAP classes; table for Agent and table for Agent Tools.
@@ -32,19 +37,6 @@ The Execution Plan is a sequence of steps to be executed. Each step is a tool an
 
 A Tool is an ABAP class providing a piece of executable ABAP code. Additionally, a Tool contains metadata expanding and clarifying the tool's role. The Tool itself must implement the interface ZPRU_IF_TOOL_EXECUTOR and a specific tool interface, e.g., ZPRU_IF_ABAP_EXECUTOR. Alternatively, you can inherit from a specific base class, e.g., ZPRU_CL_ABAP_EXECUTOR. Each specific class contains an abstract method where the developer must provide the ABAP code.
 
-### Tool Metadata
-
-Tool Metadata is an ABAP class implementing the interface ZPRU_IF_TOOL_INFO_PROVIDER and returning tool metadata as a plain string.
-
-### Tool Schema Provider
-
-Tool Schema Provider is ABAP class returning input and output schema. It support two formats: JSON and ABAP RTTS types. 
-
-### Miniloop
-
-Miniloop is a dynamic feature that enables the creation and execution of sub-steps within an existing execution plan.
-Technically, a developer simply populates an exporting parameter during tool execution with the new steps required. The framework then intercepts these additional steps and injects them into the workflow - executing them immediately after the current step and before the next scheduled step in the initial plan.
-
 ### Supported Tools
 
 | # | Tool Type | Description |
@@ -59,6 +51,19 @@ Technically, a developer simply populates an exporting parameter during tool exe
 | 8 | Inference Machine Learning Model | You write an ABAP class which calls a Machine Learning API. |
 | 9 | User Tool | You write an ABAP class where you can invoke screens if you work in on-premise or private cloud systems to provide the Human-In-The-Loop pattern. |
 
+### Tool Info Provider
+
+Tool Info Provider is an ABAP class implementing the interface ZPRU_IF_TOOL_INFO_PROVIDER and returning tool metadata as a plain string.
+
+### Tool Schema Provider
+
+Tool Schema Provider is ABAP class returning input and output schema. It support two formats: JSON and ABAP RTTS types. 
+
+### Miniloop
+
+Miniloop is a dynamic feature that enables the creation and execution of sub-steps within an existing execution plan.
+Technically, a developer simply populates an exporting parameter during tool execution with the new steps required. The framework then intercepts these additional steps and injects them into the workflow - executing them immediately after the current step and before the next scheduled step in the initial plan.
+
 ### Key Features
 * **Agentic Orchestration:** Define multi-step reasoning loops directly in ABAP.
 * **Clean Core Ready:** Built for S/4HANA Cloud using released APIs.
@@ -72,11 +77,6 @@ Technically, a developer simply populates an exporting parameter during tool exe
 * **Orchestration Layer**: Runs on **ABAP Cloud** (S/4HANA Public or Private Cloud and BTP), managing the state of the agentic loop, memory persistence, and tool dispatching.
 * **Intelligence Layer**: Connects to **SAP BTP (Generative AI Hub)** to securely access Large Language Models (LLMs) such as GPT-4, Claude, or Mistral.
 * **Communication**: Leverages the **ABAP AI SDK** for secure, authenticated, and "Clean Core" compliant communication between the SAP backend and BTP AI services.
-
-### Installation
-1. Install [abapGit](https://abapgit.org/).
-2. Create a new Online Repo with the URL: `https://github.com/IlyaPrusakou/aipf`
-3. Pull the objects into the system.
 
 ### Technical Overview
 
