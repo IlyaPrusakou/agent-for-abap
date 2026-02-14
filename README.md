@@ -159,7 +159,7 @@ AIPF is designed to be model-agnostic. You can choose the "Intelligence Level" o
 
 Basically, this differiantion are made based on how developer provides implementation for interface zpru_if_decision_provider~call_decision_engine 
 
-#### If-ELSE Agent
+#### IF-ELSE Agent
 
 ```abap
 METHOD zpru_if_decision_provider~call_decision_engine.
@@ -196,6 +196,41 @@ METHOD zpru_if_decision_provider~call_decision_engine.
     <ls_execution_plan>-toolname  = <ls_candidate>-toolname.
   ENDLOOP.
 ENDMETHOD. 
+```
+
+#### Decision Agent
+```abap
+METHOD zpru_if_decision_provider~call_decision_engine.
+  "Main Process: Decide if a received Handling Unit (HU) needs full inspection or immediate putaway.
+
+  "First Question: Does the vendor's attached delivery note or damage description suggest a recurring quality issue?
+  lo_llm_provider->call_llm( EXPORTING iv_input      = ls_delivery_note-raw_text
+                             IMPORTING ev_risk_level = lv_risk_level ).
+  IF lv_risk_level = `HIGH`.
+    APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname = `PROVIDE_HUMAN_VISUAL_INSPECTION`.
+  ENDIF.
+
+  "Second Question: Based on the Product Category and Risk Level, what is the required Sampling Percentage?
+  lo_bfr_provider->call_brf( EXPORTING iv_product_category = ls_delivery_note-product_category
+                                       iv_risk_level       = lv_risk_level
+                             IMPORTING ev_sample_size      = lv_sample_size ).
+  IF lv_sample_size > 50.
+    APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname = `CHECK_WORKFORCE_AVAILABILITY`.
+  ENDIF.
+
+  lo_ewm_api->read_work_center( EXPORTING iv_wc_name     = 'QLTY'
+                                IMPORTING es_work_center = ls_work_center ).
+
+  IF ls_work_center-workcenterisavailable = abap_true.
+    APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname = `SEND_TO_WORK_CENTER`.
+  ELSE.
+    APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname = `IMMIDIATE_PUTAWAY`.
+  ENDIF. 
+ENDMETHOD.
 ```
 
 * **Decision Agent:** Acts as a meta-orchestrator. It can use an LLM to "think," an ML model to "calculate," and BRF+ to "verify" against corporate policy before executing a BAPI.
