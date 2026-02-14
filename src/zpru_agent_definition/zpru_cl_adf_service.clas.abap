@@ -634,7 +634,7 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD zpru_if_adf_service~rba_tool.
-    DATA ls_out TYPE zpru_s_agent_tool.
+    DATA lt_rba_in TYPE TABLE FOR READ IMPORT ZR_PRU_AGENT\_tool.
 
     CLEAR et_tool.
 
@@ -647,40 +647,55 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
                        CHANGING  cs_reported   = cs_reported
                                  cs_failed     = cs_failed ).
 
-    zpru_cl_adf_buffer=>prep_agent_buffer( VALUE #( FOR <ls_k>
-                                                    IN     lt_entities
-                                                    ( agent_uuid = <ls_k>-agentuuid ) ) ).
+    IF lt_entities IS INITIAL.
+      RETURN.
+    ENDIF.
 
-    zpru_cl_adf_buffer=>prep_tool_buffer( VALUE #( FOR <ls_q>
-                                                   IN     lt_entities
-                                                   ( agent_uuid = <ls_q>-agentuuid ) ) ).
+    LOOP AT lt_entities ASSIGNING FIELD-SYMBOL(<ls_read>).
+      APPEND INITIAL LINE TO lt_rba_in ASSIGNING FIELD-SYMBOL(<ls_rba_in>).
+      <ls_rba_in>-AIPF7AgentUUID = <ls_read>-agentuuid.
+      <ls_rba_in>-%control-AIPF7ToolUuid           = <ls_read>-control-tooluuid.
+      <ls_rba_in>-%control-AIPF7AgentUuid          = <ls_read>-control-agentuuid.
+      <ls_rba_in>-%control-AIPF7ToolName           = <ls_read>-control-toolname.
+      <ls_rba_in>-%control-AIPF7ToolProvider       = <ls_read>-control-toolprovider.
+      <ls_rba_in>-%control-AIPF7StepType           = <ls_read>-control-steptype.
+      <ls_rba_in>-%control-AIPF7ToolSchemaProvider = <ls_read>-control-toolschemaprovider.
+      <ls_rba_in>-%control-AIPF7ToolInfoProvider   = <ls_read>-control-toolinfoprovider.
+      <ls_rba_in>-%control-AIPF7ToolIsBorrowed     = <ls_read>-control-toolisborrowed.
+      <ls_rba_in>-%control-AIPF7ToolIsTransient    = <ls_read>-control-toolistransient.
+    ENDLOOP.
 
-    LOOP AT lt_entities ASSIGNING FIELD-SYMBOL(<ls_h>).
-      LOOP AT zpru_cl_adf_buffer=>tool_buffer ASSIGNING FIELD-SYMBOL(<ls_t_buf>)
-           WHERE     instance-agentuuid = <ls_h>-agentuuid
-                 AND deleted             = abap_false.
+    READ ENTITIES OF ZR_PRU_AGENT
+         ENTITY Agent
+         BY \_tool
+         FROM lt_rba_in
+         RESULT DATA(lt_result)
+         FAILED DATA(ls_failed_eml)
+         REPORTED DATA(ls_reported_eml).
 
-        CLEAR ls_out.
-        ls_out-tooluuid           = <ls_t_buf>-instance-tooluuid.
-        ls_out-agentuuid          = COND #( WHEN <ls_h>-control-agentuuid = abap_true
-                                            THEN <ls_t_buf>-instance-agentuuid ).
-        ls_out-toolname           = COND #( WHEN <ls_h>-control-toolname = abap_true
-                                            THEN <ls_t_buf>-instance-toolname ).
-        ls_out-toolprovider       = COND #( WHEN <ls_h>-control-toolprovider = abap_true
-                                            THEN <ls_t_buf>-instance-toolprovider ).
-        ls_out-steptype           = COND #( WHEN <ls_h>-control-steptype = abap_true
-                                            THEN <ls_t_buf>-instance-steptype ).
-        ls_out-toolschemaprovider = COND #( WHEN <ls_h>-control-toolschemaprovider = abap_true
-                                            THEN <ls_t_buf>-instance-toolschemaprovider ).
-        ls_out-toolinfoprovider   = COND #( WHEN <ls_h>-control-toolinfoprovider = abap_true
-                                            THEN <ls_t_buf>-instance-toolinfoprovider ).
-        ls_out-toolisborrowed         = COND #( WHEN <ls_h>-control-toolisborrowed = abap_true
-                                            THEN <ls_t_buf>-instance-toolisborrowed ).
-        ls_out-toolistransient        = COND #( WHEN <ls_h>-control-toolistransient = abap_true
-                                            THEN <ls_t_buf>-instance-toolistransient ).
+    LOOP AT ls_failed_eml-agent ASSIGNING FIELD-SYMBOL(<ls_failed_agent>).
+      APPEND INITIAL LINE TO cs_failed-agent ASSIGNING FIELD-SYMBOL(<ls_failed_agent_target>).
+      <ls_failed_agent_target>-agentuuid = <ls_failed_agent>-AIPF7AgentUUID.
+      <ls_failed_agent_target>-fail    = CONV #( <ls_failed_agent>-%fail-cause ).
+    ENDLOOP.
 
-        APPEND ls_out TO et_tool.
-      ENDLOOP.
+    LOOP AT ls_reported_eml-agent ASSIGNING FIELD-SYMBOL(<ls_reported_agent>).
+      APPEND INITIAL LINE TO cs_reported-agent ASSIGNING FIELD-SYMBOL(<ls_reported_agent_target>).
+      <ls_reported_agent_target>-agentuuid = <ls_reported_agent>-AIPF7AgentUUID.
+*      <ls_reported_agent_target>-msg      = <ls_reported_agent>-%msg.
+    ENDLOOP.
+
+    LOOP AT lt_result ASSIGNING FIELD-SYMBOL(<ls_res>).
+      APPEND INITIAL LINE TO et_tool ASSIGNING FIELD-SYMBOL(<ls_out>).
+      <ls_out>-tooluuid           = <ls_res>-AIPF7ToolUuid.
+      <ls_out>-agentuuid          = <ls_res>-AIPF7AgentUuid.
+      <ls_out>-toolname           = <ls_res>-AIPF7ToolName.
+      <ls_out>-toolprovider       = <ls_res>-AIPF7ToolProvider.
+      <ls_out>-steptype           = <ls_res>-AIPF7StepType.
+      <ls_out>-toolschemaprovider = <ls_res>-AIPF7ToolSchemaProvider.
+      <ls_out>-toolinfoprovider   = <ls_res>-AIPF7ToolInfoProvider.
+      <ls_out>-toolisborrowed         = <ls_res>-AIPF7ToolIsBorrowed.
+      <ls_out>-toolistransient        = <ls_res>-AIPF7ToolIsTransient.
     ENDLOOP.
   ENDMETHOD.
 
