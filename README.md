@@ -18,7 +18,7 @@ Core idea expressed in pseudo ABAP:
 " select tools from agent database table
 " feed tools metadata to LLM to get execution plan
 LOOP AT lt_execution_plan ASSIGNING TO FIELD-SYMBOL(<ls_execution_plan>).
-ASSIGN lt_agent_tool TO FIELD-SYMBOL(<ls_agent_tool>).
+ASSIGN lt_agent_tool[ tool_name = <ls_execution_plan>-tool_name ] TO FIELD-SYMBOL(<ls_agent_tool>).
 """"
 """"
 CREATE OBJECT lo_tool TYPE (<ls_agent_tool>-classname).
