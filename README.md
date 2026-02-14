@@ -1,4 +1,4 @@
-# AIPF - Agentic Intelligence Processing Framework
+# AIPF - Agentic Integration Processing Framework
 
 The name is inspired by famous **Business Object Processing Framework (BOPF)**
 
