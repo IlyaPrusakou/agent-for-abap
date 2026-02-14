@@ -700,7 +700,7 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD zpru_if_adf_service~read_tool.
-    DATA ls_out TYPE zpru_s_agent_tool.
+    DATA lt_read_in TYPE TABLE FOR READ IMPORT ZR_PRU_AGENT\AgentTool.
 
     CLEAR et_tool.
 
@@ -713,64 +713,56 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
                         CHANGING  cs_reported    = cs_reported
                                   cs_failed      = cs_failed ).
 
-    zpru_cl_adf_buffer=>prep_agent_buffer( VALUE #( FOR <ls_k>
-                                                    IN     lt_entities
-                                                    ( agent_uuid = <ls_k>-agentuuid ) ) ).
-
-    zpru_cl_adf_buffer=>prep_tool_buffer( VALUE #( FOR <ls_q>
-                                                   IN     lt_entities
-                                                   ( agent_uuid = <ls_q>-agentuuid
-                                                     tool_uuid  = <ls_q>-tooluuid
-                                                     full_key   = abap_true ) ) ).
+    IF lt_entities IS INITIAL.
+      RETURN.
+    ENDIF.
 
     LOOP AT lt_entities ASSIGNING FIELD-SYMBOL(<ls_read>).
-      ASSIGN zpru_cl_adf_buffer=>agent_buffer[ instance-agentuuid = <ls_read>-agentuuid ] TO FIELD-SYMBOL(<ls_parent>).
-      IF sy-subrc = 0 AND <ls_parent>-deleted = abap_true.
-        APPEND VALUE #( agentuuid = <ls_read>-agentuuid
-                        tooluuid  = <ls_read>-tooluuid
-                        fail      = zpru_if_agent_frw=>cs_fail_cause-not_found )
-               TO cs_failed-tool.
-        CONTINUE.
-      ENDIF.
+      APPEND INITIAL LINE TO lt_read_in ASSIGNING FIELD-SYMBOL(<ls_read_in>).
+      <ls_read_in>-AIPF7ToolUuid = <ls_read>-tooluuid.
+      <ls_read_in>-%control-AIPF7ToolUuid           = <ls_read>-control-tooluuid.
+      <ls_read_in>-%control-AIPF7AgentUuid          = <ls_read>-control-agentuuid.
+      <ls_read_in>-%control-AIPF7ToolName           = <ls_read>-control-toolname.
+      <ls_read_in>-%control-AIPF7ToolProvider       = <ls_read>-control-toolprovider.
+      <ls_read_in>-%control-AIPF7StepType           = <ls_read>-control-steptype.
+      <ls_read_in>-%control-AIPF7ToolSchemaProvider = <ls_read>-control-toolschemaprovider.
+      <ls_read_in>-%control-AIPF7ToolInfoProvider   = <ls_read>-control-toolinfoprovider.
+      <ls_read_in>-%control-AIPF7ToolIsBorrowed     = <ls_read>-control-toolisborrowed.
+      <ls_read_in>-%control-AIPF7ToolIsTransient    = <ls_read>-control-toolistransient.
+    ENDLOOP.
 
-      ASSIGN zpru_cl_adf_buffer=>tool_buffer[ instance-agentuuid = <ls_read>-agentuuid
-                                              instance-tooluuid  = <ls_read>-tooluuid ] TO FIELD-SYMBOL(<ls_buffer>).
-      IF sy-subrc = 0.
-        IF <ls_buffer>-deleted = abap_true.
-          APPEND VALUE #( agentuuid = <ls_read>-agentuuid
-                          tooluuid  = <ls_read>-tooluuid
-                          fail      = zpru_if_agent_frw=>cs_fail_cause-not_found )
-                 TO cs_failed-tool.
-          CONTINUE.
-        ENDIF.
+    READ ENTITIES OF ZR_PRU_AGENT
+         ENTITY AgentTool
+         FROM lt_read_in
+         RESULT DATA(lt_result)
+         FAILED DATA(ls_failed_eml)
+         REPORTED DATA(ls_reported_eml).
 
-        CLEAR ls_out.
-        ls_out-tooluuid           = <ls_buffer>-instance-tooluuid.
-        ls_out-agentuuid          = COND #( WHEN <ls_read>-control-agentuuid = abap_true
-                                            THEN <ls_buffer>-instance-agentuuid ).
-        ls_out-toolname           = COND #( WHEN <ls_read>-control-toolname = abap_true
-                                            THEN <ls_buffer>-instance-toolname ).
-        ls_out-toolprovider       = COND #( WHEN <ls_read>-control-toolprovider = abap_true
-                                            THEN <ls_buffer>-instance-toolprovider ).
-        ls_out-steptype           = COND #( WHEN <ls_read>-control-steptype = abap_true
-                                            THEN <ls_buffer>-instance-steptype ).
-        ls_out-toolschemaprovider = COND #( WHEN <ls_read>-control-toolschemaprovider = abap_true
-                                            THEN <ls_buffer>-instance-toolschemaprovider ).
-        ls_out-toolinfoprovider   = COND #( WHEN <ls_read>-control-toolinfoprovider = abap_true
-                                            THEN <ls_buffer>-instance-toolinfoprovider ).
-        ls_out-toolisborrowed         = COND #( WHEN <ls_read>-control-toolisborrowed = abap_true
-                                            THEN <ls_buffer>-instance-toolisborrowed ).
-        ls_out-toolistransient        = COND #( WHEN <ls_read>-control-toolistransient = abap_true
-                                            THEN <ls_buffer>-instance-toolistransient ).
+    LOOP AT ls_failed_eml-agenttool ASSIGNING FIELD-SYMBOL(<ls_failed_tool>).
+      APPEND INITIAL LINE TO cs_failed-tool ASSIGNING FIELD-SYMBOL(<ls_failed_tool_target>).
+      <ls_failed_tool_target>-tooluuid  = <ls_failed_tool>-AIPF7ToolUuid.
+      <ls_failed_tool_target>-agentuuid = <ls_failed_tool>-AIPF7AgentUuid.
+      <ls_failed_tool_target>-fail       = CONV #( <ls_failed_tool>-%fail-cause ).
+    ENDLOOP.
 
-        APPEND ls_out TO et_tool.
+    LOOP AT ls_reported_eml-agenttool ASSIGNING FIELD-SYMBOL(<ls_reported_tool>).
+      APPEND INITIAL LINE TO cs_reported-tool ASSIGNING FIELD-SYMBOL(<ls_reported_tool_target>).
+      <ls_reported_tool_target>-tooluuid  = <ls_reported_tool>-AIPF7ToolUuid.
+      <ls_reported_tool_target>-agentuuid = <ls_reported_tool>-AIPF7AgentUuid.
+*      <ls_reported_tool_target>-msg       = <ls_reported_tool>-%msg.
+    ENDLOOP.
 
-      ELSE.
-        APPEND VALUE #( agentuuid = <ls_read>-agentuuid
-                        tooluuid  = <ls_read>-tooluuid
-                        fail      = zpru_if_agent_frw=>cs_fail_cause-not_found )
-               TO cs_failed-tool.
-      ENDIF.
+    LOOP AT lt_result ASSIGNING FIELD-SYMBOL(<ls_res>).
+      APPEND INITIAL LINE TO et_tool ASSIGNING FIELD-SYMBOL(<ls_out>).
+      <ls_out>-tooluuid           = <ls_res>-AIPF7ToolUuid.
+      <ls_out>-agentuuid          = <ls_res>-AIPF7AgentUuid.
+      <ls_out>-toolname           = <ls_res>-AIPF7ToolName.
+      <ls_out>-toolprovider       = <ls_res>-AIPF7ToolProvider.
+      <ls_out>-steptype           = <ls_res>-AIPF7StepType.
+      <ls_out>-toolschemaprovider = <ls_res>-AIPF7ToolSchemaProvider.
+      <ls_out>-toolinfoprovider   = <ls_res>-AIPF7ToolInfoProvider.
+      <ls_out>-toolisborrowed         = <ls_res>-AIPF7ToolIsBorrowed.
+      <ls_out>-toolistransient        = <ls_res>-AIPF7ToolIsTransient.
     ENDLOOP.
   ENDMETHOD.
 
