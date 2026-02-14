@@ -59,6 +59,9 @@ Tool Info Provider is an ABAP class implementing the interface ZPRU_IF_TOOL_INFO
 
 Tool Schema Provider is ABAP class returning input and output schema. It support two formats: JSON and ABAP RTTS types. 
 
+## Agent Type
+
+
 ## Agent Execution
 
 While Agent Definition contains project of the Agent, Agent Execution will use these data to create and execute agent. It reads names of ABAP classes from agent definition from database and create and perform Agent Execution. Technically, Agent Execution will saved in data base tables for Execution Header, Execution Query and Execution Steps.
@@ -79,6 +82,22 @@ Execution Step contains input prompt to step and output of execution of ABAP Too
 
 Miniloop is a dynamic feature that enables the creation and execution of sub-steps within an existing execution plan.
 Technically, a developer simply populates an exporting parameter during tool execution with the new steps required. The framework then intercepts these additional steps and injects them into the workflow - executing them immediately after the current step and before the next scheduled step in the initial plan.
+
+## Memory Managment
+
+Memory Managment comprises ABAP classes, processing Short Memory, Long Memory, Memory Summirization and Memory Discard.
+
+### Short Memory
+
+Short Memory is an ABAP class handling messages during execution particular Execution Query. It has basic implementation and developer must attach certain ABAP class (basic, custom or inherited from basic) to each Agent Definition.  
+
+### Long Memory
+
+Long Memory is an ABAP class handling different strategies for saving messages into database table. It has basic implementation and developer must attach certain ABAP class (basic, custom or inherited from basic) to each Agent Definition. Save strategies are persisting raw messages or persisting summarized messages in database table.  
+
+### Discard Strategy
+
+### Summarize Strategy
 
 ### Key Features
 * **Agentic Orchestration:** Define multi-step reasoning loops directly in ABAP.
