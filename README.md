@@ -6,18 +6,18 @@ The name is inspired by famous **Business Object Processing Framework (BOPF)**
 
 **Disclaimer**: SAP, ABAP, BTP, and BOPF are trademarks or registered trademarks of SAP SE in Germany and other countries. AIPF is an independent open-source project and is not affiliated with, sponsored by, or endorsed by SAP SE.
 
-### Long Story Short
+## Long Story Short
 Standard AI calls in ABAP are stateless—they send a prompt and get a response. AIPF adds the Brain and Muscles:
 **Decision Platform:** ABAP-based Decision Engine, ABAP-based Short-Term Memory Management, ABAP-based Long-Term Memory Framework, etc.
 **Actionables:** Various ABAP-based Tools, etc.
 The framework requires writing a significant amount of ABAP code. It is designed for developers and implies that you are proficient in writing ABAP code and have a solid understanding of concepts like APIs, HTTP, and integration patterns. You must be capable of integrating different types of APIs, such as LLMs, Machine Learning models, and various external services. Moreover, you must know how to execute these integrations within the constraints and architecture of the SAP landscape. 
 
-### Installation
+## Installation
 1. Install [abapGit](https://abapgit.org/).
 2. Create a new Online Repo with the URL: `https://github.com/IlyaPrusakou/aipf`
 3. Pull the objects into the system.
 
-### Agent Definition
+## Agent Definition
 
 Agent Definition is a combination of data base tables, containing names of main ABAP classes; table for Agent and table for Agent Tools.
 Agent table contains names for ABAP classes: Decision Provider, Short Memory Provider, Long Memory Provider, Agent Info Provider, System Prompr Provider.
@@ -58,6 +58,22 @@ Tool Info Provider is an ABAP class implementing the interface ZPRU_IF_TOOL_INFO
 ### Tool Schema Provider
 
 Tool Schema Provider is ABAP class returning input and output schema. It support two formats: JSON and ABAP RTTS types. 
+
+## Agent Execution
+
+While Agent Definition contains project of the Agent, Agent Execution will use these data to create and execute agent. It reads names of ABAP classes from agent definition from database and create and perform Agent Execution. Technically, Agent Execution will saved in data base tables for Execution Header, Execution Query and Execution Steps.
+
+### Execution Header
+
+Execution Header is root for execution and has unique UUID. It can have multiple execution queries. 
+
+### Execution Query
+
+Execution Query is combination initial input prompt, provided by framework consumer, and final response, provided by agent framework after execution all steps from the execution plan. It recieves unique UUID and attach to certain Execution Header.
+
+### Execution Step
+
+Execution Step contains input prompt to step and output of execution of ABAP Tool Provider class. Apart of output itself the Execution Step can return list of additional steps for execution to initiate Miniloop. 
 
 ### Miniloop
 
