@@ -108,9 +108,9 @@ It recieves unique UUID and attach to certain Execution Query.
 Miniloop is a dynamic feature that enables the creation and execution of sub-steps within an existing execution plan.
 Technically, a developer simply populates an exporting parameter during tool execution with the new steps required. The framework then intercepts these additional steps and injects them into the workflow - executing them immediately after the current step and before the next scheduled step in the initial plan.
 
-## Memory Managment
+## Memory Management
 
-Memory Managment comprises ABAP classes, processing Short Memory, Long Memory, Memory Summirization and Memory Discard.
+Memory Management comprises ABAP classes, processing Short Memory, Long Memory, Memory Summirization and Memory Discard.
 
 ### Short Memory
 
