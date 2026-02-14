@@ -6,17 +6,52 @@ The name is inspired by famous **Business Object Processing Framework (BOPF)**
 
 **Disclaimer**: SAP, ABAP, BTP, and BOPF are trademarks or registered trademarks of SAP SE in Germany and other countries. AIPF is an independent open-source project and is not affiliated with, sponsored by, or endorsed by SAP SE.
 
-### Long Story Short
+## Long Story Short
 Standard AI calls in ABAP are stateless—they send a prompt and get a response. AIPF adds the Brain and Muscles:
 **Decision Platform:** ABAP-based Decision Engine, ABAP-based Short-Term Memory Management, ABAP-based Long-Term Memory Framework, etc.
 **Actionables:** Various ABAP-based Tools, etc.
-The framework requires writing a significant amount of ABAP code. It is designed for developers and implies that you are proficient in writing ABAP code and have a solid understanding of concepts like APIs, HTTP, and integration patterns. You must be capable of integrating different types of APIs, such as LLMs, Machine Learning models, and various external services. Moreover, you must know how to execute these integrations within the constraints and architecture of the SAP landscape. 
+The framework requires writing a significant amount of ABAP code. It is designed for developers and implies that you are proficient in writing ABAP code and have a solid understanding of concepts like APIs, HTTP, and integration patterns. You must be capable of integrating different types of APIs, such as LLMs, Machine Learning models, and various external services. Moreover, you must know how to execute these integrations within the constraints and architecture of the SAP landscape.
 
-### Decision Platform
+Core idea expressed in pseudo ABAP:
 
-Decision Platform is an ABAP class. The framework does not contain a generic implementation. The developer is responsible for writing ABAP code to provide the decision logic.
-Decision logic is a broad concept. It may involve a call to an LLM, hard-coded ABAP logic, or the invocation of a Machine Learning API. Creating a Decision Platform means decomposing domain logic into manageable questions. Some of these can be decided by ABAP, while others can be decided by an LLM, etc. The Decision Platform must implement the interface ZPRU_IF_DECISION_PROVIDER. The output of the Decision Platform's work is an Execution Plan.
-For each agent, the developer must insert an entry into table ZPRU_AGENT containing the name of the ABAP class for the Decision Platform.
+```abap
+" select tool metadata from agent database table
+" feed tools metadata to LLM to get execution plan
+LOOP AT lt_execution_plan ASSIGNING TO FIELD-SYMBOL(<ls_execution_plan>).
+  ASSIGN lt_agent_tool[ tool_name = <ls_execution_plan>-tool_name ] TO FIELD-SYMBOL(<ls_agent_tool>).
+  """"
+  """"
+  CREATE OBJECT lo_tool TYPE (<ls_agent_tool>-classname).
+  """"
+  """"
+  lo_tool->execute_tool( EXPORTING is_input = ls_input
+                         IMPORTING es_output = ls_output ).
+  """"
+  """"
+ENDLOOP.
+" feed LLM last output to get final response
+" return final response to consumer
+```
+
+
+
+
+## Installation
+1. Install [abapGit](https://abapgit.org/).
+2. Create a new Online Repo with the URL: `https://github.com/IlyaPrusakou/aipf`
+3. Pull the objects into the system.
+
+## Agent Definition
+
+Agent Definition is a combination of data base tables, containing names of main ABAP classes; table for Agent and table for Agent Tools.
+Agent table contains names for ABAP classes: Decision Provider, Short Memory Provider, Long Memory Provider, Agent Info Provider, System Prompr Provider.
+Agent Tool contains names for ABAP classes: Tool Provider, Tools Schema Provider and Tool Info Provider
+
+### Decision Provider
+
+Decision Provider is an ABAP class. The framework does not contain a generic implementation. The developer is responsible for writing ABAP code to provide the decision logic.
+Decision logic is a broad concept. It may involve a call to an LLM, hard-coded ABAP logic, or the invocation of a Machine Learning API. Creating a Decision Provider means decomposing domain logic into manageable questions. Some of these questions can be decided by ABAP, while others can be decided by an LLM, etc. The Decision Provider must implement the interface ZPRU_IF_DECISION_PROVIDER. The output of the Decision Provider's work is an Execution Plan.
+For each agent, the developer must insert an entry into table ZPRU_AGENT containing the name of the ABAP class for the Decision Provider.
 
 ### Execution Plan
 
@@ -25,19 +60,6 @@ The Execution Plan is a sequence of steps to be executed. Each step is a tool an
 ### Tool
 
 A Tool is an ABAP class providing a piece of executable ABAP code. Additionally, a Tool contains metadata expanding and clarifying the tool's role. The Tool itself must implement the interface ZPRU_IF_TOOL_EXECUTOR and a specific tool interface, e.g., ZPRU_IF_ABAP_EXECUTOR. Alternatively, you can inherit from a specific base class, e.g., ZPRU_CL_ABAP_EXECUTOR. Each specific class contains an abstract method where the developer must provide the ABAP code.
-
-### Tool Metadata
-
-Tool Metadata is an ABAP class implementing the interface ZPRU_IF_TOOL_INFO_PROVIDER and returning tool metadata as a plain string.
-
-### Tool Schema Provider
-
-
-
-
-### Miniloop
-
-
 
 ### Supported Tools
 
@@ -53,47 +75,62 @@ Tool Metadata is an ABAP class implementing the interface ZPRU_IF_TOOL_INFO_PROV
 | 8 | Inference Machine Learning Model | You write an ABAP class which calls a Machine Learning API. |
 | 9 | User Tool | You write an ABAP class where you can invoke screens if you work in on-premise or private cloud systems to provide the Human-In-The-Loop pattern. |
 
-### Key Features
-* **Agentic Orchestration:** Define multi-step reasoning loops directly in ABAP.
-* **Clean Core Ready:** Built for S/4HANA Cloud using released APIs.
-* **Memory Management:** Persistence layer for conversation history and "thinking" states.
-* **Tool Integration:** Seamless binding between LLM reasoning and ABAP executable logic.
+### Tool Info Provider
 
-### Architecture: ABAP Cloud & SAP BTP
+Tool Info Provider is an ABAP class implementing the interface ZPRU_IF_TOOL_INFO_PROVIDER and returning tool metadata as a plain string.
 
-**AIPF** follows a **side-by-side extension pattern** and **clean core** design, bridging the gap between high-level AI reasoning and on-stack business execution:
+### Tool Schema Provider
 
-* **Orchestration Layer**: Runs on **ABAP Cloud** (S/4HANA Public or Private Cloud and BTP), managing the state of the agentic loop, memory persistence, and tool dispatching.
-* **Intelligence Layer**: Connects to **SAP BTP (Generative AI Hub)** to securely access Large Language Models (LLMs) such as GPT-4, Claude, or Mistral.
-* **Communication**: Leverages the **ABAP AI SDK** for secure, authenticated, and "Clean Core" compliant communication between the SAP backend and BTP AI services.
+Tool Schema Provider is ABAP class returning input and output schema. It support two formats: JSON and ABAP RTTS types. 
 
-### Installation
-1. Install [abapGit](https://abapgit.org/).
-2. Create a new Online Repo with the URL: `https://github.com/IlyaPrusakou/aipf`
-3. Pull the objects into the system.
+## Agent Type
 
-### Technical Overview
 
-At its core, an agent is a single-threaded process that starts with an initial decision, loops through tool executions, and concludes with a final decision call. It is designed to be simple: it receives a **string input** and returns a **string output**.
+## Agent Execution
 
-```mermaid
+While Agent Definition contains project of the Agent, Agent Execution will use these data to create and execute agent. It reads names of ABAP classes from agent definition from database and create and perform Agent Execution. Technically, Agent Execution will saved in data base tables for Execution Header, Execution Query and Execution Steps.
 
-flowchart TD
-    Start(["User Input: Prompt String + Agent Name"]) --> Init["Initialize Agent and Query Object"]
-    Init --> Decision1{"Invoke Decision Engine<br/>(LLM, ML, IF-ELSE)"}
-    Decision1 --> Plan["Generate Step Plan"]
-    Plan --> Build["Build Execution Run + Query + Steps"]
-    Build --> Exec["Execute Steps according to Step Plan"]
-    Exec --> Decision2{"Invoke Decision Engine"}
-    Decision2 --> Response["Generate Final Response"]
-    Response --> End(["Return Final Response String to User"])
+### Execution Header
 
-    style Start fill:#f9f,stroke:#333,stroke-width:2px
-    style End fill:#f9f,stroke:#333,stroke-width:2px
-    style Decision1 fill:#fff4dd,stroke:#d4a017,stroke-width:2px
-    style Decision2 fill:#fff4dd,stroke:#d4a017,stroke-width:2px
+Execution Header is root for execution and has unique UUID. It can have multiple execution queries. 
 
-```
+### Execution Query
+
+Execution Query is combination initial input prompt, provided by framework consumer, and final response, provided by agent framework after execution all steps from the execution plan. It recieves unique UUID and attach to certain Execution Header. It can have multiple execution steps.
+
+### Execution Step
+
+Execution Step contains input prompt to step and output of execution of ABAP Tool Provider class. Apart of output itself the Execution Step can return list of additional steps for execution to initiate Miniloop.
+It recieves unique UUID and attach to certain Execution Query.
+
+### Miniloop
+
+Miniloop is a dynamic feature that enables the creation and execution of sub-steps within an existing execution plan.
+Technically, a developer simply populates an exporting parameter during tool execution with the new steps required. The framework then intercepts these additional steps and injects them into the workflow - executing them immediately after the current step and before the next scheduled step in the initial plan.
+
+## Memory Managment
+
+Memory Managment comprises ABAP classes, processing Short Memory, Long Memory, Memory Summirization and Memory Discard.
+
+### Short Memory
+
+Short Memory is an ABAP class handling messages during execution particular Execution Query. It has basic implementation and developer must attach certain ABAP class (basic, custom or inherited from basic) to each Agent Definition.  
+
+### Long Memory
+
+Long Memory is an ABAP class handling different strategies for saving messages into database table. It has basic implementation and developer must attach certain ABAP class (basic, custom or inherited from basic) to each Agent Definition. Save strategies are persisting raw messages or persisting summarized messages in database table.  
+
+### Discard Strategy
+
+### Summarize Strategy
+
+### Technical Features
+
+#### Adapter Service Framework
+
+#### ABAP Cloud Language Version
+
+#### Base Implementation
 
 ### Developer Experience
 
@@ -107,30 +144,7 @@ To build your agent, you implement the following interfaces:
 * **Tool Definition:** Implement `ZPRU_IF_TOOL_PROVIDER` to describe the tool's capabilities.
 * **Tool Execution:** Implement `ZPRU_IF_TOOL_EXECUTOR` to write the actual ABAP code the agent will trigger.
 
-### Persistence & Dynamic Execution
-
-Agent configurations and their assigned tools are stored in the framework's database tables. When the API method **`RUN`** is executed, the framework dynamically reads these configurations and invokes your interface implementations at runtime.
-
-#### Table: `ZPRU_AGENT` (Agent Registry)
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| **AGENT_UUID** | `RAW(16)` | Unique Identifier for the Agent. |
-| **AGENT_NAME** | `CHAR(100)` | Technical or descriptive name. |
-| **DECISION_PROVIDER** | `ZPRU_IF_DECISION_PROVIDER` | Class implementing the planning logic. |
-| **SHORT_MEMORY_PROVIDER** | `ZPRU_IF_SHORT_MEMORY_PROVIDER` | Handles session-based memory. |
-| **LONG_MEMORY_PROVIDER** | `ZPRU_IF_LONG_MEMORY_PROVIDER` | Handles historical/persistent memory. |
-| **AGENT_INFO_PROVIDER** | `ZPRU_IF_AGENT_INFO_PROVIDER` | Provides metadata about the agent's identity. |
-| **SYSTEM_PROMPT_PROVIDER**| `ZPRU_IF_PROMPT_PROVIDER` | Defines the base persona/instructions. |
-
-#### Table: `ZPRU_AGENT_TOOL` (Tool Assignments)
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| **AGENT_UUID** | `RAW(16)` | Foreign key to the Agent. |
-| **TOOL_NAME** | `CHAR(100)` | Technical name of the tool. |
-| **TOOL_PROVIDER** | `ZPRU_IF_TOOL_PROVIDER` | Class implementing the tool definition and execution. |
-
-
-### Agent Types
+### Agent Categories
 
 AIPF is designed to be model-agnostic. You can choose the "Intelligence Level" of your agent based on the complexity of the business task:
 
@@ -143,8 +157,82 @@ AIPF is designed to be model-agnostic. You can choose the "Intelligence Level" o
 
 ### Implementation Details
 
-* **IF-ELSE Agent:** Perfect for "Clean Core" legacy modernization where you want to wrap existing BRF+ or Condition Technique logic into an agentic interface.
-* **ML & LLM Agents:** Fully integrated with SAP AI Core, allowing you to swap models (e.g., moving from GPT-3.5 to GPT-4o) without changing your ABAP code.
+Basically, this differiantion are made based on how developer provides implementation for interface zpru_if_decision_provider~call_decision_engine 
+
+#### IF-ELSE Agent
+
+```abap
+METHOD zpru_if_decision_provider~call_decision_engine.
+  IF ls_input-strategy_name = `CREATE_INBOUND_DELIVERY`.
+    APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname = `GET_PO_DETAILS`.
+ 
+    APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname = `POST_INBOUND_DELIVERY`
+  ELSEIF ls_input-strategy_name = `COMPLETE_WAREHOUSE_ORDER`.
+    APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname = `CONFIRM_PICKING_WTS`.
+ 
+    APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname = `SET_WO_STATUS_COMPLETE`.
+  ELSE.
+    APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname = `SEND_EMAIL_WRONG_STRATEGY`.
+  ENDIF.
+ENDMETHOD. 
+```
+#### LLM Agent
+
+```abap
+METHOD zpru_if_decision_provider~call_decision_engine.
+  FINAL(lo_api) = cl_aic_islm_compl_api_factory=>get( )->create_instance( 'ST-GEMINI-3.0' ).
+  FINAL(lv_response) = lo_api->execute_for_string( 'I got CMR N1234562KL. How to procced?' )->get_completion( ).
+
+  /ui2/cl_json=>deserialize( EXPORTING json = lv_response
+                             CHANGING  data = ls_parsed_response ).
+
+  LOOP AT ls_parsed_response-content ASSIGNING TO FIELD-SYMBOL(<ls_candidate>).
+    APPEND INITIAL LINE TO lt_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname  = <ls_candidate>-toolname.
+  ENDLOOP.
+ENDMETHOD. 
+```
+
+#### Decision Agent
+```abap
+METHOD zpru_if_decision_provider~call_decision_engine.
+  "Main Process: Decide if a received Handling Unit (HU) needs full inspection or immediate putaway.
+
+  "First Question: Does the vendor's attached delivery note or damage description suggest a recurring quality issue?
+  lo_llm_provider->call_llm( EXPORTING iv_input      = ls_delivery_note-raw_text
+                             IMPORTING ev_risk_level = lv_risk_level ).
+  IF lv_risk_level = `HIGH`.
+    APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname = `PROVIDE_HUMAN_VISUAL_INSPECTION`.
+  ENDIF.
+
+  "Second Question: Based on the Product Category and Risk Level, what is the required Sampling Percentage?
+  lo_bfr_provider->call_brf( EXPORTING iv_product_category = ls_delivery_note-product_category
+                                       iv_risk_level       = lv_risk_level
+                             IMPORTING ev_sample_size      = lv_sample_size ).
+  IF lv_sample_size > 50.
+    APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname = `CHECK_WORKFORCE_AVAILABILITY`.
+  ENDIF.
+
+  lo_ewm_api->read_work_center( EXPORTING iv_wc_name     = 'QLTY'
+                                IMPORTING es_work_center = ls_work_center ).
+
+  IF ls_work_center-workcenterisavailable = abap_true.
+    APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname = `SEND_TO_WORK_CENTER`.
+  ELSE.
+    APPEND INITIAL LINE TO et_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
+    <ls_execution_plan>-toolname = `IMMIDIATE_PUTAWAY`.
+  ENDIF. 
+ENDMETHOD.
+```
+
 * **Decision Agent:** Acts as a meta-orchestrator. It can use an LLM to "think," an ML model to "calculate," and BRF+ to "verify" against corporate policy before executing a BAPI.
 
 ### Agent Composition
