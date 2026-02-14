@@ -296,16 +296,22 @@ METHOD zpru_if_prompt_provider~get_system_prompt.
 ENDMETHOD.
 ENDCLASS.
 ```
+### Short Memory Provider
+Just use framework class ZPRU_CL_SHORT_MEMORY_BASE, but if you want to implement your own short memory management, you may inherit theis class or even create new class and implement interface ZPRU_IF_SHORT_MEMORY_PROVIDER. 
+
+### Long Memory Provider
+Just use framework class ZPRU_CL_LONG_MEMORY_BASE, but if you want to implement your own short memory management, you may inherit theis class or even create new class and implement interface ZPRU_IF_LONG_MEMORY_PROVIDER. 
+
 ### Create entry in database table ZPRU_AGENT
 You can use preview app for RAP business object ZR_PRU_AGENT via service binding ZUI_PRU_AGENT_TYPE_O4
 ```abap
 DATA ls_agent TYPE zpru_agent.
 ls_agent-agentname            = `My first Agent`.
 ls_agent-decisionprovider     = `ZCL_DECISION_PROVIDER`.
-ls_agent-systempromptprovider = `ZCL_SYST_PROMPT_PROVIDER`.
-ls_agent-shortmemoryprovider  = `ZPRU_IF_SHORT_MEMORY_PROVIDER`.
-ls_agent-agentinfoprovider    = `ZCL_AGENT_INFO_PROVIDER`.
+ls_agent-shortmemoryprovider  = `ZPRU_CL_SHORT_MEMORY_BASE`.
 ls_agent-longmemoryprovider   = `ZPRU_CL_LONG_MEMORY_BASE`.
+ls_agent-agentinfoprovider    = `ZCL_AGENT_INFO_PROVIDER`.
+ls_agent-systempromptprovider = `ZCL_SYST_PROMPT_PROVIDER`.
 ```
 
 
