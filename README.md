@@ -10,7 +10,31 @@ The name is inspired by famous **Business Object Processing Framework (BOPF)**
 Standard AI calls in ABAP are stateless—they send a prompt and get a response. AIPF adds the Brain and Muscles:
 **Decision Platform:** ABAP-based Decision Engine, ABAP-based Short-Term Memory Management, ABAP-based Long-Term Memory Framework, etc.
 **Actionables:** Various ABAP-based Tools, etc.
-The framework requires writing a significant amount of ABAP code. It is designed for developers and implies that you are proficient in writing ABAP code and have a solid understanding of concepts like APIs, HTTP, and integration patterns. You must be capable of integrating different types of APIs, such as LLMs, Machine Learning models, and various external services. Moreover, you must know how to execute these integrations within the constraints and architecture of the SAP landscape. 
+The framework requires writing a significant amount of ABAP code. It is designed for developers and implies that you are proficient in writing ABAP code and have a solid understanding of concepts like APIs, HTTP, and integration patterns. You must be capable of integrating different types of APIs, such as LLMs, Machine Learning models, and various external services. Moreover, you must know how to execute these integrations within the constraints and architecture of the SAP landscape.
+
+Core idea expressed in pseudo ABAP:
+
+```abap
+" select tools from agent database table
+" feed tools metadata to LLM to get execution plan
+LOOP AT lt_execution_plan ASSIGNING TO FIELD-SYMBOL(<ls_execution_plan>).
+ASSIGN lt_agent_tool TO FIELD-SYMBOL(<ls_agent_tool>).
+""""
+""""
+CREATE OBJECT lo_tool TYPE (<ls_agent_tool>-classname).
+""""
+""""
+lo_tool->execute_tool( EXPORTING is_input = ls_input
+                       IMPORTING es_output = ls_output ).
+""""
+""""
+ENDLOOP.
+" feed LLM last output to get final response
+" return final response to consumer
+```
+
+
+
 
 ## Installation
 1. Install [abapGit](https://abapgit.org/).
