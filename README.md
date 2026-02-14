@@ -124,7 +124,11 @@ Long Memory is an ABAP class handling different strategies for saving messages i
 
 ### Summarize Strategy
 
-### Key Features
+### Technical Features
+
+Adapter Service Framework
+ABAP Cloud Language Version
+Base Implementation
 
 ### Developer Experience
 
@@ -137,29 +141,6 @@ To build your agent, you implement the following interfaces:
 * **Planning Logic:** Implement `ZPRU_IF_DECISION_PROVIDER` to define how the agent reasons and selects steps.
 * **Tool Definition:** Implement `ZPRU_IF_TOOL_PROVIDER` to describe the tool's capabilities.
 * **Tool Execution:** Implement `ZPRU_IF_TOOL_EXECUTOR` to write the actual ABAP code the agent will trigger.
-
-### Persistence & Dynamic Execution
-
-Agent configurations and their assigned tools are stored in the framework's database tables. When the API method **`RUN`** is executed, the framework dynamically reads these configurations and invokes your interface implementations at runtime.
-
-#### Table: `ZPRU_AGENT` (Agent Registry)
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| **AGENT_UUID** | `RAW(16)` | Unique Identifier for the Agent. |
-| **AGENT_NAME** | `CHAR(100)` | Technical or descriptive name. |
-| **DECISION_PROVIDER** | `ZPRU_IF_DECISION_PROVIDER` | Class implementing the planning logic. |
-| **SHORT_MEMORY_PROVIDER** | `ZPRU_IF_SHORT_MEMORY_PROVIDER` | Handles session-based memory. |
-| **LONG_MEMORY_PROVIDER** | `ZPRU_IF_LONG_MEMORY_PROVIDER` | Handles historical/persistent memory. |
-| **AGENT_INFO_PROVIDER** | `ZPRU_IF_AGENT_INFO_PROVIDER` | Provides metadata about the agent's identity. |
-| **SYSTEM_PROMPT_PROVIDER**| `ZPRU_IF_PROMPT_PROVIDER` | Defines the base persona/instructions. |
-
-#### Table: `ZPRU_AGENT_TOOL` (Tool Assignments)
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| **AGENT_UUID** | `RAW(16)` | Foreign key to the Agent. |
-| **TOOL_NAME** | `CHAR(100)` | Technical name of the tool. |
-| **TOOL_PROVIDER** | `ZPRU_IF_TOOL_PROVIDER` | Class implementing the tool definition and execution. |
-
 
 ### Agent Categories
 
