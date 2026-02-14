@@ -306,7 +306,7 @@ Just use framework class ZPRU_CL_LONG_MEMORY_BASE, but if you want to implement 
 You can use preview app for RAP business object ZR_PRU_AGENT via service binding ZUI_PRU_AGENT_TYPE_O4
 ```abap
 DATA ls_agent TYPE zpru_agent.
-ls_agent-agentname            = `My first Agent`.
+ls_agent-agentname            = `MY_FIRST_AGENT`.
 ls_agent-decisionprovider     = `ZCL_DECISION_PROVIDER`.
 ls_agent-shortmemoryprovider  = `ZPRU_CL_SHORT_MEMORY_BASE`.
 ls_agent-longmemoryprovider   = `ZPRU_CL_LONG_MEMORY_BASE`.
@@ -418,6 +418,6 @@ ls_agent_tool-toolinfoprovider   = `ZCL_TOOL_INFO`.
     DATA lo_cl_unit_agent TYPE REF TO zpru_if_unit_agent.
 
     lo_cl_unit_agent = NEW zpru_cl_unit_agent( ).
-    lo_cl_unit_agent->execute_agent( iv_agent_name  = 'DUMMY_AGENT'
-                                     is_prompt = VALUE #( string_content =  zpru_cl_dummy_agent_logic=>get_input_prompt( ) ) ).
+    lo_cl_unit_agent->execute_agent( iv_agent_name  = 'MY_FIRST_AGENT'
+                                     is_prompt = VALUE #( string_content = `Process CMR N1231411KL` ) ).
 ```
