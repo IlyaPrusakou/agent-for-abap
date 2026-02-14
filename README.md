@@ -15,7 +15,7 @@ The framework requires writing a significant amount of ABAP code. It is designed
 Core idea expressed in pseudo ABAP:
 
 ```abap
-" select tools from agent database table
+" select tool metadata from agent database table
 " feed tools metadata to LLM to get execution plan
 LOOP AT lt_execution_plan ASSIGNING TO FIELD-SYMBOL(<ls_execution_plan>).
 ASSIGN lt_agent_tool[ tool_name = <ls_execution_plan>-tool_name ] TO FIELD-SYMBOL(<ls_agent_tool>).
