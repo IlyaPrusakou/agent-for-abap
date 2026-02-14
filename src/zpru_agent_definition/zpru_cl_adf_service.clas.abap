@@ -506,68 +506,44 @@ CLASS zpru_cl_adf_service IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD zpru_if_adf_service~delete_agent.
-    DATA lo_util TYPE REF TO zpru_if_agent_util.
+    DATA ls_reported  TYPE zpru_if_agent_frw=>ts_adf_reported.
+    DATA ls_failed    TYPE zpru_if_agent_frw=>ts_adf_failed.
+    DATA lt_delete_in TYPE TABLE FOR DELETE ZR_PRU_AGENT.
 
     precheck_delete_agent( EXPORTING it_agent_delete_imp = it_agent_delete_imp
                            IMPORTING et_entities         = DATA(lt_entities)
-                           CHANGING  cs_reported         = cs_reported
-                                     cs_failed           = cs_failed ).
+                           CHANGING  cs_reported         = ls_reported
+                                     cs_failed           = ls_failed ).
 
-    IF lt_entities IS INITIAL.
+    cs_failed = CORRESPONDING #( DEEP ls_failed ).
+    cs_reported = CORRESPONDING #( DEEP ls_reported ).
+
+    IF    lt_entities       <> it_agent_delete_imp
+       OR ls_failed-agent IS NOT INITIAL.
       RETURN.
     ENDIF.
 
-    TRY.
-        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
-                                                            iv_context = zpru_if_agent_frw=>cs_context-standard ).
-      CATCH zpru_cx_agent_core.
-        RAISE SHORTDUMP NEW zpru_cx_agent_core( ).
-    ENDTRY.
-
-    zpru_cl_adf_buffer=>prep_agent_buffer( VALUE #( FOR <ls_k>
-                                                    IN     lt_entities
-                                                    ( agent_uuid = <ls_k>-agentuuid ) ) ).
-
-    zpru_cl_adf_buffer=>prep_tool_buffer( VALUE #( FOR <ls_q>
-                                                   IN     lt_entities
-                                                   ( agent_uuid = <ls_q>-agentuuid ) ) ).
-
     LOOP AT lt_entities ASSIGNING FIELD-SYMBOL(<ls_delete>).
+      APPEND INITIAL LINE TO lt_delete_in ASSIGNING FIELD-SYMBOL(<ls_delete_in>).
+      <ls_delete_in>-AIPF7AgentUUID = <ls_delete>-agentuuid.
+    ENDLOOP.
 
-      ASSIGN zpru_cl_adf_buffer=>agent_buffer[ instance-agentuuid = <ls_delete>-agentuuid
-                                               deleted             = abap_false ] TO FIELD-SYMBOL(<ls_buffer>).
-      IF sy-subrc = 0.
-        <ls_buffer>-deleted = abap_true.
-        <ls_buffer>-changed = abap_true.
+    MODIFY ENTITIES OF ZR_PRU_AGENT
+           ENTITY Agent
+           DELETE FROM lt_delete_in
+           FAILED DATA(ls_failed_eml)
+           REPORTED DATA(ls_reported_eml).
 
-        LOOP AT zpru_cl_adf_buffer=>tool_buffer ASSIGNING FIELD-SYMBOL(<ls_tool_del>)
-             WHERE instance-agentuuid = <ls_buffer>-instance-agentuuid.
-          <ls_tool_del>-changed = abap_true.
-          <ls_tool_del>-deleted = abap_true.
-        ENDLOOP.
+    LOOP AT ls_failed_eml-agent ASSIGNING FIELD-SYMBOL(<ls_failed_agent>).
+      APPEND INITIAL LINE TO cs_failed-agent ASSIGNING FIELD-SYMBOL(<ls_failed_target>).
+      <ls_failed_target>-agentuuid = <ls_failed_agent>-AIPF7AgentUUID.
+      <ls_failed_target>-fail    = CONV #( <ls_failed_agent>-%fail-cause ).
+    ENDLOOP.
 
-        APPEND VALUE #( msg       = lo_util->new_message(
-                                        iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                        iv_number   = `001`
-                                        iv_severity = zpru_if_agent_message=>sc_severity-success
-                                        iv_v1       = <ls_delete>-agentuuid )
-                        agentuuid = <ls_delete>-agentuuid ) TO cs_reported-agent.
-
-      ELSE.
-        APPEND VALUE #( agentuuid = <ls_delete>-agentuuid
-                        delete    = abap_true
-                        fail      = zpru_if_agent_frw=>cs_fail_cause-not_found )
-               TO cs_failed-agent.
-
-        APPEND VALUE #( agentuuid = <ls_delete>-agentuuid
-                        delete    = abap_true
-                        msg       = lo_util->new_message(
-                                        iv_id       = zpru_if_agent_frw=>cs_message_class-zpru_msg_execution
-                                        iv_number   = `003`
-                                        iv_severity = zpru_if_agent_message=>sc_severity-error ) )
-               TO cs_reported-agent.
-
-      ENDIF.
+    LOOP AT ls_reported_eml-agent ASSIGNING FIELD-SYMBOL(<ls_reported_agent>).
+      APPEND INITIAL LINE TO cs_reported-agent ASSIGNING FIELD-SYMBOL(<ls_reported_agent_target>).
+      <ls_reported_agent_target>-agentuuid = <ls_reported_agent>-AIPF7AgentUUID.
+*      <ls_reported_agent_target>-msg      = <ls_reported_agent>-%msg.
     ENDLOOP.
   ENDMETHOD.
 
