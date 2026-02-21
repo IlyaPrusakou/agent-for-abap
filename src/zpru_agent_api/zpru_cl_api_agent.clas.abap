@@ -11,7 +11,7 @@ CLASS zpru_cl_api_agent DEFINITION
     DATA mo_short_memory         TYPE REF TO zpru_if_short_memory_provider.
     DATA mo_long_memory          TYPE REF TO zpru_if_long_memory_provider.
     DATA mv_input_query          TYPE zpru_if_agent_frw=>ts_json.
-    DATA ms_input_prompt TYPE zpru_s_prompt.
+    DATA ms_input_prompt         TYPE zpru_s_prompt.
     DATA mv_output_response      TYPE zpru_if_agent_frw=>ts_json.
     DATA mv_output_response_prev TYPE zpru_if_agent_frw=>ts_json.
 
@@ -22,15 +22,15 @@ CLASS zpru_cl_api_agent DEFINITION
     METHODS get_short_memory
       IMPORTING iv_agent_uuid   TYPE sysuuid_x16
       EXPORTING eo_short_memory TYPE REF TO zpru_if_short_memory_provider
-      CHANGING  cs_reported     TYPE zpru_if_agent_frw=>ts_adf_reported
-                cs_failed       TYPE zpru_if_agent_frw=>ts_adf_failed
+      CHANGING  cs_reported     TYPE zpru_if_agent_frw=>ts_adf_reported OPTIONAL
+                cs_failed       TYPE zpru_if_agent_frw=>ts_adf_failed   OPTIONAL
       RAISING   zpru_cx_agent_core.
 
     METHODS get_long_memory
       IMPORTING iv_agent_uuid  TYPE sysuuid_x16
       EXPORTING eo_long_memory TYPE REF TO zpru_if_long_memory_provider
-      CHANGING  cs_reported    TYPE zpru_if_agent_frw=>ts_adf_reported
-                cs_failed      TYPE zpru_if_agent_frw=>ts_adf_failed
+      CHANGING  cs_reported    TYPE zpru_if_agent_frw=>ts_adf_reported OPTIONAL
+                cs_failed      TYPE zpru_if_agent_frw=>ts_adf_failed   OPTIONAL
       RAISING   zpru_cx_agent_core.
 
     METHODS process_execution_steps
@@ -40,24 +40,24 @@ CLASS zpru_cl_api_agent DEFINITION
                 it_execution_steps  TYPE zpru_if_axc_type_and_constant=>tt_axc_step
                 it_agent_tools      TYPE zpru_if_adf_type_and_constant=>tt_agent_tool
       EXPORTING eo_final_response   TYPE REF TO zpru_if_payload
-      CHANGING  cs_axc_reported     TYPE zpru_if_agent_frw=>ts_axc_reported
-                cs_axc_failed       TYPE zpru_if_agent_frw=>ts_axc_failed
-                cs_adf_reported     TYPE zpru_if_agent_frw=>ts_adf_reported
-                cs_adf_failed       TYPE zpru_if_agent_frw=>ts_adf_failed
+      CHANGING  cs_axc_reported     TYPE zpru_if_agent_frw=>ts_axc_reported OPTIONAL
+                cs_axc_failed       TYPE zpru_if_agent_frw=>ts_axc_failed   OPTIONAL
+                cs_adf_reported     TYPE zpru_if_agent_frw=>ts_adf_reported OPTIONAL
+                cs_adf_failed       TYPE zpru_if_agent_frw=>ts_adf_failed   OPTIONAL
       RAISING   zpru_cx_agent_core.
 
     METHODS prepare_execution
       IMPORTING iv_run_uuid         TYPE sysuuid_x16
-                iv_query_uuid       TYPE sysuuid_x16 OPTIONAL
+                iv_query_uuid       TYPE sysuuid_x16                        OPTIONAL
       EXPORTING es_agent            TYPE zpru_if_adf_type_and_constant=>ts_agent
                 es_execution_header TYPE zpru_s_axc_head
                 es_execution_query  TYPE zpru_if_axc_type_and_constant=>ts_axc_query
                 et_execution_steps  TYPE zpru_if_axc_type_and_constant=>tt_axc_step
                 et_agent_tools      TYPE zpru_if_adf_type_and_constant=>tt_agent_tool
-      CHANGING  cs_axc_reported     TYPE zpru_if_agent_frw=>ts_axc_reported
-                cs_axc_failed       TYPE zpru_if_agent_frw=>ts_axc_failed
-                cs_adf_reported     TYPE zpru_if_agent_frw=>ts_adf_reported
-                cs_adf_failed       TYPE zpru_if_agent_frw=>ts_adf_failed
+      CHANGING  cs_axc_reported     TYPE zpru_if_agent_frw=>ts_axc_reported OPTIONAL
+                cs_axc_failed       TYPE zpru_if_agent_frw=>ts_axc_failed   OPTIONAL
+                cs_adf_reported     TYPE zpru_if_agent_frw=>ts_adf_reported OPTIONAL
+                cs_adf_failed       TYPE zpru_if_agent_frw=>ts_adf_failed   OPTIONAL
       RAISING   zpru_cx_agent_core.
 
     METHODS execute_mini_loop
@@ -70,10 +70,10 @@ CLASS zpru_cl_api_agent DEFINITION
                 is_current_step     TYPE zpru_if_axc_type_and_constant=>ts_axc_step
                 iv_output_prompt    TYPE string
       EXPORTING eo_final_response   TYPE REF TO zpru_if_payload
-      CHANGING  cs_axc_reported     TYPE zpru_if_agent_frw=>ts_axc_reported
-                cs_axc_failed       TYPE zpru_if_agent_frw=>ts_axc_failed
-                cs_adf_reported     TYPE zpru_if_agent_frw=>ts_adf_reported
-                cs_adf_failed       TYPE zpru_if_agent_frw=>ts_adf_failed
+      CHANGING  cs_axc_reported     TYPE zpru_if_agent_frw=>ts_axc_reported OPTIONAL
+                cs_axc_failed       TYPE zpru_if_agent_frw=>ts_axc_failed OPTIONAL
+                cs_adf_reported     TYPE zpru_if_agent_frw=>ts_adf_reported OPTIONAL
+                cs_adf_failed       TYPE zpru_if_agent_frw=>ts_adf_failed OPTIONAL
       RAISING   zpru_cx_agent_core.
 
     METHODS execute_tool_logic
@@ -95,10 +95,10 @@ CLASS zpru_cl_api_agent DEFINITION
                 io_short_memory     TYPE REF TO zpru_if_short_memory_provider
                 io_controller       TYPE REF TO zpru_if_agent_controller
       EXPORTING eo_final_response   TYPE REF TO zpru_if_payload
-      CHANGING  cs_axc_reported     TYPE zpru_if_agent_frw=>ts_axc_reported
-                cs_axc_failed       TYPE zpru_if_agent_frw=>ts_axc_failed
-                cs_adf_reported     TYPE zpru_if_agent_frw=>ts_adf_reported
-                cs_adf_failed       TYPE zpru_if_agent_frw=>ts_adf_failed
+      CHANGING  cs_axc_reported     TYPE zpru_if_agent_frw=>ts_axc_reported OPTIONAL
+                cs_axc_failed       TYPE zpru_if_agent_frw=>ts_axc_failed   OPTIONAL
+                cs_adf_reported     TYPE zpru_if_agent_frw=>ts_adf_reported OPTIONAL
+                cs_adf_failed       TYPE zpru_if_agent_frw=>ts_adf_failed   OPTIONAL
       RAISING   zpru_cx_agent_core.
 
     METHODS log_step_execution
@@ -122,8 +122,8 @@ CLASS zpru_cl_api_agent DEFINITION
                 eo_long_memory            TYPE REF TO zpru_if_long_memory_provider
                 eo_agent_info_provider    TYPE REF TO zpru_if_agent_info_provider
                 eo_system_prompt_provider TYPE REF TO zpru_if_prompt_provider
-      CHANGING  cs_adf_reported           TYPE zpru_if_agent_frw=>ts_adf_reported
-                cs_adf_failed             TYPE zpru_if_agent_frw=>ts_adf_failed
+      CHANGING  cs_adf_reported           TYPE zpru_if_agent_frw=>ts_adf_reported OPTIONAL
+                cs_adf_failed             TYPE zpru_if_agent_frw=>ts_adf_failed OPTIONAL
       RAISING   zpru_cx_agent_core.
 
     METHODS process_decision_engine
@@ -154,8 +154,8 @@ CLASS zpru_cl_api_agent DEFINITION
                 iv_count            TYPE i
       EXPORTING et_execution_steps  TYPE zpru_if_axc_type_and_constant=>tt_axc_step
       CHANGING  ct_execution_plan   TYPE zpru_if_decision_provider=>tt_execution_plan
-                cs_axc_reported     TYPE zpru_if_agent_frw=>ts_axc_reported
-                cs_axc_failed       TYPE zpru_if_agent_frw=>ts_axc_failed
+                cs_axc_reported     TYPE zpru_if_agent_frw=>ts_axc_reported OPTIONAL
+                cs_axc_failed       TYPE zpru_if_agent_frw=>ts_axc_failed OPTIONAL
                 cs_axc_mapped       TYPE zpru_if_agent_frw=>ts_axc_mapped OPTIONAL     " qqq
       RAISING   zpru_cx_agent_core.
 
@@ -179,30 +179,30 @@ CLASS zpru_cl_api_agent DEFINITION
       EXPORTING es_agent      TYPE zpru_if_adf_type_and_constant=>ts_agent
                 eo_service    TYPE REF TO zpru_if_adf_service
                 et_agent_k    TYPE zpru_if_adf_type_and_constant=>tt_agent_k
-      CHANGING  cs_reported   TYPE zpru_if_agent_frw=>ts_adf_reported
-                cs_failed     TYPE zpru_if_agent_frw=>ts_adf_failed
+      CHANGING  cs_reported   TYPE zpru_if_agent_frw=>ts_adf_reported OPTIONAL
+                cs_failed     TYPE zpru_if_agent_frw=>ts_adf_failed   OPTIONAL
       RAISING   zpru_cx_agent_core.
 
     METHODS ensure_agent_is_active
       IMPORTING is_agent    TYPE zpru_if_adf_type_and_constant=>ts_agent
                 io_service  TYPE REF TO zpru_if_adf_service
-      CHANGING  cs_reported TYPE zpru_if_agent_frw=>ts_adf_reported
-                cs_failed   TYPE zpru_if_agent_frw=>ts_adf_failed
+      CHANGING  cs_reported TYPE zpru_if_agent_frw=>ts_adf_reported OPTIONAL
+                cs_failed   TYPE zpru_if_agent_frw=>ts_adf_failed   OPTIONAL
       RAISING   zpru_cx_agent_core.
 
     METHODS identify_available_tools
       IMPORTING it_agent_k  TYPE zpru_if_adf_type_and_constant=>tt_agent_k
                 io_service  TYPE REF TO zpru_if_adf_service
       EXPORTING et_tools    TYPE zpru_if_adf_type_and_constant=>tt_agent_tool
-      CHANGING  cs_reported TYPE zpru_if_agent_frw=>ts_adf_reported
-                cs_failed   TYPE zpru_if_agent_frw=>ts_adf_failed
+      CHANGING  cs_reported TYPE zpru_if_agent_frw=>ts_adf_reported OPTIONAL
+                cs_failed   TYPE zpru_if_agent_frw=>ts_adf_failed   OPTIONAL
       RAISING   zpru_cx_agent_core.
 
     METHODS prepare_memory_provider
       IMPORTING iv_agent_uuid   TYPE sysuuid_x16
       EXPORTING eo_short_memory TYPE REF TO zpru_if_short_memory_provider
-      CHANGING  cs_reported     TYPE zpru_if_agent_frw=>ts_adf_reported
-                cs_failed       TYPE zpru_if_agent_frw=>ts_adf_failed
+      CHANGING  cs_reported     TYPE zpru_if_agent_frw=>ts_adf_reported OPTIONAL
+                cs_failed       TYPE zpru_if_agent_frw=>ts_adf_failed   OPTIONAL
       RAISING   zpru_cx_agent_core.
 
     METHODS record_initialization_event
@@ -215,8 +215,8 @@ CLASS zpru_cl_api_agent DEFINITION
       IMPORTING iv_agent_uuid TYPE sysuuid_x16
       EXPORTING es_agent      TYPE zpru_if_adf_type_and_constant=>ts_agent
                 eo_service    TYPE REF TO zpru_if_adf_service
-      CHANGING  cs_reported   TYPE zpru_if_agent_frw=>ts_adf_reported
-                cs_failed     TYPE zpru_if_agent_frw=>ts_adf_failed
+      CHANGING  cs_reported   TYPE zpru_if_agent_frw=>ts_adf_reported OPTIONAL
+                cs_failed     TYPE zpru_if_agent_frw=>ts_adf_failed   OPTIONAL
       RAISING   zpru_cx_agent_core.
 
     METHODS update_query_internal_state
@@ -239,17 +239,17 @@ CLASS zpru_cl_api_agent DEFINITION
       IMPORTING iv_agent_uuid       TYPE sysuuid_x16
                 io_axc_service      TYPE REF TO zpru_if_axc_service
       EXPORTING es_execution_header TYPE zpru_if_axc_type_and_constant=>ts_head_create_imp
-      CHANGING  cs_axc_reported     TYPE zpru_if_agent_frw=>ts_axc_reported
-                cs_axc_failed       TYPE zpru_if_agent_frw=>ts_axc_failed
-                cs_axc_mapped       TYPE zpru_if_agent_frw=>ts_axc_mapped
+      CHANGING  cs_axc_reported     TYPE zpru_if_agent_frw=>ts_axc_reported OPTIONAL
+                cs_axc_failed       TYPE zpru_if_agent_frw=>ts_axc_failed   OPTIONAL
+                cs_axc_mapped       TYPE zpru_if_agent_frw=>ts_axc_mapped   OPTIONAL
       RAISING   zpru_cx_agent_core.
 
     METHODS load_execution_header
       IMPORTING iv_run_uuid         TYPE sysuuid_x16
                 io_axc_service      TYPE REF TO zpru_if_axc_service
       EXPORTING es_execution_header TYPE zpru_s_axc_head
-      CHANGING  cs_axc_reported     TYPE zpru_if_agent_frw=>ts_axc_reported
-                cs_axc_failed       TYPE zpru_if_agent_frw=>ts_axc_failed
+      CHANGING  cs_axc_reported     TYPE zpru_if_agent_frw=>ts_axc_reported OPTIONAL
+                cs_axc_failed       TYPE zpru_if_agent_frw=>ts_axc_failed   OPTIONAL
       RAISING   zpru_cx_agent_core.
 
     METHODS create_execution_query
@@ -261,9 +261,9 @@ CLASS zpru_cl_api_agent DEFINITION
                 io_utility          TYPE REF TO zpru_if_agent_util
       EXPORTING es_execution_query  TYPE zpru_if_axc_type_and_constant=>ts_query_create_imp
                 ev_decision_log_msg TYPE string
-      CHANGING  cs_axc_reported     TYPE zpru_if_agent_frw=>ts_axc_reported
-                cs_axc_failed       TYPE zpru_if_agent_frw=>ts_axc_failed
-                cs_axc_mapped       TYPE zpru_if_agent_frw=>ts_axc_mapped
+      CHANGING  cs_axc_reported     TYPE zpru_if_agent_frw=>ts_axc_reported OPTIONAL
+                cs_axc_failed       TYPE zpru_if_agent_frw=>ts_axc_failed OPTIONAL
+                cs_axc_mapped       TYPE zpru_if_agent_frw=>ts_axc_mapped OPTIONAL
       RAISING   zpru_cx_agent_core.
 
     METHODS log_query_to_memory
@@ -277,8 +277,7 @@ CLASS zpru_cl_api_agent DEFINITION
       RAISING   zpru_cx_agent_core.
 
     METHODS prepare_controller_4_return
-      EXPORTING
-                eo_executed_controller TYPE REF TO zpru_if_agent_controller
+      EXPORTING eo_executed_controller TYPE REF TO zpru_if_agent_controller
       RAISING   zpru_cx_agent_core.
 
     METHODS attach_run_2_controller
@@ -286,7 +285,6 @@ CLASS zpru_cl_api_agent DEFINITION
                 is_execution_query  TYPE zpru_if_axc_type_and_constant=>ts_axc_query
                 io_controller       TYPE REF TO zpru_if_agent_controller
       RAISING   zpru_cx_agent_core.
-
 
     METHODS detach_run_from_controller
       IMPORTING io_controller TYPE REF TO zpru_if_agent_controller
@@ -481,8 +479,8 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
       RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDIF.
 
-    IF    ls_execution_query-querystatus = zpru_if_axc_type_and_constant=>sc_query_status-new
-       OR ls_execution_query-querystatus = zpru_if_axc_type_and_constant=>sc_query_status-complete.
+    IF    ls_execution_query-QueryStatus = zpru_if_axc_type_and_constant=>sc_query_status-new
+       OR ls_execution_query-QueryStatus = zpru_if_axc_type_and_constant=>sc_query_status-complete.
       RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDIF.
 
@@ -501,11 +499,9 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
                                        cs_adf_reported     = cs_adf_reported
                                        cs_adf_failed       = cs_adf_failed ).
 
-    detach_run_from_controller( io_controller =  get_controller( ) ).
+    detach_run_from_controller( io_controller = get_controller( ) ).
 
     prepare_controller_4_return( IMPORTING eo_executed_controller = eo_executed_controller ).
-
-
   ENDMETHOD.
 
   METHOD zpru_if_api_agent~rerun_from_step.
@@ -533,7 +529,7 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
       RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDIF.
 
-    IF ls_execution_query-querystatus = zpru_if_axc_type_and_constant=>sc_query_status-complete.
+    IF ls_execution_query-QueryStatus = zpru_if_axc_type_and_constant=>sc_query_status-complete.
       RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDIF.
 
@@ -588,10 +584,9 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
                                        cs_adf_reported     = cs_adf_reported
                                        cs_adf_failed       = cs_adf_failed ).
 
-    detach_run_from_controller( io_controller =  get_controller( ) ).
+    detach_run_from_controller( io_controller = get_controller( ) ).
 
     prepare_controller_4_return( IMPORTING eo_executed_controller = eo_executed_controller ).
-
   ENDMETHOD.
 
   METHOD zpru_if_api_agent~run.
@@ -613,8 +608,8 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
       RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDIF.
 
-    IF    ls_execution_query-querystatus = zpru_if_axc_type_and_constant=>sc_query_status-complete
-       OR ls_execution_query-querystatus = zpru_if_axc_type_and_constant=>sc_query_status-error.
+    IF    ls_execution_query-QueryStatus = zpru_if_axc_type_and_constant=>sc_query_status-complete
+       OR ls_execution_query-QueryStatus = zpru_if_axc_type_and_constant=>sc_query_status-error.
       RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDIF.
 
@@ -633,10 +628,9 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
                                        cs_adf_reported     = cs_adf_reported
                                        cs_adf_failed       = cs_adf_failed ).
 
-    detach_run_from_controller( io_controller =  get_controller( ) ).
+    detach_run_from_controller( io_controller = get_controller( ) ).
 
     prepare_controller_4_return( IMPORTING eo_executed_controller = eo_executed_controller ).
-
   ENDMETHOD.
 
   METHOD zpru_if_api_agent~set_input_query.
@@ -716,17 +710,17 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
     ENDTRY.
 
     lo_agty_service->read_agent_type(
-      EXPORTING it_agty_read_k = VALUE #( ( agenttype                 = ls_agent-agenttype
-                                            control-agenttype         = abap_true
-                                            control-shortmemoryvolume = abap_true
-                                            control-discardstrategy   = abap_true
-                                            control-summarystrategy   = abap_true
-                                            control-maximumnumberofloop   = abap_true
-                                            control-createdby         = abap_true
-                                            control-createdat         = abap_true
-                                            control-changedby         = abap_true
-                                            control-lastchanged       = abap_true
-                                            control-locallastchanged  = abap_true ) )
+      EXPORTING it_agty_read_k = VALUE #( ( agenttype                   = ls_agent-agenttype
+                                            control-agenttype           = abap_true
+                                            control-shortmemoryvolume   = abap_true
+                                            control-discardstrategy     = abap_true
+                                            control-summarystrategy     = abap_true
+                                            control-maximumnumberofloop = abap_true
+                                            control-createdby           = abap_true
+                                            control-createdat           = abap_true
+                                            control-changedby           = abap_true
+                                            control-lastchanged         = abap_true
+                                            control-locallastchanged    = abap_true ) )
       IMPORTING et_agty        = DATA(lt_agent_type) ).
 
     DATA(ls_agent_type) = VALUE #( lt_agent_type[ 1 ] OPTIONAL ).
@@ -1331,7 +1325,7 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
 
     IF lo_controller->mv_max_number_of_loops IS INITIAL.
       lo_agty_service->read_agent_type(
-        EXPORTING it_agty_read_k = VALUE #( ( agenttype               = is_agent-agenttype
+        EXPORTING it_agty_read_k = VALUE #( ( agenttype                   = is_agent-agenttype
                                               control-maximumnumberofloop = abap_true ) )
         IMPORTING et_agty        = DATA(lt_agty) ).
 
@@ -2268,11 +2262,11 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
     DATA(lo_controller) = get_controller( ).
     DATA(lv_last_number) = lines( lo_controller->mt_input_output ).
     APPEND INITIAL LINE TO lo_controller->mt_input_output ASSIGNING FIELD-SYMBOL(<ls_input_output>).
-    <ls_input_output>-number      = lv_last_number + 1.
-    <ls_input_output>-input_query = mv_input_query.
-    <ls_input_output>-input_prompt = ms_input_prompt.
+    <ls_input_output>-number             = lv_last_number + 1.
+    <ls_input_output>-input_query        = mv_input_query.
+    <ls_input_output>-input_prompt       = ms_input_prompt.
     <ls_input_output>-current_controller = lo_controller.
-    <ls_input_output>-parent_controller = lo_controller->mo_parent_controller.
+    <ls_input_output>-parent_controller  = lo_controller->mo_parent_controller.
   ENDMETHOD.
 
   METHOD record_query_event.
@@ -2420,25 +2414,24 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD prepare_controller_4_return.
-    DATA(LO_SHORT_MEMORY) = get_short_memory(  ).
-    LO_SHORT_MEMORY->flush_memory( EXPORTING iv_all_messages = ABAP_TRUE ).
+    get_short_memory( EXPORTING iv_agent_uuid   = mo_controller->mv_agent_uuid
+                      IMPORTING eo_short_memory = DATA(lo_short_memory) ).
+    lo_short_memory->flush_memory( iv_all_messages = abap_true ).
     eo_executed_controller = get_controller( ).
   ENDMETHOD.
 
   METHOD attach_run_2_controller.
-    io_controller->mv_run_uuid   =  is_execution_header-runuuid.
+    io_controller->mv_run_uuid   = is_execution_header-runuuid.
     io_controller->mv_query_uuid = is_execution_query-queryuuid.
   ENDMETHOD.
 
   METHOD detach_run_from_controller.
-
     APPEND INITIAL LINE TO io_controller->mt_run_history ASSIGNING FIELD-SYMBOL(<ls_run_history>).
-    <ls_run_history>-count = lines( io_controller->mt_run_history ) + 1.
-    <ls_run_history>-run_uuid = io_controller->mv_run_uuid.
+    <ls_run_history>-count      = lines( io_controller->mt_run_history ) + 1.
+    <ls_run_history>-run_uuid   = io_controller->mv_run_uuid.
     <ls_run_history>-query_uuid = io_controller->mv_query_uuid.
 
     CLEAR io_controller->mv_run_uuid.
     CLEAR io_controller->mv_query_uuid.
   ENDMETHOD.
-
 ENDCLASS.

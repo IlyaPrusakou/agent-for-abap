@@ -78,13 +78,13 @@ CLASS zpru_cl_short_memory_base IMPLEMENTATION.
                           IMPORTING eo_output = lo_discard_output ).
 
         eo_output = lo_discard_output.
-        
+
         if iv_all_messages = abap_false.
           IF lr_sort_number_r IS NOT INITIAL.
             DELETE mt_agent_message WHERE sortnumber IN lr_sort_number_r.
           ENDIF.
         else.
-           clear: mt_agent_message. 
+           clear: mt_agent_message.
         endif.
 
       ENDIF.
@@ -130,7 +130,7 @@ CLASS zpru_cl_short_memory_base IMPLEMENTATION.
 
     ENDLOOP.
 
-    zpru_if_short_memory_provider=>flush_memory( EXPORTING iv_all_messages = abap_false 
+    zpru_if_short_memory_provider~flush_memory( EXPORTING iv_all_messages = abap_false
                                                  IMPORTING eo_output = lo_discard_output ).
 
   ENDMETHOD.

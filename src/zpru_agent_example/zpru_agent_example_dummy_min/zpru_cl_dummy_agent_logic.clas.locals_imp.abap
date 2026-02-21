@@ -2,51 +2,46 @@ CLASS lcl_decision_provider DEFINITION CREATE PUBLIC.
   PUBLIC SECTION.
     INTERFACES zpru_if_decision_provider.
 
-TYPES: BEGIN OF tS_thinking_step,
-         step_no    TYPE i,
-         timestamp  TYPE timestampl,
-         content    TYPE string,
-       END OF tS_thinking_step.
+    TYPES: BEGIN OF tS_thinking_step,
+             step_no   TYPE i,
+             timestamp TYPE timestampl,
+             content   TYPE string,
+           END OF tS_thinking_step.
 
-  TYPES: tt_thinking_steps TYPE STANDARD TABLE OF tS_thinking_step WITH EMPTY KEY.
+    TYPES tt_thinking_steps TYPE STANDARD TABLE OF tS_thinking_step WITH EMPTY KEY.
 
-  TYPES: BEGIN OF tS_usage,
-           prompt_tokens     TYPE i,
-           completion_tokens TYPE i,
-           total_tokens      TYPE i,
-         END OF tS_usage.
+    TYPES: BEGIN OF tS_usage,
+             prompt_tokens     TYPE i,
+             completion_tokens TYPE i,
+             total_tokens      TYPE i,
+           END OF tS_usage.
 
-  TYPES: BEGIN OF tS_decision_log,
-    agent_UUID         TYPE XSTRING,
-    model_id         TYPE string,
-    input_prompt     TYPE string,
-    final_output     TYPE string,
-    thinking_steps TYPE tt_thinking_steps,
-    usage            TYPE tS_usage,
-    duration_ms      TYPE i,
-  END OF tS_decision_log.
+    TYPES: BEGIN OF tS_decision_log,
+             agent_UUID     TYPE xstring,
+             model_id       TYPE string,
+             input_prompt   TYPE string,
+             final_output   TYPE string,
+             thinking_steps TYPE tt_thinking_steps,
+             usage          TYPE tS_usage,
+             duration_ms    TYPE i,
+           END OF tS_decision_log.
 
   PROTECTED SECTION.
-  METHODS MAKE_DECISION
-    IMPORTING
-      IV_PROMPT TYPE STRING
-    EXPORTING
-      EV_FULL_EXECUTION TYPE abap_boolean
-    CHANGING
-      CS_DECISION_LOG TYPE tS_decision_log
-    RAISING
-      zpru_if_agent_logic=>cx_agent_logic.
-  PRIVATE SECTION.
-    
+    METHODS make_decision
+      IMPORTING iv_prompt         TYPE string
+      EXPORTING ev_full_execution TYPE abap_boolean
+      CHANGING  cs_decision_log   TYPE tS_decision_log
+      RAISING   zpru_cx_agent_core.
+
 ENDCLASS.
 
 
 CLASS lcl_decision_provider IMPLEMENTATION.
   METHOD zpru_if_decision_provider~call_decision_engine.
-    DATA lt_execution_plan TYPE zpru_if_decision_provider=>tt_execution_plan.
-    DATA LS_DECISION_LOG TYPE tS_decision_log.
-    DATA lo_utility          TYPE REF TO zpru_if_agent_util.
-    DATA LV_DECISION_LOG_JSON TYPE zpru_if_agent_frw=>ts_json.
+    DATA lt_execution_plan    TYPE zpru_if_decision_provider=>tt_execution_plan.
+    DATA ls_decision_log      TYPE tS_decision_log.
+    DATA lo_utility           TYPE REF TO zpru_if_agent_util.
+    DATA lv_decision_log_json TYPE zpru_if_agent_frw=>ts_json.
 
     zpru_cl_dummy_agent_logic=>ms_method_registr-call_decision_engine = abap_true.
 
@@ -54,118 +49,110 @@ CLASS lcl_decision_provider IMPLEMENTATION.
                                                            iv_context = zpru_if_agent_frw=>cs_context-standard ).
 
     make_decision( EXPORTING iv_prompt = io_input->get_data( )->*
-                   IMPORTING EV_FULL_EXECUTION = DATA(lv_full_execution)
-                   CHANGING  CS_DECISION_LOG = LS_DECISION_LOG ).
+                   " TODO: variable is assigned but never used (ABAP cleaner)
+                   IMPORTING ev_full_execution = DATA(lv_full_execution)
+                   CHANGING  cs_decision_log = ls_decision_log ).
 
     GET TIME STAMP FIELD DATA(lv_now).
 
-    APPEND LS_DECISION_LOG-thinking_steps assigning FIELD-SYMBOL(<ls_thinking_step>).
-    <ls_thinking_step>-step_no = 2.
+    APPEND INITIAL LINE TO ls_decision_log-thinking_steps ASSIGNING FIELD-SYMBOL(<ls_thinking_step>).
+    <ls_thinking_step>-step_no   = 2.
     <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content = 'We added DUMMY_CODE to execution plan'.
+    <ls_thinking_step>-content   = 'We added DUMMY_CODE to execution plan'.
 
     APPEND INITIAL LINE TO lt_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
     <ls_execution_plan>-agentuuid = is_agent-agentuuid.
     <ls_execution_plan>-toolname  = 'DUMMY_CODE'.
-    <ls_execution_plan>-sequence   = 1.
+    <ls_execution_plan>-sequence  = 1.
 
-
-    APPEND LS_DECISION_LOG-thinking_steps assigning FIELD-SYMBOL(<ls_thinking_step>).
-    <ls_thinking_step>-step_no = 3.
+    APPEND INITIAL LINE TO ls_decision_log-thinking_steps ASSIGNING <ls_thinking_step>.
+    <ls_thinking_step>-step_no   = 3.
     <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content = 'We added DUMMY_KNOWLEDGE to execution plan'.
+    <ls_thinking_step>-content   = 'We added DUMMY_KNOWLEDGE to execution plan'.
 
     APPEND INITIAL LINE TO lt_execution_plan ASSIGNING <ls_execution_plan>.
     <ls_execution_plan>-agentuuid = is_agent-agentuuid.
     <ls_execution_plan>-toolname  = 'DUMMY_KNOWLEDGE'.
-    <ls_execution_plan>-sequence   = 2.
+    <ls_execution_plan>-sequence  = 2.
 
-
-    APPEND LS_DECISION_LOG-thinking_steps assigning FIELD-SYMBOL(<ls_thinking_step>).
-    <ls_thinking_step>-step_no = 4.
+    APPEND INITIAL LINE TO ls_decision_log-thinking_steps ASSIGNING <ls_thinking_step>.
+    <ls_thinking_step>-step_no   = 4.
     <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content = 'We added NESTED_AGENT to execution plan'.
+    <ls_thinking_step>-content   = 'We added NESTED_AGENT to execution plan'.
 
     APPEND INITIAL LINE TO lt_execution_plan ASSIGNING <ls_execution_plan>.
     <ls_execution_plan>-agentuuid = is_agent-agentuuid.
     <ls_execution_plan>-toolname  = 'NESTED_AGENT'.
-    <ls_execution_plan>-sequence   = 3.
+    <ls_execution_plan>-sequence  = 3.
 
-
-    APPEND LS_DECISION_LOG-thinking_steps assigning FIELD-SYMBOL(<ls_thinking_step>).
-    <ls_thinking_step>-step_no = 5.
+    APPEND INITIAL LINE TO ls_decision_log-thinking_steps ASSIGNING <ls_thinking_step>.
+    <ls_thinking_step>-step_no   = 5.
     <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content = 'We added DUMMY_LLM to execution plan'.
+    <ls_thinking_step>-content   = 'We added DUMMY_LLM to execution plan'.
 
     APPEND INITIAL LINE TO lt_execution_plan ASSIGNING <ls_execution_plan>.
     <ls_execution_plan>-agentuuid = is_agent-agentuuid.
     <ls_execution_plan>-toolname  = 'DUMMY_LLM'.
-    <ls_execution_plan>-sequence   = 4.
+    <ls_execution_plan>-sequence  = 4.
 
-
-    APPEND LS_DECISION_LOG-thinking_steps assigning FIELD-SYMBOL(<ls_thinking_step>).
-    <ls_thinking_step>-step_no = 6.
+    APPEND INITIAL LINE TO ls_decision_log-thinking_steps ASSIGNING <ls_thinking_step>.
+    <ls_thinking_step>-step_no   = 6.
     <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content = 'We added DUMMY_HTTP to execution plan'.
+    <ls_thinking_step>-content   = 'We added DUMMY_HTTP to execution plan'.
 
     APPEND INITIAL LINE TO lt_execution_plan ASSIGNING <ls_execution_plan>.
     <ls_execution_plan>-agentuuid = is_agent-agentuuid.
     <ls_execution_plan>-toolname  = 'DUMMY_HTTP'.
-    <ls_execution_plan>-sequence   = 5.
+    <ls_execution_plan>-sequence  = 5.
 
-
-    APPEND LS_DECISION_LOG-thinking_steps assigning FIELD-SYMBOL(<ls_thinking_step>).
-    <ls_thinking_step>-step_no = 7.
+    APPEND INITIAL LINE TO ls_decision_log-thinking_steps ASSIGNING <ls_thinking_step>.
+    <ls_thinking_step>-step_no   = 7.
     <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content = 'We added DUMMY_ML to execution plan'.
+    <ls_thinking_step>-content   = 'We added DUMMY_ML to execution plan'.
 
     APPEND INITIAL LINE TO lt_execution_plan ASSIGNING <ls_execution_plan>.
     <ls_execution_plan>-agentuuid = is_agent-agentuuid.
     <ls_execution_plan>-toolname  = 'DUMMY_ML'.
-    <ls_execution_plan>-sequence   = 6.
+    <ls_execution_plan>-sequence  = 6.
 
-
-    APPEND LS_DECISION_LOG-thinking_steps assigning FIELD-SYMBOL(<ls_thinking_step>).
-    <ls_thinking_step>-step_no = 8.
+    APPEND INITIAL LINE TO ls_decision_log-thinking_steps ASSIGNING <ls_thinking_step>.
+    <ls_thinking_step>-step_no   = 8.
     <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content = 'We added DUMMY_SCM to execution plan'.
+    <ls_thinking_step>-content   = 'We added DUMMY_SCM to execution plan'.
 
     APPEND INITIAL LINE TO lt_execution_plan ASSIGNING <ls_execution_plan>.
     <ls_execution_plan>-agentuuid = is_agent-agentuuid.
     <ls_execution_plan>-toolname  = 'DUMMY_SCM'.
-    <ls_execution_plan>-sequence   = 7.
+    <ls_execution_plan>-sequence  = 7.
 
-
-    APPEND LS_DECISION_LOG-thinking_steps assigning FIELD-SYMBOL(<ls_thinking_step>).
-    <ls_thinking_step>-step_no = 9.
+    APPEND INITIAL LINE TO ls_decision_log-thinking_steps ASSIGNING <ls_thinking_step>.
+    <ls_thinking_step>-step_no   = 9.
     <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content = 'We added DUMMY_DYN_CODE to execution plan'.
+    <ls_thinking_step>-content   = 'We added DUMMY_DYN_CODE to execution plan'.
 
     APPEND INITIAL LINE TO lt_execution_plan ASSIGNING <ls_execution_plan>.
     <ls_execution_plan>-agentuuid = is_agent-agentuuid.
     <ls_execution_plan>-toolname  = 'DUMMY_DYN_CODE'.
-    <ls_execution_plan>-sequence   = 8.
+    <ls_execution_plan>-sequence  = 8.
 
-
-    APPEND LS_DECISION_LOG-thinking_steps assigning FIELD-SYMBOL(<ls_thinking_step>).
-    <ls_thinking_step>-step_no = 10.
+    APPEND INITIAL LINE TO ls_decision_log-thinking_steps ASSIGNING <ls_thinking_step>.
+    <ls_thinking_step>-step_no   = 10.
     <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content = 'We added DUMMY_USER_TOOL to execution plan'.
+    <ls_thinking_step>-content   = 'We added DUMMY_USER_TOOL to execution plan'.
 
     APPEND INITIAL LINE TO lt_execution_plan ASSIGNING <ls_execution_plan>.
     <ls_execution_plan>-agentuuid = is_agent-agentuuid.
     <ls_execution_plan>-toolname  = 'DUMMY_USER_TOOL'.
-    <ls_execution_plan>-sequence   = 9.
-
+    <ls_execution_plan>-sequence  = 9.
 
     eo_execution_plan->set_data( ir_data = NEW zpru_if_decision_provider=>tt_execution_plan( lt_execution_plan ) ).
     eo_first_tool_input->set_data( ir_data = NEW string( `Let's start full execution` ) ). " must be json add schema provider for first tool input!!!
     eo_langu->set_data( ir_data = NEW spras( sy-langu ) ).
 
-    lo_utility->convert_to_string( EXPORTING ir_abap = REF #( LS_DECISION_LOG )
-                                   CHANGING cr_string = LV_DECISION_LOG_JSON ).
+    lo_utility->convert_to_string( EXPORTING ir_abap   = REF #( ls_decision_log )
+                                   CHANGING  cr_string = lv_decision_log_json ).
 
-    eo_decision_log->set_data( ir_data = NEW string( LV_DECISION_LOG_JSON ) ).
+    eo_decision_log->set_data( ir_data = NEW string( lv_decision_log_json ) ).
   ENDMETHOD.
 
   METHOD zpru_if_decision_provider~prepare_final_response.
@@ -179,20 +166,19 @@ CLASS lcl_decision_provider IMPLEMENTATION.
     eo_final_response->set_data( ir_data = NEW string( lv_final_response ) ).
   ENDMETHOD.
 
-METHOD make_decision.
+  METHOD make_decision.
+    GET TIME STAMP FIELD DATA(lv_now).
 
-  GET TIME STAMP FIELD DATA(lv_now).
-
-    cs_decision_log-agent_UUID = '12345678901234567890123456789012'.
-    cs_decision_log-model_id = 'GEMINI 3.0'.
+    cs_decision_log-agent_UUID   = '12345678901234567890123456789012'.
+    cs_decision_log-model_id     = 'GEMINI 3.0'.
     cs_decision_log-input_prompt = iv_prompt.
     cs_decision_log-final_output = `Start Full Execution`.
-    cs_decision_log-usage-prompt_tokens = 100.
+    cs_decision_log-usage-prompt_tokens     = 100.
     cs_decision_log-usage-completion_tokens = 200.
-    cs_decision_log-usage-total_tokens = 300.
+    cs_decision_log-usage-total_tokens      = 300.
     cs_decision_log-duration_ms = 1000.
 
-  TRY.
+    TRY.
         FINAL(lo_api) = cl_aic_islm_compl_api_factory=>get( )->create_instance( 'ST-GEMINI-3.0' ).
         FINAL(lo_params) = lo_api->get_parameter_setter( ).
         lo_params->set_temperature( '0.5' ).
@@ -204,14 +190,13 @@ METHOD make_decision.
 
     ENDTRY.
 
-    APPEND cs_decision_log-thinking_steps assigning FIELD-SYMBOL(<ls_thinking_step>).
-    <ls_thinking_step>-step_no = 1.
+    APPEND INITIAL LINE TO cs_decision_log-thinking_steps ASSIGNING FIELD-SYMBOL(<ls_thinking_step>).
+    <ls_thinking_step>-step_no   = 1.
     <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content = 'We got decision to start full execution'.
+    <ls_thinking_step>-content   = 'We got decision to start full execution'.
 
-    rv_full_execution = abap_true.
-ENDMETHOD.
-
+    ev_full_execution = abap_true.
+  ENDMETHOD.
 ENDCLASS.
 
 
@@ -399,12 +384,10 @@ ENDCLASS.
 
 
 CLASS lcl_abap_code_tool DEFINITION
-  CREATE PUBLIC INHERITING FROM zpru_cl_abap_executor.
+  INHERITING FROM zpru_cl_abap_executor CREATE PUBLIC.
 
-  PUBLIC SECTION.
   PROTECTED SECTION.
     METHODS execute_code_int REDEFINITION.
-  PRIVATE SECTION.
 ENDCLASS.
 
 
@@ -696,11 +679,13 @@ CLASS lcl_nested_agent IMPLEMENTATION.
                                               is_prompt              = VALUE #( string_content = lv_input_query )
                                               io_parent_controller   = io_controller
                                     IMPORTING ev_final_response      = lv_final_response
+                                    " TODO: variable is assigned but never used (ABAP cleaner)
                                               eo_executed_controller = DATA(lo_nested_controler) ).
 
     eo_response->set_data( ir_data = NEW zpru_if_agent_frw=>ts_json( lv_final_response ) ).
   ENDMETHOD.
 ENDCLASS.
+
 
 " Local class for HTTP Request tool
 CLASS lcl_http_request_tool DEFINITION CREATE PUBLIC.
@@ -1235,11 +1220,9 @@ CLASS lcl_user_tool IMPLEMENTATION.
 
         DATA(lv_response) = |EMAIL TO { lv_recipient } HAS BEEN SENT SUCCESSFULLY|.
 
-        DATA(lv_output) =  lo_util->append_json_to_json(
-           EXPORTING
-             iv_field_4_append = 'email_response'
-             iv_json_4_append  = lv_response
-             iv_json_target    = lv_input ).
+        DATA(lv_output) = lo_util->append_json_to_json( iv_field_4_append = 'email_response'
+                                                        iv_json_4_append  = lv_response
+                                                        iv_json_target    = lv_input ).
 
         eo_response->set_data( NEW string( lv_output ) ).
 
@@ -1392,6 +1375,7 @@ CLASS lcl_tool_info_provider IMPLEMENTATION.
   ENDMETHOD.
 ENDCLASS.
 
+
 CLASS lcl_schema_provider DEFINITION
   CREATE PUBLIC.
 
@@ -1401,7 +1385,6 @@ ENDCLASS.
 
 
 CLASS lcl_schema_provider IMPLEMENTATION.
-
   METHOD zpru_if_tool_schema_provider~input_json_schema.
     zpru_cl_dummy_agent_logic=>ms_method_registr-get_input_schema = abap_true.
     CASE is_tool_master_data-toolname.
@@ -1453,5 +1436,4 @@ CLASS lcl_schema_provider IMPLEMENTATION.
       WHEN OTHERS.
     ENDCASE.
   ENDMETHOD.
-
 ENDCLASS.
