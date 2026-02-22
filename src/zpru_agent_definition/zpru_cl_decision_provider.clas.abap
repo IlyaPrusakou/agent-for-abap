@@ -115,6 +115,7 @@ CLASS zpru_cl_decision_provider IMPLEMENTATION.
     DATA ls_decision_request     TYPE zpru_s_decision_request.
     DATA lo_agent_info_provider  TYPE REF TO zpru_if_agent_info_provider.
     DATA lo_syst_prompt_provider TYPE REF TO zpru_if_prompt_provider.
+    DATA lo_tool_info_provider TYPE REF TO zpru_if_tool_info_provider.
 
     ls_decision_log-agentuuid            = is_agent-agentuuid.
     ls_decision_log-modelid              = set_model_id( ).
@@ -197,6 +198,19 @@ CLASS zpru_cl_decision_provider IMPLEMENTATION.
     ENDIF.
 
     ls_decision_request-agentmetadata         = lo_agent_info_provider->get_abap_agent_info( ).
+
+    LOOP AT it_tool ASSIGNING FIELD-SYMBOL(<ls_tool>).
+
+      CREATE OBJECT lo_tool_info_provider TYPE (<ls_tool>-toolinfoprovider).
+      IF sy-subrc <> 0.
+        CONTINUE.
+      ENDIF.
+
+      APPEND INITIAL LINE TO ls_decision_request-agentmetadata-agenttools ASSIGNING FIELD-SYMBOL(<ls_tool_metadata>).
+      <ls_tool_metadata> = lo_tool_info_provider->get_abap_tool_info( is_tool_master_data = <ls_tool> ).
+
+    ENDLOOP.
+
     ls_decision_request-systemprompt          = lo_syst_prompt_provider->get_abap_system_prompt( ).
     ls_decision_request-sessionmemory         = lt_session_memory.
     ls_decision_request-episodicmessagememory = lt_episodic_message_memory.
