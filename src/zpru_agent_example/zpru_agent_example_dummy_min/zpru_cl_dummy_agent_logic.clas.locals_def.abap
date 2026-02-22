@@ -8,6 +8,9 @@ CLASS lcl_common_algorithms DEFINITION CREATE PUBLIC.
     CLASS-METHODS get_timestamp
       RETURNING VALUE(rv_now) TYPE timestampl.
 
+    class-METHODS get_llm_api_factory
+      RETURNING VALUE(ro_llm_api_factory) TYPE REF TO if_aic_islm_compl_api_factory.
+
   PROTECTED SECTION.
   PRIVATE SECTION.
 ENDCLASS.
@@ -124,8 +127,6 @@ CLASS lcl_call_llm_tool DEFINITION CREATE PUBLIC.
            END OF ts_result_payload.
 
   PROTECTED SECTION.
-    METHODS get_llm_api_factory
-      RETURNING VALUE(ro_llm_api_factory) TYPE REF TO if_aic_islm_compl_api_factory.
 
     METHODS prepare_prompt
       IMPORTING io_llm_api           TYPE REF TO if_aic_completion_api

@@ -10,6 +10,19 @@ CLASS lcl_common_algorithms IMPLEMENTATION.
     GET TIME STAMP FIELD rv_now.
   ENDMETHOD.
 
+  METHOD get_llm_api_factory.
+    IF zpru_cl_logic_switch=>get_logic( ) = abap_true.
+      ro_llm_api_factory = NEW zpru_cl_islm_compl_api_factory( ).
+    ELSE.
+      TRY.
+          ro_llm_api_factory = cl_aic_islm_compl_api_factory=>get( ).
+        CATCH cx_aic_api_factory.
+          RETURN.
+      ENDTRY.
+    ENDIF.
+  ENDMETHOD.
+
+
 ENDCLASS.
 
 CLASS lcl_decision_provider IMPLEMENTATION.
@@ -20,6 +33,21 @@ CLASS lcl_decision_provider IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD prepare_first_tool_input.
+
+    FIELD-SYMBOLS: <ls_first_input> TYPE zpru_s_first_tool_input_exmpl.
+
+    IF er_first_tool_input IS NOT BOUND.
+      RETURN.
+    ENDIF.
+
+    ASSIGN er_first_tool_input->* TO <ls_first_input>.
+    <ls_first_input>-firstinput = `First tool input`.
+
+    APPEND INITIAL LINE TO cs_decision_log-thinkingsteps ASSIGNING FIELD-SYMBOL(<ls_thinking_step>).
+    <ls_thinking_step>-thinkingstepnumber   = lcl_common_algorithms=>get_last_thinkingstepnumber( cs_decision_log-thinkingsteps ).
+    <ls_thinking_step>-thinkingstepdatetime = lcl_common_algorithms=>get_timestamp( ).
+    <ls_thinking_step>-thinkingstepcontent  = `First Tool Input is processed`.
+
   ENDMETHOD.
 
   METHOD process_thinking.
@@ -31,15 +59,17 @@ CLASS lcl_decision_provider IMPLEMENTATION.
 
     DATA(lv_message) = lo_decision_request->get_decision_request_string( ).
 
+    DATA(lo_factory) = lcl_common_algorithms=>get_llm_api_factory( ).
+
     TRY.
-        FINAL(lo_api) = cl_aic_islm_compl_api_factory=>get( )->create_instance( 'ST-GEMINI-3.0' ).
-        FINAL(lo_params) = lo_api->get_parameter_setter( ).
+        DATA(lo_api) = lo_factory->create_instance( 'ST-GEMINI-3.0' ).
+        DATA(lo_params) = lo_api->get_parameter_setter( ).
         lo_params->set_temperature( '0.5' ).
 
         FINAL(lv_response) = lo_api->execute_for_string( lv_message )->get_completion( ).
       CATCH cx_aic_api_factory
             cx_aic_completion_api.
-
+        RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDTRY.
 
     ev_langu = sy-langu.
@@ -70,6 +100,11 @@ CLASS lcl_decision_provider IMPLEMENTATION.
                                  ( agentuuid  = is_agent-agentuuid
                                    toolname  = 'DUMMY_USER_TOOL'
                                    sequence = 9 ) ).
+
+    APPEND INITIAL LINE TO cs_decision_log-thinkingsteps ASSIGNING FIELD-SYMBOL(<ls_thinking_step>).
+    <ls_thinking_step>-thinkingstepnumber   = lcl_common_algorithms=>get_last_thinkingstepnumber( cs_decision_log-thinkingsteps ).
+    <ls_thinking_step>-thinkingstepdatetime = lcl_common_algorithms=>get_timestamp( ).
+    <ls_thinking_step>-thinkingstepcontent  = `LLM is called`.
 
   ENDMETHOD.
 
@@ -196,9 +231,11 @@ CLASS lcl_decision_provider IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD set_model_id.
+    rv_model_id = `ST-GEMINI-3.0`.
   ENDMETHOD.
 
   METHOD set_result_comment.
+    rv_result_comment = `Decision Engine processing is finished`.
   ENDMETHOD.
 ENDCLASS.
 
@@ -808,18 +845,6 @@ CLASS lcl_call_llm_tool IMPLEMENTATION.
                                    ev_error_flag = ev_error_flag ).
   ENDMETHOD.
 
-  METHOD get_llm_api_factory.
-    IF zpru_cl_logic_switch=>get_logic( ) = abap_true.
-      ro_llm_api_factory = NEW zpru_cl_islm_compl_api_factory( ).
-    ELSE.
-      TRY.
-          ro_llm_api_factory = cl_aic_islm_compl_api_factory=>get( ).
-        CATCH cx_aic_api_factory.
-          RETURN.
-      ENDTRY.
-    ENDIF.
-  ENDMETHOD.
-
   METHOD prepare_prompt.
     ro_message = io_llm_api->create_message_container( ).
     ro_message->set_system_role( iv_system_role ).
@@ -876,7 +901,7 @@ CLASS lcl_call_llm_tool IMPLEMENTATION.
 
     ev_error_flag = abap_false.
 
-    DATA(lo_llm_api_factory) = get_llm_api_factory( ).
+    DATA(lo_llm_api_factory) = lcl_common_algorithms=>get_llm_api_factory( ).
 
     TRY.
         eo_llm_api = lo_llm_api_factory->create_instance( iv_islm_scenario ).

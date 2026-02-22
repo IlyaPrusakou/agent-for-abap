@@ -86,7 +86,7 @@ CLASS zpru_cl_decision_provider DEFINITION
                 it_semantic_memory         TYPE zpru_tt_semantic_memory_comb              OPTIONAL
                 it_rag_data                TYPE zpru_tt_rag_header                        OPTIONAL
                 iv_user_data               TYPE zpru_de_json                              OPTIONAL
-      EXPORTING ev_first_tool_input        TYPE REF TO data
+      EXPORTING er_first_tool_input        TYPE REF TO data
       CHANGING  cs_decision_log            TYPE zpru_s_decision_log
       RAISING   zpru_cx_agent_core.
 
@@ -311,7 +311,7 @@ CLASS zpru_cl_decision_provider IMPLEMENTATION.
                                         it_semantic_memory         = lt_semantic_memory
                                         it_rag_data                = lt_rag_data
                                         iv_user_data               = lv_user_data
-                              IMPORTING ev_first_tool_input        = lr_first_input
+                              IMPORTING er_first_tool_input        = lr_first_input
                               CHANGING  cs_decision_log            = ls_decision_log ).
 
     APPEND INITIAL LINE TO ls_decision_log-thinkingsteps ASSIGNING <ls_thinking_step>.
