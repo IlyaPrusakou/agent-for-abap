@@ -44,7 +44,7 @@ CLASS zpru_cl_decision_provider DEFINITION
                 io_long_memory         TYPE REF TO zpru_if_long_memory_provider  OPTIONAL
                 io_agent_info_provider TYPE REF TO zpru_if_agent_info_provider   OPTIONAL
       EXPORTING et_rag_data            TYPE zpru_tt_rag_header
-                eo_thinking_data       TYPE REF TO zpru_if_payload
+                ev_user_data           TYPE zpru_de_json
       CHANGING  cs_decision_log        TYPE zpru_s_decision_log.
 
     METHODS process_thinking ABSTRACT
@@ -62,7 +62,7 @@ CLASS zpru_cl_decision_provider DEFINITION
                 it_episodic_summary_memory TYPE zpru_tt_export_mem_sum                    OPTIONAL
                 it_semantic_memory         TYPE zpru_tt_semantic_memory_comb              OPTIONAL
                 it_rag_data                TYPE zpru_tt_rag_header                        OPTIONAL
-                io_thinking_data           TYPE REF TO zpru_if_payload                    OPTIONAL
+                iv_user_data               TYPE zpru_de_json                              OPTIONAL
       EXPORTING et_execution_plan          TYPE zpru_if_decision_provider=>tt_execution_plan
                 ev_langu                   TYPE sylangu
       CHANGING  cs_decision_log            TYPE zpru_s_decision_log.
@@ -81,7 +81,7 @@ CLASS zpru_cl_decision_provider DEFINITION
                 it_episodic_summary_memory TYPE zpru_tt_export_mem_sum                    OPTIONAL
                 it_semantic_memory         TYPE zpru_tt_semantic_memory_comb              OPTIONAL
                 it_rag_data                TYPE zpru_tt_rag_header                        OPTIONAL
-                io_thinking_data           TYPE REF TO zpru_if_payload                    OPTIONAL
+                iv_user_data               TYPE zpru_de_json                              OPTIONAL
       EXPORTING ev_first_tool_input        TYPE REF TO data
       CHANGING  cs_decision_log            TYPE zpru_s_decision_log.
 
@@ -108,7 +108,6 @@ ENDCLASS.
 
 CLASS zpru_cl_decision_provider IMPLEMENTATION.
   METHOD zpru_if_decision_provider~call_decision_engine.
-    DATA lo_thinking_data        TYPE REF TO zpru_if_payload.
     DATA ls_decision_log         TYPE zpru_s_decision_log.
     DATA lo_tool_schema_provider TYPE REF TO zpru_if_tool_schema_provider.
     DATA lr_first_input          TYPE REF TO data.
@@ -161,14 +160,6 @@ CLASS zpru_cl_decision_provider IMPLEMENTATION.
     <ls_thinking_step>-thinkingstepdatetime = get_timestamp( ).
     <ls_thinking_step>-thinkingstepcontent  = `Recall memory is finished`.
 
-    TRY.
-        lo_thinking_data ?= zpru_cl_agent_service_mngr=>get_service(
-                                iv_service = `ZPRU_IF_PAYLOAD`
-                                iv_context = zpru_if_agent_frw=>cs_context-standard ).
-      CATCH zpru_cx_agent_core.
-        RAISE EXCEPTION NEW zpru_cx_agent_core( ).
-    ENDTRY.
-
     read_data_4_thinking( EXPORTING is_agent               = is_agent
                                     it_tool                = it_tool
                                     io_controller          = io_controller
@@ -178,7 +169,7 @@ CLASS zpru_cl_decision_provider IMPLEMENTATION.
                                     io_long_memory         = io_long_memory
                                     io_agent_info_provider = io_agent_info_provider
                           IMPORTING et_rag_data            = DATA(lt_rag_data)
-                                    eo_thinking_data       = lo_thinking_data
+                                    ev_user_data           = DATA(lv_user_data)
                           CHANGING  cs_decision_log        = ls_decision_log ).
 
     APPEND INITIAL LINE TO ls_decision_log-thinkingsteps ASSIGNING <ls_thinking_step>.
@@ -212,7 +203,7 @@ CLASS zpru_cl_decision_provider IMPLEMENTATION.
     ls_decision_request-episodicsummarymemory = lt_episodic_summary_memory.
     ls_decision_request-semanticmemory        = lt_semantic_memory.
     ls_decision_request-ragdata               = lt_rag_data.
-    ls_decision_request-thinkingdata          = lo_thinking_data->get_data( ).
+    ls_decision_request-userdata              = lv_user_data.
     ls_decision_request-userprompt            = io_input->get_data( )->*.
 
     lo_decision_request->zpru_if_payload~set_data( ir_data = NEW zpru_s_decision_request( ls_decision_request ) ).
@@ -231,7 +222,7 @@ CLASS zpru_cl_decision_provider IMPLEMENTATION.
                                 it_episodic_summary_memory = lt_episodic_summary_memory
                                 it_semantic_memory         = lt_semantic_memory
                                 it_rag_data                = lt_rag_data
-                                io_thinking_data           = lo_thinking_data
+                                iv_user_data               = lv_user_data
                       IMPORTING et_execution_plan          = DATA(lt_execution_plan)
                                 ev_langu                   = DATA(lv_langu)
                       CHANGING  cs_decision_log            = ls_decision_log ).
@@ -290,7 +281,7 @@ CLASS zpru_cl_decision_provider IMPLEMENTATION.
                                         it_episodic_summary_memory = lt_episodic_summary_memory
                                         it_semantic_memory         = lt_semantic_memory
                                         it_rag_data                = lt_rag_data
-                                        io_thinking_data           = lo_thinking_data
+                                        iv_user_data               = lv_user_data
                               IMPORTING ev_first_tool_input        = lr_first_input
                               CHANGING  cs_decision_log            = ls_decision_log ).
 

@@ -1,234 +1,227 @@
 CLASS zpru_cl_decision_request DEFINITION
-  PUBLIC
-  FINAL
-  CREATE PUBLIC .
+  PUBLIC FINAL
+  CREATE PUBLIC.
 
   PUBLIC SECTION.
+    INTERFACES zpru_if_payload.
+    INTERFACES zpru_if_agent_frw.
+    INTERFACES zpru_if_decision_request.
 
-    INTERFACES zpru_if_payload .
-    INTERFACES zpru_if_agent_frw .
-    INTERFACES zpru_if_decision_request .
   PROTECTED SECTION.
-
     DATA ms_decision_request TYPE REF TO zpru_s_decision_request.
-
-  PRIVATE SECTION.
 ENDCLASS.
 
 
-
 CLASS zpru_cl_decision_request IMPLEMENTATION.
-
-
   METHOD zpru_if_decision_request~get_decision_request_string.
+    " TODO: variable is assigned but never used (ABAP cleaner)
     DATA lv_string TYPE string.
 
     DATA(ls_request) = ms_decision_request->*.
 
     " agent metadata
     IF ls_request-agentmetadata IS NOT INITIAL.
-      lv_string = lv_string && `Agent Metadata:` && cl_abap_char_utilities=>newline.
+      lv_string = |{ lv_string } Agent Metadata:{ cl_abap_char_utilities=>newline }|.
 
       IF ls_request-agentmetadata-agentname IS NOT INITIAL.
-        lv_string = lv_string && |Agent Name: { ls_request-agentmetadata-agentname } | && cl_abap_char_utilities=>newline.
+        lv_string = |{ lv_string } Agent Name: { ls_request-agentmetadata-agentname } { cl_abap_char_utilities=>newline }|.
       ENDIF.
 
-      IF  ls_request-agentmetadata-agentversion IS NOT INITIAL.
-        lv_string = lv_string && |Agent Version: { ls_request-agentmetadata-agentversion } | && cl_abap_char_utilities=>newline.
+      IF ls_request-agentmetadata-agentversion IS NOT INITIAL.
+        lv_string = |{ lv_string } Agent Version: { ls_request-agentmetadata-agentversion } { cl_abap_char_utilities=>newline }|.
       ENDIF.
 
       IF ls_request-agentmetadata-agentrole IS NOT INITIAL.
-        lv_string = lv_string && |Agent Role: { ls_request-agentmetadata-agentrole } | && cl_abap_char_utilities=>newline.
+        lv_string = |{ lv_string } Agent Role: { ls_request-agentmetadata-agentrole } { cl_abap_char_utilities=>newline }|.
       ENDIF.
 
       DATA(lv_goal_count) = 0.
       LOOP AT ls_request-agentmetadata-agentgoals ASSIGNING FIELD-SYMBOL(<ls_agent_goal>).
 
-        IF <ls_agent_goal>-agentgoalid IS INITIAL OR
-           <ls_agent_goal>-agentgoaldescription IS INITIAL OR
-           <ls_agent_goal>-agentgoalcontent IS INITIAL.
+        IF    <ls_agent_goal>-agentgoalid          IS INITIAL
+           OR <ls_agent_goal>-agentgoaldescription IS INITIAL
+           OR <ls_agent_goal>-agentgoalcontent     IS INITIAL.
           CONTINUE.
         ENDIF.
 
         IF lv_goal_count = 0.
-          lv_string = lv_string && |Agent Goals: | && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } Agent Goals: { cl_abap_char_utilities=>newline }|.
         ENDIF.
 
-        lv_string = lv_string && |Agent Goal ID: { <ls_agent_goal>-agentgoalid } | && cl_abap_char_utilities=>newline.
-        lv_string = lv_string && |Agent Goal Description: { <ls_agent_goal>-agentgoaldescription } | && cl_abap_char_utilities=>newline.
-        lv_string = lv_string && |Agent Goal: { <ls_agent_goal>-agentgoalcontent } | && cl_abap_char_utilities=>newline.
+        lv_string = |{ lv_string } Agent Goal ID: { <ls_agent_goal>-agentgoalid } { cl_abap_char_utilities=>newline }|.
+        lv_string = |{ lv_string } Agent Goal Description: { <ls_agent_goal>-agentgoaldescription } { cl_abap_char_utilities=>newline }|.
+        lv_string = |{ lv_string } Agent Goal: { <ls_agent_goal>-agentgoalcontent } { cl_abap_char_utilities=>newline }|.
 
         IF <ls_agent_goal>-agentgoalpriority IS NOT INITIAL.
-          lv_string = lv_string && |Agent Goal Priority: { <ls_agent_goal>-agentgoalpriority } | && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } Agent Goal Priority: { <ls_agent_goal>-agentgoalpriority } { cl_abap_char_utilities=>newline }|.
         ENDIF.
         IF <ls_agent_goal>-agentgoalsuccesscriteria IS NOT INITIAL.
-          lv_string = lv_string && |Agent Success Criteria: { <ls_agent_goal>-agentgoalsuccesscriteria } | && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } Agent Success Criteria: { <ls_agent_goal>-agentgoalsuccesscriteria } { cl_abap_char_utilities=>newline }|.
         ENDIF.
 
-        lv_goal_count = lv_goal_count + 1.
+        lv_goal_count += 1.
       ENDLOOP.
 
       IF ls_request-agentmetadata-agentdomain IS NOT INITIAL.
-        lv_string = lv_string && |Agent Domain: | && cl_abap_char_utilities=>newline.
+        lv_string = |{ lv_string } Agent Domain: { cl_abap_char_utilities=>newline }|.
 
         IF ls_request-agentmetadata-agentdomain-agentdomainname IS NOT INITIAL.
-          lv_string = lv_string && |Agent Main Domain: { ls_request-agentmetadata-agentdomain-agentdomainname } | && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } Agent Main Domain: { ls_request-agentmetadata-agentdomain-agentdomainname } { cl_abap_char_utilities=>newline }|.
         ENDIF.
 
         IF ls_request-agentmetadata-agentdomain-agentdomaincontent IS NOT INITIAL.
-          lv_string = lv_string && |Agent Main Domain Description: { ls_request-agentmetadata-agentdomain-agentdomaincontent } | && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } Agent Main Domain Description: { ls_request-agentmetadata-agentdomain-agentdomaincontent } { cl_abap_char_utilities=>newline }|.
         ENDIF.
 
         DATA(lv_subdomain_count) = 0.
         LOOP AT ls_request-agentmetadata-agentdomain-agentsubdomains ASSIGNING FIELD-SYMBOL(<ls_agent_subdomain>).
 
-          IF <ls_agent_subdomain>-agentsubdomainname IS INITIAL OR
-             <ls_agent_subdomain>-agentsubdomaincontent    IS INITIAL.
+          IF    <ls_agent_subdomain>-agentsubdomainname    IS INITIAL
+             OR <ls_agent_subdomain>-agentsubdomaincontent IS INITIAL.
             CONTINUE.
           ENDIF.
 
           IF lv_subdomain_count = 0.
-            lv_string = lv_string && |Agent Subdomains: | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } Agent Subdomains: { cl_abap_char_utilities=>newline }|.
           ENDIF.
 
-          lv_string = lv_string && |Agent Subdomain Name: { <ls_agent_subdomain>-agentsubdomainname } | && cl_abap_char_utilities=>newline.
-          lv_string = lv_string && |Agent Subdomain Description: { <ls_agent_subdomain>-agentsubdomaincontent } | && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } Agent Subdomain Name: { <ls_agent_subdomain>-agentsubdomainname } { cl_abap_char_utilities=>newline }|.
+          lv_string = |{ lv_string } Agent Subdomain Description: { <ls_agent_subdomain>-agentsubdomaincontent } { cl_abap_char_utilities=>newline }|.
 
-          lv_subdomain_count = lv_subdomain_count + 1.
+          lv_subdomain_count += 1.
         ENDLOOP.
       ENDIF.
 
       DATA(lv_agent_restrict_count) = 0.
       LOOP AT ls_request-agentmetadata-agentrestrictions ASSIGNING FIELD-SYMBOL(<ls_agentrestriction>).
 
-        IF <ls_agentrestriction>-agentrestrictionname IS INITIAL OR
-           <ls_agentrestriction>-agentrestriction    IS INITIAL.
+        IF    <ls_agentrestriction>-agentrestrictionname IS INITIAL
+           OR <ls_agentrestriction>-agentrestriction     IS INITIAL.
           CONTINUE.
         ENDIF.
 
         IF lv_agent_restrict_count = 0.
-          lv_string = lv_string && |Agent Restrictions: | && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } Agent Restrictions: { cl_abap_char_utilities=>newline }|.
         ENDIF.
 
-        lv_string = lv_string && |Agent Restriction Name: { <ls_agentrestriction>-agentrestrictionname } | && cl_abap_char_utilities=>newline.
-        lv_string = lv_string && |Agent Restriction Rule: { <ls_agentrestriction>-agentrestriction } | && cl_abap_char_utilities=>newline.
+        lv_string = |{ lv_string } Agent Restriction Name: { <ls_agentrestriction>-agentrestrictionname } { cl_abap_char_utilities=>newline }|.
+        lv_string = |{ lv_string } Agent Restriction Rule: { <ls_agentrestriction>-agentrestriction } { cl_abap_char_utilities=>newline }|.
 
-        lv_subdomain_count = lv_subdomain_count + 1.
+        lv_subdomain_count += 1.
       ENDLOOP.
     ENDIF.
 
-
     " agent system prompt
     IF ls_request-systemprompt IS NOT INITIAL.
-      lv_string = lv_string && `System Prompt:` && cl_abap_char_utilities=>newline.
+      lv_string = |{ lv_string } System Prompt:{ cl_abap_char_utilities=>newline }|.
 
       IF ls_request-systemprompt-primarysessiontask IS NOT INITIAL.
-        lv_string = lv_string && |Primary Session Task: { ls_request-systemprompt-primarysessiontask }| && cl_abap_char_utilities=>newline.
+        lv_string = |{ lv_string } Primary Session Task: { ls_request-systemprompt-primarysessiontask }{ cl_abap_char_utilities=>newline }|.
       ENDIF.
 
       DATA(lv_tech_rule_count) = 0.
       LOOP AT ls_request-systemprompt-technicalrules ASSIGNING FIELD-SYMBOL(<ls_technicalrules>).
 
-        IF <ls_technicalrules>-technicalrulesname IS INITIAL OR
-           <ls_technicalrules>-technicalrule    IS INITIAL.
+        IF    <ls_technicalrules>-technicalrulesname IS INITIAL
+           OR <ls_technicalrules>-technicalrule      IS INITIAL.
           CONTINUE.
         ENDIF.
 
         IF lv_tech_rule_count = 0.
-          lv_string = lv_string && |Technical Rules: | && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } Technical Rules: { cl_abap_char_utilities=>newline }|.
         ENDIF.
 
-        lv_string = lv_string && |Technical Rule Name: { <ls_technicalrules>-technicalrulesname } | && cl_abap_char_utilities=>newline.
-        lv_string = lv_string && |Technical Rule: { <ls_technicalrules>-technicalrule } | && cl_abap_char_utilities=>newline.
+        lv_string = |{ lv_string } Technical Rule Name: { <ls_technicalrules>-technicalrulesname } { cl_abap_char_utilities=>newline }|.
+        lv_string = |{ lv_string } Technical Rule: { <ls_technicalrules>-technicalrule } { cl_abap_char_utilities=>newline }|.
 
-        lv_tech_rule_count = lv_tech_rule_count + 1.
+        lv_tech_rule_count += 1.
       ENDLOOP.
 
       DATA(lv_bus_rule_count) = 0.
       LOOP AT ls_request-systemprompt-businessrules ASSIGNING FIELD-SYMBOL(<ls_businessrules>).
 
-        IF <ls_businessrules>-businessrulesname IS INITIAL OR
-           <ls_businessrules>-businessrule    IS INITIAL.
+        IF    <ls_businessrules>-businessrulesname IS INITIAL
+           OR <ls_businessrules>-businessrule      IS INITIAL.
           CONTINUE.
         ENDIF.
 
         IF lv_bus_rule_count = 0.
-          lv_string = lv_string && |Business Rules: | && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } Business Rules: { cl_abap_char_utilities=>newline }|.
         ENDIF.
 
-        lv_string = lv_string && |Business Rule Name: { <ls_businessrules>-businessrulesname } | && cl_abap_char_utilities=>newline.
-        lv_string = lv_string && |Business Rule: { <ls_businessrules>-businessrule } | && cl_abap_char_utilities=>newline.
+        lv_string = |{ lv_string } Business Rule Name: { <ls_businessrules>-businessrulesname } { cl_abap_char_utilities=>newline }|.
+        lv_string = |{ lv_string } Business Rule: { <ls_businessrules>-businessrule } { cl_abap_char_utilities=>newline }|.
 
-        lv_bus_rule_count = lv_bus_rule_count + 1.
+        lv_bus_rule_count += 1.
       ENDLOOP.
 
       DATA(lv_format_count) = 0.
       LOOP AT ls_request-systemprompt-formatguidelines ASSIGNING FIELD-SYMBOL(<ls_formatguidelines>).
 
-        IF <ls_formatguidelines>-formatguidelinename IS INITIAL OR
-           <ls_formatguidelines>-formatguideline    IS INITIAL.
+        IF    <ls_formatguidelines>-formatguidelinename IS INITIAL
+           OR <ls_formatguidelines>-formatguideline     IS INITIAL.
           CONTINUE.
         ENDIF.
 
         IF lv_format_count = 0.
-          lv_string = lv_string && |Format Guidlines: | && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } Format Guidlines: { cl_abap_char_utilities=>newline }|.
         ENDIF.
 
-        lv_string = lv_string && |Format Guidline Name: { <ls_formatguidelines>-formatguidelinename } | && cl_abap_char_utilities=>newline.
-        lv_string = lv_string && |Format Guidline Instruction: { <ls_formatguidelines>-formatguideline } | && cl_abap_char_utilities=>newline.
+        lv_string = |{ lv_string } Format Guidline Name: { <ls_formatguidelines>-formatguidelinename } { cl_abap_char_utilities=>newline }|.
+        lv_string = |{ lv_string } Format Guidline Instruction: { <ls_formatguidelines>-formatguideline } { cl_abap_char_utilities=>newline }|.
 
-        lv_format_count = lv_format_count + 1.
+        lv_format_count += 1.
       ENDLOOP.
 
       DATA(lv_reason_step_count) = 0.
       LOOP AT ls_request-systemprompt-reasoningstep ASSIGNING FIELD-SYMBOL(<ls_reasoningstep>).
 
-        IF <ls_reasoningstep>-reasoningstepname IS INITIAL OR
-           <ls_reasoningstep>-reasoningstepquestion    IS INITIAL OR
-           <ls_reasoningstep>-reasoninginstruction    IS INITIAL.
+        IF    <ls_reasoningstep>-reasoningstepname     IS INITIAL
+           OR <ls_reasoningstep>-reasoningstepquestion IS INITIAL
+           OR <ls_reasoningstep>-reasoninginstruction  IS INITIAL.
           CONTINUE.
         ENDIF.
 
         IF lv_reason_step_count = 0.
-          lv_string = lv_string && |Reasoning Steps: | && cl_abap_char_utilities=>newline.
-          lv_string = lv_string && |Use them as hint what questions and how you must resolve before you send output. | && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } Reasoning Steps: { cl_abap_char_utilities=>newline }|.
+          lv_string = |{ lv_string } Use them as hint what questions and how you must resolve before you send output. { cl_abap_char_utilities=>newline }|.
         ENDIF.
 
-        lv_string = lv_string && |Reasoning Step Name: { <ls_reasoningstep>-reasoningstepname } | && cl_abap_char_utilities=>newline.
-        lv_string = lv_string && |Reasoning Step Question: { <ls_reasoningstep>-reasoningstepquestion }? | && cl_abap_char_utilities=>newline.
-        lv_string = lv_string && |Reasoning Step Instruction: { <ls_reasoningstep>-reasoninginstruction } | && cl_abap_char_utilities=>newline.
+        lv_string = |{ lv_string } Reasoning Step Name: { <ls_reasoningstep>-reasoningstepname } { cl_abap_char_utilities=>newline }|.
+        lv_string = |{ lv_string } Reasoning Step Question: { <ls_reasoningstep>-reasoningstepquestion }? { cl_abap_char_utilities=>newline }|.
+        lv_string = |{ lv_string } Reasoning Step Instruction: { <ls_reasoningstep>-reasoninginstruction } { cl_abap_char_utilities=>newline }|.
 
         IF <ls_reasoningstep>-reasoningstepismandatory = abap_true.
-          lv_string = lv_string && |The Reasoning Step { <ls_reasoningstep>-reasoningstepname } is mandatory. | && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } The Reasoning Step { <ls_reasoningstep>-reasoningstepname } is mandatory. { cl_abap_char_utilities=>newline }|.
         ENDIF.
 
-        lv_reason_step_count = lv_reason_step_count + 1.
+        lv_reason_step_count += 1.
       ENDLOOP.
 
       DATA(lv_promptrestrictions_count) = 0.
       LOOP AT ls_request-systemprompt-promptrestrictions ASSIGNING FIELD-SYMBOL(<ls_promptrestriction>).
 
-        IF <ls_promptrestriction>-promptrestrictionname  IS INITIAL OR
-           <ls_promptrestriction>-promptrestriction    IS INITIAL.
+        IF    <ls_promptrestriction>-promptrestrictionname IS INITIAL
+           OR <ls_promptrestriction>-promptrestriction     IS INITIAL.
           CONTINUE.
         ENDIF.
 
         IF lv_promptrestrictions_count = 0.
-          lv_string = lv_string && |Format Guidlines: | && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } Format Guidlines: { cl_abap_char_utilities=>newline }|.
         ENDIF.
 
-        lv_string = lv_string && |System Prompt Restriction Name: { <ls_promptrestriction>-promptrestrictionname } | && cl_abap_char_utilities=>newline.
-        lv_string = lv_string && |System Prompt Restriction Rule: { <ls_promptrestriction>-promptrestriction } | && cl_abap_char_utilities=>newline.
+        lv_string = |{ lv_string } System Prompt Restriction Name: { <ls_promptrestriction>-promptrestrictionname } { cl_abap_char_utilities=>newline }|.
+        lv_string = |{ lv_string } System Prompt Restriction Rule: { <ls_promptrestriction>-promptrestriction } { cl_abap_char_utilities=>newline }|.
 
-        lv_promptrestrictions_count = lv_promptrestrictions_count + 1.
+        lv_promptrestrictions_count += 1.
       ENDLOOP.
 
       IF ls_request-systemprompt-arbitrarytexttitle IS NOT INITIAL.
-        lv_string = lv_string && |{ ls_request-systemprompt-arbitrarytexttitle } | && cl_abap_char_utilities=>newline.
+        lv_string = |{ lv_string }{ ls_request-systemprompt-arbitrarytexttitle } { cl_abap_char_utilities=>newline }|.
       ENDIF.
 
       IF ls_request-systemprompt-arbitrarytext IS NOT INITIAL.
-        lv_string = lv_string && |{ ls_request-systemprompt-arbitrarytext } | && cl_abap_char_utilities=>newline.
+        lv_string = |{ lv_string }{ ls_request-systemprompt-arbitrarytext } { cl_abap_char_utilities=>newline }|.
       ENDIF.
 
     ENDIF.
@@ -240,33 +233,33 @@ CLASS zpru_cl_decision_request IMPLEMENTATION.
       DATA(lv_session_msg_count) = 1.
       LOOP AT ls_request-sessionmemory ASSIGNING FIELD-SYMBOL(<ls_sessionmemory>).
 
-        IF <ls_sessionmemory>-content  IS INITIAL.
+        IF <ls_sessionmemory>-content IS INITIAL.
           CONTINUE.
         ENDIF.
 
         IF lv_session_msg_count = 1.
-          lv_string = lv_string && `Recent Session Messages:` && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } Recent Session Messages:{ cl_abap_char_utilities=>newline }|.
         ENDIF.
 
-        lv_string = lv_string && |Message Number: { lv_session_msg_count } | && cl_abap_char_utilities=>newline.
-        lv_string = lv_string && |Message Content: { <ls_sessionmemory>-content } | && cl_abap_char_utilities=>newline.
+        lv_string = |{ lv_string } Message Number: { lv_session_msg_count } { cl_abap_char_utilities=>newline }|.
+        lv_string = |{ lv_string } Message Content: { <ls_sessionmemory>-content } { cl_abap_char_utilities=>newline }|.
 
         CASE <ls_sessionmemory>-messagetype.
           WHEN zpru_if_short_memory_provider=>cs_msg_type-query.
-            lv_string = lv_string && |Message Type: Input Query | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } Message Type: Input Query { cl_abap_char_utilities=>newline }|.
           WHEN zpru_if_short_memory_provider=>cs_msg_type-step_input.
-            lv_string = lv_string && |Message Type: Step Input | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } Message Type: Step Input { cl_abap_char_utilities=>newline }|.
           WHEN zpru_if_short_memory_provider=>cs_msg_type-step_output.
-            lv_string = lv_string && |Message Type: Step Output | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } Message Type: Step Output { cl_abap_char_utilities=>newline }|.
           WHEN zpru_if_short_memory_provider=>cs_msg_type-response.
-            lv_string = lv_string && |Message Type: Final Output Response | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } Message Type: Final Output Response { cl_abap_char_utilities=>newline }|.
           WHEN zpru_if_short_memory_provider=>cs_msg_type-info.
-            lv_string = lv_string && |Message Type: Information Message | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } Message Type: Information Message { cl_abap_char_utilities=>newline }|.
           WHEN OTHERS.
-            lv_string = lv_string && |Message Type: Information Message | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } Message Type: Information Message { cl_abap_char_utilities=>newline }|.
         ENDCASE.
 
-        lv_session_msg_count = lv_session_msg_count + 1.
+        lv_session_msg_count += 1.
       ENDLOOP.
     ENDIF.
 
@@ -282,28 +275,28 @@ CLASS zpru_cl_decision_request IMPLEMENTATION.
         ENDIF.
 
         IF lv_episodicmessage_count = 1.
-          lv_string = lv_string && `Conversiation History:` && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } Conversiation History:{ cl_abap_char_utilities=>newline }|.
         ENDIF.
 
-        lv_string = lv_string && |Message Number: { lv_episodicmessage_count } | && cl_abap_char_utilities=>newline.
-        lv_string = lv_string && |Message Content: { <ls_episodicmessage>-content } | && cl_abap_char_utilities=>newline.
+        lv_string = |{ lv_string } Message Number: { lv_episodicmessage_count } { cl_abap_char_utilities=>newline }|.
+        lv_string = |{ lv_string } Message Content: { <ls_episodicmessage>-content } { cl_abap_char_utilities=>newline }|.
 
         CASE <ls_episodicmessage>-messagetype.
           WHEN zpru_if_short_memory_provider=>cs_msg_type-query.
-            lv_string = lv_string && |Message Type: Input Query | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } Message Type: Input Query { cl_abap_char_utilities=>newline }|.
           WHEN zpru_if_short_memory_provider=>cs_msg_type-step_input.
-            lv_string = lv_string && |Message Type: Step Input | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } Message Type: Step Input { cl_abap_char_utilities=>newline }|.
           WHEN zpru_if_short_memory_provider=>cs_msg_type-step_output.
-            lv_string = lv_string && |Message Type: Step Output | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } Message Type: Step Output { cl_abap_char_utilities=>newline }|.
           WHEN zpru_if_short_memory_provider=>cs_msg_type-response.
-            lv_string = lv_string && |Message Type: Final Output Response | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } Message Type: Final Output Response { cl_abap_char_utilities=>newline }|.
           WHEN zpru_if_short_memory_provider=>cs_msg_type-info.
-            lv_string = lv_string && |Message Type: Information Message | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } Message Type: Information Message { cl_abap_char_utilities=>newline }|.
           WHEN OTHERS.
-            lv_string = lv_string && |Message Type: Information Message | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } Message Type: Information Message { cl_abap_char_utilities=>newline }|.
         ENDCASE.
 
-        lv_episodicmessage_count = lv_episodicmessage_count + 1.
+        lv_episodicmessage_count += 1.
       ENDLOOP.
     ENDIF.
 
@@ -319,13 +312,13 @@ CLASS zpru_cl_decision_request IMPLEMENTATION.
         ENDIF.
 
         IF lv_episodicsummary_count = 1.
-          lv_string = lv_string && `Summary History:` && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } Summary History:{ cl_abap_char_utilities=>newline }|.
         ENDIF.
 
-        lv_string = lv_string && |Message Number: { lv_episodicsummary_count } | && cl_abap_char_utilities=>newline.
-        lv_string = lv_string && |Message Content: { <ls_episodicsummary>-content } | && cl_abap_char_utilities=>newline.
+        lv_string = |{ lv_string } Message Number: { lv_episodicsummary_count } { cl_abap_char_utilities=>newline }|.
+        lv_string = |{ lv_string } Message Content: { <ls_episodicsummary>-content } { cl_abap_char_utilities=>newline }|.
 
-        lv_episodicsummary_count = lv_episodicsummary_count + 1.
+        lv_episodicsummary_count += 1.
       ENDLOOP.
     ENDIF.
 
@@ -334,39 +327,37 @@ CLASS zpru_cl_decision_request IMPLEMENTATION.
       DATA(lv_semantic_head_count) = 0.
       LOOP AT ls_request-semanticmemory ASSIGNING FIELD-SYMBOL(<ls_semanticmemory>).
 
-        IF <ls_semanticmemory>-semanticterm IS INITIAL OR
-           <ls_semanticmemory>-semanticcontent    IS INITIAL.
+        IF    <ls_semanticmemory>-semanticterm    IS INITIAL
+           OR <ls_semanticmemory>-semanticcontent IS INITIAL.
           CONTINUE.
         ENDIF.
 
         IF lv_semantic_head_count = 0.
-          lv_string = lv_string && |Semantic Memory: | && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } Semantic Memory: { cl_abap_char_utilities=>newline }|.
         ENDIF.
 
-        lv_string = lv_string && |Semantic Term Name: { <ls_semanticmemory>-semanticterm } | && cl_abap_char_utilities=>newline.
-        lv_string = lv_string && |Semantic Term Definition: { <ls_semanticmemory>-semanticcontent } | && cl_abap_char_utilities=>newline.
-
+        lv_string = |{ lv_string } Semantic Term Name: { <ls_semanticmemory>-semanticterm } { cl_abap_char_utilities=>newline }|.
+        lv_string = |{ lv_string } Semantic Term Definition: { <ls_semanticmemory>-semanticcontent } { cl_abap_char_utilities=>newline }|.
 
         CASE <ls_semanticmemory>-semanticcategory.
           WHEN zpru_if_long_memory_provider=>cs_semantic_cat-entity.
-            lv_string = lv_string && |Semantic Term Category: Entity | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } Semantic Term Category: Entity { cl_abap_char_utilities=>newline }|.
           WHEN zpru_if_long_memory_provider=>cs_semantic_cat-concept.
-            lv_string = lv_string && |Semantic Term Category: Concept | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } Semantic Term Category: Concept { cl_abap_char_utilities=>newline }|.
           WHEN zpru_if_long_memory_provider=>cs_semantic_cat-rule.
-            lv_string = lv_string && |Semantic Term Category: Rule | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } Semantic Term Category: Rule { cl_abap_char_utilities=>newline }|.
           WHEN zpru_if_long_memory_provider=>cs_semantic_cat-domain.
-            lv_string = lv_string && |Semantic Term Category: Domain | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } Semantic Term Category: Domain { cl_abap_char_utilities=>newline }|.
           WHEN OTHERS.
-            lv_string = lv_string && |Semantic Term Category: Entity | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } Semantic Term Category: Entity { cl_abap_char_utilities=>newline }|.
         ENDCASE.
-
 
         DATA(lv_semantic_rel_count) = 1.
         LOOP AT <ls_semanticmemory>-semanticrelations ASSIGNING FIELD-SYMBOL(<ls_semantic_rel>).
 
-          IF <ls_semantic_rel>-firstsemanticterm IS INITIAL OR
-             <ls_semantic_rel>-secondsemanticterm    IS INITIAL OR
-             <ls_semantic_rel>-conceptrelationship IS INITIAL.
+          IF    <ls_semantic_rel>-firstsemanticterm   IS INITIAL
+             OR <ls_semantic_rel>-secondsemanticterm  IS INITIAL
+             OR <ls_semantic_rel>-conceptrelationship IS INITIAL.
             CONTINUE.
           ENDIF.
 
@@ -375,65 +366,65 @@ CLASS zpru_cl_decision_request IMPLEMENTATION.
           ENDIF.
 
           IF lv_semantic_rel_count = 1.
-            lv_string = lv_string && |Semantic Relation for Term { <ls_semanticmemory>-semanticterm }: | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } Semantic Relation for Term { <ls_semanticmemory>-semanticterm }: { cl_abap_char_utilities=>newline }|.
           ENDIF.
 
-          lv_string = lv_string && |Relation Number: { lv_semantic_rel_count } | && cl_abap_char_utilities=>newline.
-          lv_string = lv_string && |Relation Between: { <ls_semantic_rel>-firstsemanticterm } and { <ls_semantic_rel>-secondsemanticterm } | && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } Relation Number: { lv_semantic_rel_count } { cl_abap_char_utilities=>newline }|.
+          lv_string = |{ lv_string } Relation Between: { <ls_semantic_rel>-firstsemanticterm } and { <ls_semantic_rel>-secondsemanticterm } { cl_abap_char_utilities=>newline }|.
 
           CASE <ls_semantic_rel>-conceptrelationship.
-            WHEN   zpru_if_long_memory_provider=>gc_semantic_rel-parent_of.
+            WHEN zpru_if_long_memory_provider=>gc_semantic_rel-parent_of.
               lv_string = lv_string &&
                           |Term { <ls_semantic_rel>-firstsemanticterm } acts as a high-level container or owner for Term { <ls_semantic_rel>-secondsemanticterm }. | &&
                           |Term { <ls_semantic_rel>-secondsemanticterm } exists within the context of { <ls_semantic_rel>-firstsemanticterm }. | &&
                           cl_abap_char_utilities=>newline.
-            WHEN   zpru_if_long_memory_provider=>gc_semantic_rel-child_of.
+            WHEN zpru_if_long_memory_provider=>gc_semantic_rel-child_of.
               lv_string = lv_string &&
                           |Term { <ls_semantic_rel>-firstsemanticterm } is a sub-component or member of Term { <ls_semantic_rel>-secondsemanticterm }. | &&
                           cl_abap_char_utilities=>newline.
-            WHEN   zpru_if_long_memory_provider=>gc_semantic_rel-comprises.
+            WHEN zpru_if_long_memory_provider=>gc_semantic_rel-comprises.
               lv_string = lv_string &&
                           |Term { <ls_semantic_rel>-firstsemanticterm } is composed of several instances of Term { <ls_semantic_rel>-secondsemanticterm }. | &&
                           |This implies a structural assembly (e.g., a Header comprises Items). | &&
                           cl_abap_char_utilities=>newline.
-            WHEN   zpru_if_long_memory_provider=>gc_semantic_rel-part_of.
+            WHEN zpru_if_long_memory_provider=>gc_semantic_rel-part_of.
               lv_string = lv_string &&
                           |Term { <ls_semantic_rel>-firstsemanticterm } is a constituent element that helps make up the larger Term { <ls_semantic_rel>-secondsemanticterm }. | &&
                           cl_abap_char_utilities=>newline.
-            WHEN   zpru_if_long_memory_provider=>gc_semantic_rel-generalizes.
+            WHEN zpru_if_long_memory_provider=>gc_semantic_rel-generalizes.
               lv_string = lv_string &&
                           |Term { <ls_semantic_rel>-firstsemanticterm } is a broad, generic template or category that covers the specific nature of Term { <ls_semantic_rel>-secondsemanticterm }.| &&
                           cl_abap_char_utilities=>newline.
-            WHEN   zpru_if_long_memory_provider=>gc_semantic_rel-specializes.
+            WHEN zpru_if_long_memory_provider=>gc_semantic_rel-specializes.
               lv_string = lv_string &&
                           |Term { <ls_semantic_rel>-firstsemanticterm } is a specific variation or subtype of the more general Term { <ls_semantic_rel>-secondsemanticterm }. | &&
                           cl_abap_char_utilities=>newline.
-            WHEN   zpru_if_long_memory_provider=>gc_semantic_rel-depends_on.
+            WHEN zpru_if_long_memory_provider=>gc_semantic_rel-depends_on.
               lv_string = lv_string &&
                           |Term { <ls_semantic_rel>-firstsemanticterm } cannot function, be validated, or exist correctly without the prior existence or success of Term { <ls_semantic_rel>-secondsemanticterm }. | &&
                           cl_abap_char_utilities=>newline.
-            WHEN   zpru_if_long_memory_provider=>gc_semantic_rel-required_by.
+            WHEN zpru_if_long_memory_provider=>gc_semantic_rel-required_by.
               lv_string = lv_string &&
                           |Term { <ls_semantic_rel>-firstsemanticterm } is a mandatory prerequisite that must be satisfied for Term { <ls_semantic_rel>-secondsemanticterm } to proceed. | &&
                           cl_abap_char_utilities=>newline.
-            WHEN   zpru_if_long_memory_provider=>gc_semantic_rel-precedes.
+            WHEN zpru_if_long_memory_provider=>gc_semantic_rel-precedes.
               lv_string = lv_string &&
                           |Term { <ls_semantic_rel>-firstsemanticterm } occurs earlier in the business process timeline than Term { <ls_semantic_rel>-secondsemanticterm }. | &&
                           cl_abap_char_utilities=>newline.
-            WHEN   zpru_if_long_memory_provider=>gc_semantic_rel-follows.
+            WHEN zpru_if_long_memory_provider=>gc_semantic_rel-follows.
               lv_string = lv_string &&
                           |Term { <ls_semantic_rel>-firstsemanticterm } is the subsequent step that takes place after Term { <ls_semantic_rel>-secondsemanticterm } is completed. | &&
                           cl_abap_char_utilities=>newline.
-            WHEN   zpru_if_long_memory_provider=>gc_semantic_rel-relates_to.
+            WHEN zpru_if_long_memory_provider=>gc_semantic_rel-relates_to.
               lv_string = lv_string &&
                           |Term { <ls_semantic_rel>-firstsemanticterm } has a non-specific but relevant connection to Term { <ls_semantic_rel>-secondsemanticterm } that the agent should be aware of for context. | &&
                           cl_abap_char_utilities=>newline.
-            WHEN   zpru_if_long_memory_provider=>gc_semantic_rel-conflicts.
+            WHEN zpru_if_long_memory_provider=>gc_semantic_rel-conflicts.
               lv_string = lv_string &&
                           |Term { <ls_semantic_rel>-firstsemanticterm } contains logic, data, or rules that are mutually exclusive with Term { <ls_semantic_rel>-secondsemanticterm }. | &&
                           |Both cannot be true or active at once.| &&
                           cl_abap_char_utilities=>newline.
-            WHEN   zpru_if_long_memory_provider=>gc_semantic_rel-duplicates.
+            WHEN zpru_if_long_memory_provider=>gc_semantic_rel-duplicates.
               lv_string = lv_string &&
                           |Term { <ls_semantic_rel>-firstsemanticterm } contains essentially the same semantic information as Term { <ls_semantic_rel>-secondsemanticterm } and should be treated as a redundant entry. | &&
                           cl_abap_char_utilities=>newline.
@@ -442,10 +433,10 @@ CLASS zpru_cl_decision_request IMPLEMENTATION.
                           |Term { <ls_semantic_rel>-firstsemanticterm } has a non-specific but relevant connection to Term { <ls_semantic_rel>-secondsemanticterm } that the agent should be aware of for context. | &&
                           cl_abap_char_utilities=>newline.
           ENDCASE.
-          lv_semantic_rel_count = lv_semantic_rel_count + 1.
+          lv_semantic_rel_count += 1.
         ENDLOOP.
 
-        lv_semantic_head_count = lv_semantic_head_count + 1.
+        lv_semantic_head_count += 1.
       ENDLOOP.
     ENDIF.
 
@@ -454,48 +445,50 @@ CLASS zpru_cl_decision_request IMPLEMENTATION.
       DATA(lv_rag_head_count) = 1.
       LOOP AT ls_request-ragdata ASSIGNING FIELD-SYMBOL(<ls_ragdata>).
 
-        IF <ls_ragdata>-ragsourcename IS INITIAL OR
-           <ls_ragdata>-ragchunks    IS INITIAL.
+        IF    <ls_ragdata>-ragsourcename IS INITIAL
+           OR <ls_ragdata>-ragchunks     IS INITIAL.
           CONTINUE.
         ENDIF.
 
         IF lv_rag_head_count = 1.
-          lv_string = lv_string && |RAG Data: | && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } RAG Data: { cl_abap_char_utilities=>newline }|.
         ENDIF.
 
-        lv_string = lv_string && |Resource Name: { <ls_ragdata>-ragsourcename } | && cl_abap_char_utilities=>newline.
-
+        lv_string = |{ lv_string } Resource Name: { <ls_ragdata>-ragsourcename } { cl_abap_char_utilities=>newline }|.
 
         DATA(lv_rag_item_count) = 1.
         LOOP AT <ls_ragdata>-ragchunks ASSIGNING FIELD-SYMBOL(<ls_rag_chunks>).
 
-          IF <ls_rag_chunks>-ragchunkid IS INITIAL OR
-             <ls_rag_chunks>-chunkcontent    IS INITIAL.
+          IF    <ls_rag_chunks>-ragchunkid   IS INITIAL
+             OR <ls_rag_chunks>-chunkcontent IS INITIAL.
             CONTINUE.
           ENDIF.
 
           IF lv_rag_item_count = 1.
-            lv_string = lv_string && |RAG Chunks for { <ls_ragdata>-ragsourcename }: | && cl_abap_char_utilities=>newline.
+            lv_string = |{ lv_string } RAG Chunks for { <ls_ragdata>-ragsourcename }: { cl_abap_char_utilities=>newline }|.
           ENDIF.
 
-          lv_string = lv_string && |Chunk Number { <ls_rag_chunks>-ragchunkid }: | && cl_abap_char_utilities=>newline.
-          lv_string = lv_string && |Chunk Content { <ls_rag_chunks>-chunkcontent }: | && cl_abap_char_utilities=>newline.
+          lv_string = |{ lv_string } Chunk Number { <ls_rag_chunks>-ragchunkid }: { cl_abap_char_utilities=>newline }|.
+          lv_string = |{ lv_string } Chunk Content { <ls_rag_chunks>-chunkcontent }: { cl_abap_char_utilities=>newline }|.
 
-          lv_rag_item_count = lv_rag_item_count + 1.
+          lv_rag_item_count += 1.
         ENDLOOP.
 
-        lv_rag_head_count = lv_rag_head_count + 1.
+        lv_rag_head_count += 1.
       ENDLOOP.
     ENDIF.
 
+    lv_string = |{ lv_string } User Data in JSON: { ls_request-userdata }: { cl_abap_char_utilities=>newline }|.
+
+    lv_string = |{ lv_string } User Prompt: { ls_request-userprompt }: { cl_abap_char_utilities=>newline }|.
+
+    rv_decision_request = lv_string.
 
   ENDMETHOD.
-
 
   METHOD zpru_if_payload~clear_data.
-    CLEAR: ms_decision_request.
+    CLEAR ms_decision_request.
   ENDMETHOD.
-
 
   METHOD zpru_if_payload~get_data.
     rr_data = ms_decision_request.
