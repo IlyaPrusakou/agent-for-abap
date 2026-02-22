@@ -1,245 +1,250 @@
-CLASS lcl_decision_provider DEFINITION CREATE PUBLIC.
-  PUBLIC SECTION.
-    INTERFACES zpru_if_decision_provider.
 
-    TYPES: BEGIN OF tS_thinking_step,
-             step_no   TYPE i,
-             timestamp TYPE timestampl,
-             content   TYPE string,
-           END OF tS_thinking_step.
+CLASS lcl_common_algorithms IMPLEMENTATION.
+  METHOD get_last_thinkingstepnumber.
+    DATA(lt_thinking_step) = it_thinking_step.
+    SORT lt_thinking_step BY thinkingstepnumber DESCENDING.
+    rv_last_thinkingstepnumber = VALUE i( lt_thinking_step[ 1 ]-thinkingstepnumber OPTIONAL ) + 1.
+  ENDMETHOD.
 
-    TYPES tt_thinking_steps TYPE STANDARD TABLE OF tS_thinking_step WITH EMPTY KEY.
+  METHOD get_timestamp.
+    GET TIME STAMP FIELD rv_now.
+  ENDMETHOD.
 
-    TYPES: BEGIN OF tS_usage,
-             prompt_tokens     TYPE i,
-             completion_tokens TYPE i,
-             total_tokens      TYPE i,
-           END OF tS_usage.
+  METHOD get_llm_api_factory.
+    IF zpru_cl_logic_switch=>get_logic( ) = abap_true.
+      ro_llm_api_factory = NEW zpru_cl_islm_compl_api_factory( ).
+    ELSE.
+      TRY.
+          ro_llm_api_factory = cl_aic_islm_compl_api_factory=>get( ).
+        CATCH cx_aic_api_factory.
+          RETURN.
+      ENDTRY.
+    ENDIF.
+  ENDMETHOD.
 
-    TYPES: BEGIN OF tS_decision_log,
-             agent_UUID     TYPE xstring,
-             model_id       TYPE string,
-             input_prompt   TYPE string,
-             final_output   TYPE string,
-             thinking_steps TYPE tt_thinking_steps,
-             usage          TYPE tS_usage,
-             duration_ms    TYPE i,
-           END OF tS_decision_log.
-
-  PROTECTED SECTION.
-    METHODS make_decision
-      IMPORTING iv_prompt         TYPE string
-      EXPORTING ev_full_execution TYPE abap_boolean
-      CHANGING  cs_decision_log   TYPE tS_decision_log
-      RAISING   zpru_cx_agent_core.
 
 ENDCLASS.
-
 
 CLASS lcl_decision_provider IMPLEMENTATION.
-  METHOD zpru_if_decision_provider~call_decision_engine.
-    DATA lt_execution_plan    TYPE zpru_if_decision_provider=>tt_execution_plan.
-    DATA ls_decision_log      TYPE tS_decision_log.
-    DATA lo_utility           TYPE REF TO zpru_if_agent_util.
-    DATA lv_decision_log_json TYPE zpru_if_agent_frw=>ts_json.
 
-    zpru_cl_dummy_agent_logic=>ms_method_registr-call_decision_engine = abap_true.
-
-    lo_utility ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
-                                                           iv_context = zpru_if_agent_frw=>cs_context-standard ).
-
-    make_decision( EXPORTING iv_prompt = io_input->get_data( )->*
-                   " TODO: variable is assigned but never used (ABAP cleaner)
-                   IMPORTING ev_full_execution = DATA(lv_full_execution)
-                   CHANGING  cs_decision_log = ls_decision_log ).
-
-    GET TIME STAMP FIELD DATA(lv_now).
-
-    APPEND INITIAL LINE TO ls_decision_log-thinking_steps ASSIGNING FIELD-SYMBOL(<ls_thinking_step>).
-    <ls_thinking_step>-step_no   = 2.
-    <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content   = 'We added DUMMY_CODE to execution plan'.
-
-    APPEND INITIAL LINE TO lt_execution_plan ASSIGNING FIELD-SYMBOL(<ls_execution_plan>).
-    <ls_execution_plan>-agentuuid = is_agent-agentuuid.
-    <ls_execution_plan>-toolname  = 'DUMMY_CODE'.
-    <ls_execution_plan>-sequence  = 1.
-
-    APPEND INITIAL LINE TO ls_decision_log-thinking_steps ASSIGNING <ls_thinking_step>.
-    <ls_thinking_step>-step_no   = 3.
-    <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content   = 'We added DUMMY_KNOWLEDGE to execution plan'.
-
-    APPEND INITIAL LINE TO lt_execution_plan ASSIGNING <ls_execution_plan>.
-    <ls_execution_plan>-agentuuid = is_agent-agentuuid.
-    <ls_execution_plan>-toolname  = 'DUMMY_KNOWLEDGE'.
-    <ls_execution_plan>-sequence  = 2.
-
-    APPEND INITIAL LINE TO ls_decision_log-thinking_steps ASSIGNING <ls_thinking_step>.
-    <ls_thinking_step>-step_no   = 4.
-    <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content   = 'We added NESTED_AGENT to execution plan'.
-
-    APPEND INITIAL LINE TO lt_execution_plan ASSIGNING <ls_execution_plan>.
-    <ls_execution_plan>-agentuuid = is_agent-agentuuid.
-    <ls_execution_plan>-toolname  = 'NESTED_AGENT'.
-    <ls_execution_plan>-sequence  = 3.
-
-    APPEND INITIAL LINE TO ls_decision_log-thinking_steps ASSIGNING <ls_thinking_step>.
-    <ls_thinking_step>-step_no   = 5.
-    <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content   = 'We added DUMMY_LLM to execution plan'.
-
-    APPEND INITIAL LINE TO lt_execution_plan ASSIGNING <ls_execution_plan>.
-    <ls_execution_plan>-agentuuid = is_agent-agentuuid.
-    <ls_execution_plan>-toolname  = 'DUMMY_LLM'.
-    <ls_execution_plan>-sequence  = 4.
-
-    APPEND INITIAL LINE TO ls_decision_log-thinking_steps ASSIGNING <ls_thinking_step>.
-    <ls_thinking_step>-step_no   = 6.
-    <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content   = 'We added DUMMY_HTTP to execution plan'.
-
-    APPEND INITIAL LINE TO lt_execution_plan ASSIGNING <ls_execution_plan>.
-    <ls_execution_plan>-agentuuid = is_agent-agentuuid.
-    <ls_execution_plan>-toolname  = 'DUMMY_HTTP'.
-    <ls_execution_plan>-sequence  = 5.
-
-    APPEND INITIAL LINE TO ls_decision_log-thinking_steps ASSIGNING <ls_thinking_step>.
-    <ls_thinking_step>-step_no   = 7.
-    <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content   = 'We added DUMMY_ML to execution plan'.
-
-    APPEND INITIAL LINE TO lt_execution_plan ASSIGNING <ls_execution_plan>.
-    <ls_execution_plan>-agentuuid = is_agent-agentuuid.
-    <ls_execution_plan>-toolname  = 'DUMMY_ML'.
-    <ls_execution_plan>-sequence  = 6.
-
-    APPEND INITIAL LINE TO ls_decision_log-thinking_steps ASSIGNING <ls_thinking_step>.
-    <ls_thinking_step>-step_no   = 8.
-    <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content   = 'We added DUMMY_SCM to execution plan'.
-
-    APPEND INITIAL LINE TO lt_execution_plan ASSIGNING <ls_execution_plan>.
-    <ls_execution_plan>-agentuuid = is_agent-agentuuid.
-    <ls_execution_plan>-toolname  = 'DUMMY_SCM'.
-    <ls_execution_plan>-sequence  = 7.
-
-    APPEND INITIAL LINE TO ls_decision_log-thinking_steps ASSIGNING <ls_thinking_step>.
-    <ls_thinking_step>-step_no   = 9.
-    <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content   = 'We added DUMMY_DYN_CODE to execution plan'.
-
-    APPEND INITIAL LINE TO lt_execution_plan ASSIGNING <ls_execution_plan>.
-    <ls_execution_plan>-agentuuid = is_agent-agentuuid.
-    <ls_execution_plan>-toolname  = 'DUMMY_DYN_CODE'.
-    <ls_execution_plan>-sequence  = 8.
-
-    APPEND INITIAL LINE TO ls_decision_log-thinking_steps ASSIGNING <ls_thinking_step>.
-    <ls_thinking_step>-step_no   = 10.
-    <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content   = 'We added DUMMY_USER_TOOL to execution plan'.
-
-    APPEND INITIAL LINE TO lt_execution_plan ASSIGNING <ls_execution_plan>.
-    <ls_execution_plan>-agentuuid = is_agent-agentuuid.
-    <ls_execution_plan>-toolname  = 'DUMMY_USER_TOOL'.
-    <ls_execution_plan>-sequence  = 9.
-
-    eo_execution_plan->set_data( ir_data = NEW zpru_if_decision_provider=>tt_execution_plan( lt_execution_plan ) ).
-    eo_first_tool_input->set_data( ir_data = NEW string( `Let's start full execution` ) ). " must be json add schema provider for first tool input!!!
-    eo_langu->set_data( ir_data = NEW spras( sy-langu ) ).
-
-    lo_utility->convert_to_string( EXPORTING ir_abap   = REF #( ls_decision_log )
-                                   CHANGING  cr_string = lv_decision_log_json ).
-
-    eo_decision_log->set_data( ir_data = NEW string( lv_decision_log_json ) ).
+  METHOD check_authorizations.
+    " CHECK AUTHORIZATION
+    ev_allowed = abap_true.
   ENDMETHOD.
 
-  METHOD zpru_if_decision_provider~prepare_final_response.
-    DATA lv_final_response TYPE string.
+  METHOD prepare_first_tool_input.
 
-    zpru_cl_dummy_agent_logic=>ms_method_registr-prepare_final_response = abap_true.
+    FIELD-SYMBOLS: <ls_first_input> TYPE zpru_s_first_tool_input_exmpl.
 
-    DATA(lv_last_output) = io_last_output->get_data( ).
-    GET TIME STAMP FIELD DATA(lv_now).
-    lv_final_response = |{ lv_last_output->* } - FINAL_RESPONSE - { lv_now } |.
-    eo_final_response->set_data( ir_data = NEW string( lv_final_response ) ).
+    IF er_first_tool_input IS NOT BOUND.
+      RETURN.
+    ENDIF.
+
+    ASSIGN er_first_tool_input->* TO <ls_first_input>.
+    <ls_first_input>-firstinput = `First tool input`.
+
+    APPEND INITIAL LINE TO cs_decision_log-thinkingsteps ASSIGNING FIELD-SYMBOL(<ls_thinking_step>).
+    <ls_thinking_step>-thinkingstepnumber   = lcl_common_algorithms=>get_last_thinkingstepnumber( cs_decision_log-thinkingsteps ).
+    <ls_thinking_step>-thinkingstepdatetime = lcl_common_algorithms=>get_timestamp( ).
+    <ls_thinking_step>-thinkingstepcontent  = `First Tool Input is processed`.
+
   ENDMETHOD.
 
-  METHOD make_decision.
-    GET TIME STAMP FIELD DATA(lv_now).
+  METHOD process_thinking.
+    DATA lo_decision_request     TYPE REF TO zpru_if_decision_request.
 
-    cs_decision_log-agent_UUID   = '12345678901234567890123456789012'.
-    cs_decision_log-model_id     = 'GEMINI 3.0'.
-    cs_decision_log-input_prompt = iv_prompt.
-    cs_decision_log-final_output = `Start Full Execution`.
-    cs_decision_log-usage-prompt_tokens     = 100.
-    cs_decision_log-usage-completion_tokens = 200.
-    cs_decision_log-usage-total_tokens      = 300.
-    cs_decision_log-duration_ms = 1000.
+    lo_decision_request ?= zpru_cl_agent_service_mngr=>get_service(
+                               iv_service = `ZPRU_IF_DECISION_REQUEST`
+                               iv_context = zpru_if_agent_frw=>cs_context-standard ).
+
+    DATA(lv_message) = lo_decision_request->get_decision_request_string( ).
+
+    DATA(lo_factory) = lcl_common_algorithms=>get_llm_api_factory( ).
 
     TRY.
-        FINAL(lo_api) = cl_aic_islm_compl_api_factory=>get( )->create_instance( 'ST-GEMINI-3.0' ).
-        FINAL(lo_params) = lo_api->get_parameter_setter( ).
+        DATA(lo_api) = lo_factory->create_instance( 'ST-GEMINI-3.0' ).
+        DATA(lo_params) = lo_api->get_parameter_setter( ).
         lo_params->set_temperature( '0.5' ).
 
-        " TODO: variable is assigned but never used (ABAP cleaner)
-        FINAL(lv_response) = lo_api->execute_for_string( 'How are you?' )->get_completion( ).
+        FINAL(lv_response) = lo_api->execute_for_string( lv_message )->get_completion( ).
       CATCH cx_aic_api_factory
             cx_aic_completion_api.
-
+        RAISE EXCEPTION NEW zpru_cx_agent_core( ).
     ENDTRY.
 
-    APPEND INITIAL LINE TO cs_decision_log-thinking_steps ASSIGNING FIELD-SYMBOL(<ls_thinking_step>).
-    <ls_thinking_step>-step_no   = 1.
-    <ls_thinking_step>-timestamp = lv_now.
-    <ls_thinking_step>-content   = 'We got decision to start full execution'.
+    ev_langu = sy-langu.
+    et_execution_plan = VALUE #( ( agentuuid  = is_agent-agentuuid
+                                   toolname  = 'DUMMY_CODE'
+                                   sequence = 1 )
+                                 ( agentuuid  = is_agent-agentuuid
+                                   toolname  = 'NESTED_AGENT'
+                                   sequence = 2 )
+                                 ( agentuuid  = is_agent-agentuuid
+                                   toolname  = 'DUMMY_ML'
+                                   sequence = 3 )
+                                 ( agentuuid  = is_agent-agentuuid
+                                   toolname  = 'DUMMY_DYN_CODE'
+                                   sequence = 4 )
+                                 ( agentuuid  = is_agent-agentuuid
+                                   toolname  = 'DUMMY_SCM'
+                                   sequence = 5 )
+                                 ( agentuuid  = is_agent-agentuuid
+                                   toolname  = 'DUMMY_HTTP'
+                                   sequence = 6 )
+                                 ( agentuuid  = is_agent-agentuuid
+                                   toolname  = 'DUMMY_LLM'
+                                   sequence = 7 )
+                                 ( agentuuid  = is_agent-agentuuid
+                                   toolname  = 'DUMMY_KNOWLEDGE'
+                                   sequence = 8 )
+                                 ( agentuuid  = is_agent-agentuuid
+                                   toolname  = 'DUMMY_USER_TOOL'
+                                   sequence = 9 ) ).
 
-    ev_full_execution = abap_true.
+    APPEND INITIAL LINE TO cs_decision_log-thinkingsteps ASSIGNING FIELD-SYMBOL(<ls_thinking_step>).
+    <ls_thinking_step>-thinkingstepnumber   = lcl_common_algorithms=>get_last_thinkingstepnumber( cs_decision_log-thinkingsteps ).
+    <ls_thinking_step>-thinkingstepdatetime = lcl_common_algorithms=>get_timestamp( ).
+    <ls_thinking_step>-thinkingstepcontent  = `LLM is called`.
+
+  ENDMETHOD.
+
+  METHOD read_data_4_thinking.
+
+    et_rag_data = VALUE #( ( ragsourceuuid = '000000000000000000000001'
+                             ragsourcename = 'Good reciept instruction'
+                             ragchunks = VALUE #( ( ragsourceuuid = '000000000000000000000001'
+                                                    ragchunkid = 1
+                                                    chunkcontent = 'first chunk'  )
+                                                  ( ragsourceuuid = '000000000000000000000001'
+                                                    ragchunkid = 2
+                                                    chunkcontent = 'second chunk'  ) ) ) ).
+
+    APPEND INITIAL LINE TO cs_decision_log-thinkingsteps ASSIGNING FIELD-SYMBOL(<ls_thinking_step>).
+    <ls_thinking_step>-thinkingstepnumber   = lcl_common_algorithms=>get_last_thinkingstepnumber( cs_decision_log-thinkingsteps ).
+    <ls_thinking_step>-thinkingstepdatetime = lcl_common_algorithms=>get_timestamp( ).
+    <ls_thinking_step>-thinkingstepcontent  = `RAG data is fetched`.
+
+    ev_user_data = `{ "user_data" : "some data" }`.
+
+    APPEND INITIAL LINE TO cs_decision_log-thinkingsteps ASSIGNING <ls_thinking_step>.
+    <ls_thinking_step>-thinkingstepnumber   = lcl_common_algorithms=>get_last_thinkingstepnumber( cs_decision_log-thinkingsteps ).
+    <ls_thinking_step>-thinkingstepdatetime = lcl_common_algorithms=>get_timestamp( ).
+    <ls_thinking_step>-thinkingstepcontent  = `User data is fetched`.
+
+  ENDMETHOD.
+
+  METHOD recall_memory.
+    DATA lo_msg_service TYPE REF TO zpru_if_mmsg_service.
+    DATA lo_sum_service TYPE REF TO zpru_if_msum_service.
+
+    et_session_memory = io_short_memory->get_history( ).
+
+    APPEND INITIAL LINE TO cs_decision_log-thinkingsteps ASSIGNING FIELD-SYMBOL(<ls_thinking_step>).
+    <ls_thinking_step>-thinkingstepnumber   = lcl_common_algorithms=>get_last_thinkingstepnumber( cs_decision_log-thinkingsteps ).
+    <ls_thinking_step>-thinkingstepdatetime = lcl_common_algorithms=>get_timestamp( ).
+    <ls_thinking_step>-thinkingstepcontent  = `Session messages are fetched`.
+
+    lo_msg_service ?= zpru_cl_agent_service_mngr=>get_service(
+                          iv_service = `ZPRU_IF_MMSG_SERVICE`
+                          iv_context = zpru_if_agent_frw=>cs_context-st_persistence_message ).
+
+    lo_msg_service->query_mmsg( EXPORTING it_agent_uuid = VALUE #( ( sign   = `I`
+                                                                     option = `EQ`
+                                                                     low    = is_agent-agentuuid ) )
+                                IMPORTING et_mmsg_k     = DATA(lt_mmsg_k) ).
+
+    et_episodic_message_memory = io_long_memory->retrieve_message(
+                                     it_mmsg_read_k = VALUE #( FOR <ls_m1>
+                                                               IN lt_mmsg_k
+                                                               ( messageuuid              = <ls_m1>-messageuuid
+                                                                 control-messageuuid      = abap_true
+                                                                 control-content          = abap_true
+                                                                 control-messagetype      = abap_true
+                                                                 control-messagecontentid = abap_true
+                                                                 control-stage            = abap_true
+                                                                 control-substage         = abap_true
+                                                                 control-namespace        = abap_true
+                                                                 control-username         = abap_true
+                                                                 control-agentuuid        = abap_true
+                                                                 control-runuuid          = abap_true
+                                                                 control-queryuuid        = abap_true
+                                                                 control-stepuuid         = abap_true
+                                                                 control-messagedatetime  = abap_true
+                                                                 control-createdby        = abap_true
+                                                                 control-createdat        = abap_true
+                                                                 control-changedby        = abap_true
+                                                                 control-changedat        = abap_true  ) ) ).
+
+    APPEND INITIAL LINE TO cs_decision_log-thinkingsteps ASSIGNING <ls_thinking_step>.
+    <ls_thinking_step>-thinkingstepnumber   = lcl_common_algorithms=>get_last_thinkingstepnumber( cs_decision_log-thinkingsteps ).
+    <ls_thinking_step>-thinkingstepdatetime = lcl_common_algorithms=>get_timestamp( ).
+    <ls_thinking_step>-thinkingstepcontent  = `Episodic memory messages are fetched`.
+
+    lo_sum_service ?= zpru_cl_agent_service_mngr=>get_service(
+                          iv_service = `ZPRU_IF_MSUM_SERVICE`
+                          iv_context = zpru_if_agent_frw=>cs_context-st_persistence_message ).
+
+    lo_sum_service->query_msum( EXPORTING it_agent_uuid = VALUE #( ( sign   = `I`
+                                                                     option = `EQ`
+                                                                     low    = is_agent-agentuuid ) )
+                                IMPORTING et_msum_k     = DATA(lt_msum_k) ).
+
+    et_episodic_summary_memory = io_long_memory->retrieve_summary( it_msum_read_k = VALUE #(
+                                                                       FOR <ls_m2>
+                                                                       IN lt_msum_k
+                                                                       ( summaryuuid              = <ls_m2>-summaryuuid
+                                                                         control-summaryuuid      = abap_true
+                                                                         control-content          = abap_true
+                                                                         control-summarycontentid = abap_true
+                                                                         control-stage            = abap_true
+                                                                         control-substage         = abap_true
+                                                                         control-namespace        = abap_true
+                                                                         control-username         = abap_true
+                                                                         control-agentuuid        = abap_true
+                                                                         control-runuuid          = abap_true
+                                                                         control-queryuuid        = abap_true
+                                                                         control-stepuuid         = abap_true
+                                                                         control-messagedatetime  = abap_true
+                                                                         control-createdby        = abap_true
+                                                                         control-createdat        = abap_true
+                                                                         control-changedby        = abap_true
+                                                                         control-changedat        = abap_true  ) ) ).
+
+    APPEND INITIAL LINE TO cs_decision_log-thinkingsteps ASSIGNING <ls_thinking_step>.
+    <ls_thinking_step>-thinkingstepnumber   = lcl_common_algorithms=>get_last_thinkingstepnumber( cs_decision_log-thinkingsteps ).
+    <ls_thinking_step>-thinkingstepdatetime = lcl_common_algorithms=>get_timestamp( ).
+    <ls_thinking_step>-thinkingstepcontent  = `Episodic summary messages are fetched`.
+
+*  et_semantic_memory = ADD SERVICE
+
+    APPEND INITIAL LINE TO cs_decision_log-thinkingsteps ASSIGNING <ls_thinking_step>.
+    <ls_thinking_step>-thinkingstepnumber   = lcl_common_algorithms=>get_last_thinkingstepnumber( cs_decision_log-thinkingsteps ).
+    <ls_thinking_step>-thinkingstepdatetime = lcl_common_algorithms=>get_timestamp( ).
+    <ls_thinking_step>-thinkingstepcontent  = `Semantic memory are fetched`.
+
+  ENDMETHOD.
+
+  METHOD set_final_response_content.
+  ENDMETHOD.
+
+  METHOD set_final_response_metadata.
+  ENDMETHOD.
+
+  METHOD set_model_id.
+    rv_model_id = `ST-GEMINI-3.0`.
+  ENDMETHOD.
+
+  METHOD set_result_comment.
+    rv_result_comment = `Decision Engine processing is finished`.
   ENDMETHOD.
 ENDCLASS.
-
-
-CLASS lcl_short_memory_provider DEFINITION
-  INHERITING FROM zpru_cl_short_memory_base
-  CREATE PUBLIC.
-
-  PUBLIC SECTION.
-
-  PROTECTED SECTION.
-
-  PRIVATE SECTION.
-ENDCLASS.
-
 
 CLASS lcl_short_memory_provider IMPLEMENTATION.
 ENDCLASS.
 
-
-CLASS lcl_long_memory_provider DEFINITION
-  INHERITING FROM zpru_cl_long_memory_base
-  CREATE PUBLIC.
-
-  PUBLIC SECTION.
-
-  PROTECTED SECTION.
-
-  PRIVATE SECTION.
-ENDCLASS.
-
-
 CLASS lcl_long_memory_provider IMPLEMENTATION.
 
 ENDCLASS.
-
-
-CLASS lcl_agent_info_provider DEFINITION
-  CREATE PUBLIC.
-
-  PUBLIC SECTION.
-    INTERFACES zpru_if_agent_info_provider.
-ENDCLASS.
-
 
 CLASS lcl_agent_info_provider IMPLEMENTATION.
   METHOD zpru_if_agent_info_provider~get_agent_info.
@@ -248,16 +253,10 @@ CLASS lcl_agent_info_provider IMPLEMENTATION.
     GET TIME STAMP FIELD DATA(lv_now).
     rv_agent_info = |JUST DUMMY AGENT - { lv_now }|.
   ENDMETHOD.
+
+  METHOD zpru_if_agent_info_provider~get_abap_agent_info.
+  ENDMETHOD.
 ENDCLASS.
-
-
-CLASS lcl_prompt_provider DEFINITION
-  INHERITING FROM zpru_cl_syst_prmpt_prvdr_base CREATE PUBLIC.
-
-  PUBLIC SECTION.
-    METHODS zpru_if_prompt_provider~get_system_prompt REDEFINITION.
-ENDCLASS.
-
 
 CLASS lcl_prompt_provider IMPLEMENTATION.
   METHOD zpru_if_prompt_provider~get_system_prompt.
@@ -382,15 +381,6 @@ CLASS lcl_prompt_provider IMPLEMENTATION.
   ENDMETHOD.
 ENDCLASS.
 
-
-CLASS lcl_abap_code_tool DEFINITION
-  INHERITING FROM zpru_cl_abap_executor CREATE PUBLIC.
-
-  PROTECTED SECTION.
-    METHODS execute_code_int REDEFINITION.
-ENDCLASS.
-
-
 CLASS lcl_abap_code_tool IMPLEMENTATION.
   METHOD execute_code_int.
 *    DATA lv_payload    TYPE string.
@@ -475,16 +465,6 @@ CLASS lcl_abap_code_tool IMPLEMENTATION.
 *    eo_response->set_data( ir_data = NEW string( lv_payload ) ).
   ENDMETHOD.
 ENDCLASS.
-
-
-CLASS lcl_knowledge DEFINITION
-  CREATE PUBLIC.
-
-  PUBLIC SECTION.
-    INTERFACES zpru_if_tool_executor.
-    INTERFACES zpru_if_knowledge_provider.
-ENDCLASS.
-
 
 CLASS lcl_knowledge IMPLEMENTATION.
   METHOD zpru_if_knowledge_provider~lookup_knowledge.
@@ -653,16 +633,6 @@ CLASS lcl_knowledge IMPLEMENTATION.
   ENDMETHOD.
 ENDCLASS.
 
-
-CLASS lcl_nested_agent DEFINITION
-  CREATE PUBLIC.
-
-  PUBLIC SECTION.
-    INTERFACES zpru_if_tool_executor.
-    INTERFACES zpru_if_nested_agent_runner.
-ENDCLASS.
-
-
 CLASS lcl_nested_agent IMPLEMENTATION.
   METHOD zpru_if_nested_agent_runner~run_nested_agent.
     DATA lo_nested_agent   TYPE REF TO zpru_if_unit_agent.
@@ -685,26 +655,6 @@ CLASS lcl_nested_agent IMPLEMENTATION.
     eo_response->set_data( ir_data = NEW zpru_if_agent_frw=>ts_json( lv_final_response ) ).
   ENDMETHOD.
 ENDCLASS.
-
-
-" Local class for HTTP Request tool
-CLASS lcl_http_request_tool DEFINITION CREATE PUBLIC.
-  PUBLIC SECTION.
-    INTERFACES zpru_if_tool_executor.
-    INTERFACES zpru_if_http_request_sender.
-
-  PROTECTED SECTION.
-    METHODS get_http_client
-      IMPORTING iv_url                TYPE string
-      RETURNING VALUE(ro_http_client) TYPE REF TO if_web_http_client.
-
-    METHODS send_via_url
-      IMPORTING io_controller TYPE REF TO zpru_if_agent_controller
-                io_request    TYPE REF TO zpru_if_payload
-      EXPORTING eo_response   TYPE REF TO zpru_if_payload
-                ev_error_flag TYPE abap_boolean.
-ENDCLASS.
-
 
 CLASS lcl_http_request_tool IMPLEMENTATION.
   METHOD zpru_if_http_request_sender~send_http.
@@ -781,14 +731,6 @@ CLASS lcl_http_request_tool IMPLEMENTATION.
     ENDIF.
   ENDMETHOD.
 ENDCLASS.
-
-
-CLASS lcl_service_cons_model_tool DEFINITION CREATE PUBLIC.
-  PUBLIC SECTION.
-    INTERFACES zpru_if_tool_executor.
-    INTERFACES zpru_if_service_model_consumer.
-ENDCLASS.
-
 
 CLASS lcl_service_cons_model_tool IMPLEMENTATION.
   METHOD zpru_if_service_model_consumer~consume_service_model.
@@ -879,53 +821,6 @@ CLASS lcl_service_cons_model_tool IMPLEMENTATION.
   ENDMETHOD.
 ENDCLASS.
 
-
-" Local class for Call LLM tool
-CLASS lcl_call_llm_tool DEFINITION CREATE PUBLIC.
-  PUBLIC SECTION.
-    INTERFACES zpru_if_tool_executor.
-    INTERFACES zpru_if_llm_caller.
-
-    TYPES: BEGIN OF ts_result_payload,
-             llm_response               TYPE string,
-             llm_total_tokens           TYPE i,
-             llm_finish_reason          TYPE aic_finish_reason=>type,
-             llm_original_finish_reason TYPE string,
-           END OF ts_result_payload.
-
-  PROTECTED SECTION.
-    METHODS get_llm_api_factory
-      RETURNING VALUE(ro_llm_api_factory) TYPE REF TO if_aic_islm_compl_api_factory.
-
-    METHODS prepare_prompt
-      IMPORTING io_llm_api           TYPE REF TO if_aic_completion_api
-                iv_system_role       TYPE string
-                iv_user_message      TYPE string
-                iv_assistant_message TYPE string
-                iv_user_message_2    TYPE string
-      RETURNING VALUE(ro_message)    TYPE REF TO if_aic_message_container.
-
-    METHODS get_response_schema
-      RETURNING VALUE(rv_response_schema) TYPE  string.
-
-    METHODS preprocess_llm_request
-      IMPORTING io_controller    TYPE REF TO zpru_if_agent_controller
-                io_request       TYPE REF TO zpru_if_payload
-                iv_islm_scenario TYPE aic_islm_scenario_id=>type
-      EXPORTING eo_message       TYPE REF TO if_aic_message_container
-                eo_llm_api       TYPE REF TO if_aic_completion_api
-                ev_error_flag    TYPE abap_boolean.
-
-    METHODS process_llm_request
-      IMPORTING io_controller TYPE REF TO zpru_if_agent_controller
-                io_request    TYPE REF TO zpru_if_payload
-                io_message    TYPE REF TO if_aic_message_container
-                io_llm_api    TYPE REF TO if_aic_completion_api
-      EXPORTING eo_response   TYPE REF TO zpru_if_payload
-                ev_error_flag TYPE abap_boolean.
-ENDCLASS.
-
-
 CLASS lcl_call_llm_tool IMPLEMENTATION.
   METHOD zpru_if_llm_caller~call_large_language_model.
     DATA lo_llm_api TYPE REF TO if_aic_completion_api.
@@ -948,18 +843,6 @@ CLASS lcl_call_llm_tool IMPLEMENTATION.
                                    io_llm_api    = lo_llm_api
                          IMPORTING eo_response   = eo_response
                                    ev_error_flag = ev_error_flag ).
-  ENDMETHOD.
-
-  METHOD get_llm_api_factory.
-    IF zpru_cl_logic_switch=>get_logic( ) = abap_true.
-      ro_llm_api_factory = NEW zpru_cl_islm_compl_api_factory( ).
-    ELSE.
-      TRY.
-          ro_llm_api_factory = cl_aic_islm_compl_api_factory=>get( ).
-        CATCH cx_aic_api_factory.
-          RETURN.
-      ENDTRY.
-    ENDIF.
   ENDMETHOD.
 
   METHOD prepare_prompt.
@@ -1018,7 +901,7 @@ CLASS lcl_call_llm_tool IMPLEMENTATION.
 
     ev_error_flag = abap_false.
 
-    DATA(lo_llm_api_factory) = get_llm_api_factory( ).
+    DATA(lo_llm_api_factory) = lcl_common_algorithms=>get_llm_api_factory( ).
 
     TRY.
         eo_llm_api = lo_llm_api_factory->create_instance( iv_islm_scenario ).
@@ -1096,56 +979,14 @@ CLASS lcl_call_llm_tool IMPLEMENTATION.
   ENDMETHOD.
 ENDCLASS.
 
-
-CLASS lcl_dynamic_abap_code_tool DEFINITION INHERITING FROM zpru_cl_dynamic_abap_base CREATE PUBLIC.
-ENDCLASS.
-
-
 CLASS lcl_dynamic_abap_code_tool IMPLEMENTATION.
 ENDCLASS.
-
-
-CLASS lcl_ml_model_inference DEFINITION CREATE PUBLIC.
-  PUBLIC SECTION.
-    INTERFACES zpru_if_tool_executor.
-    INTERFACES zpru_if_ml_model_inference.
-ENDCLASS.
-
 
 CLASS lcl_ml_model_inference IMPLEMENTATION.
   METHOD zpru_if_ml_model_inference~get_machine_learning_inference.
     " cl_aic_islm_embed_api_factory
   ENDMETHOD.
 ENDCLASS.
-
-
-CLASS lcl_user_tool DEFINITION CREATE PUBLIC.
-  PUBLIC SECTION.
-    INTERFACES zpru_if_tool_executor.
-    INTERFACES zpru_if_user_tool.
-
-  PROTECTED SECTION.
-    METHODS process_dummy_email
-      IMPORTING io_controller TYPE REF TO zpru_if_agent_controller
-                io_request    TYPE REF TO zpru_if_payload
-      EXPORTING eo_response   TYPE REF TO zpru_if_payload
-                ev_error_flag TYPE abap_boolean.
-
-    METHODS process_prod_email
-      IMPORTING io_controller TYPE REF TO zpru_if_agent_controller
-                io_request    TYPE REF TO zpru_if_payload
-      EXPORTING eo_response   TYPE REF TO zpru_if_payload
-                ev_error_flag TYPE abap_boolean.
-
-    METHODS prepare_dummy_email
-      IMPORTING iv_sender       TYPE zpru_cl_bcs_mail_message=>ty_address
-                iv_recipient    TYPE zpru_cl_bcs_mail_message=>ty_address
-                iv_subject      TYPE zpru_cl_bcs_mail_message=>ty_subject
-                iv_content      TYPE string
-                iv_content_type TYPE char128
-      EXPORTING eo_mail_manager TYPE REF TO zpru_cl_bcs_mail_message.
-ENDCLASS.
-
 
 CLASS lcl_user_tool IMPLEMENTATION.
   METHOD zpru_if_user_tool~execute_user_tool.
@@ -1279,15 +1120,6 @@ CLASS lcl_user_tool IMPLEMENTATION.
   ENDMETHOD.
 ENDCLASS.
 
-
-CLASS lcl_tool_provider DEFINITION
-  CREATE PUBLIC.
-
-  PUBLIC SECTION.
-    INTERFACES zpru_if_tool_provider.
-ENDCLASS.
-
-
 CLASS lcl_tool_provider IMPLEMENTATION.
   METHOD zpru_if_tool_provider~get_tool.
     zpru_cl_dummy_agent_logic=>ms_method_registr-get_tool = abap_true.
@@ -1327,15 +1159,6 @@ CLASS lcl_tool_provider IMPLEMENTATION.
   ENDMETHOD.
 ENDCLASS.
 
-
-CLASS lcl_tool_info_provider DEFINITION
-  CREATE PUBLIC.
-
-  PUBLIC SECTION.
-    INTERFACES zpru_if_tool_info_provider.
-ENDCLASS.
-
-
 CLASS lcl_tool_info_provider IMPLEMENTATION.
   METHOD zpru_if_tool_info_provider~get_tool_info.
     zpru_cl_dummy_agent_logic=>ms_method_registr-get_tool = abap_true.
@@ -1373,16 +1196,11 @@ CLASS lcl_tool_info_provider IMPLEMENTATION.
 *        RETURN.
 *    ENDCASE.
   ENDMETHOD.
+  METHOD zpru_if_tool_info_provider~get_abap_tool_info.
+
+  ENDMETHOD.
+
 ENDCLASS.
-
-
-CLASS lcl_schema_provider DEFINITION
-  CREATE PUBLIC.
-
-  PUBLIC SECTION.
-    INTERFACES zpru_if_tool_schema_provider.
-ENDCLASS.
-
 
 CLASS lcl_schema_provider IMPLEMENTATION.
   METHOD zpru_if_tool_schema_provider~input_json_schema.

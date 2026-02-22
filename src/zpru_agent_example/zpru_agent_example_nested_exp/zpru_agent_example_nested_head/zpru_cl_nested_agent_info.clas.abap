@@ -16,4 +16,8 @@ CLASS zpru_cl_nested_agent_info IMPLEMENTATION.
 
   ENDMETHOD.
 
+  METHOD zpru_if_agent_info_provider~get_abap_agent_info.
+
+  ENDMETHOD.
+
 ENDCLASS.

@@ -396,6 +396,7 @@ CLASS zpru_cl_dummy_agent_logic IMPLEMENTATION.
     lo_decision_provider = NEW lcl_decision_provider( ).
     lo_decision_provider->prepare_final_response( EXPORTING iv_run_uuid       = iv_run_uuid
                                                             iv_query_uuid     = iv_query_uuid
+                                                            io_controller =     io_controller
                                                             io_last_output    = io_last_output
                                                   IMPORTING eo_final_response = eo_final_response
                                                   CHANGING  cs_axc_reported   = cs_axc_reported
@@ -604,6 +605,14 @@ CLASS zpru_cl_dummy_agent_logic IMPLEMENTATION.
 
 
   METHOD zpru_if_short_memory_provider~flush_memory.
+
+  ENDMETHOD.
+
+  METHOD zpru_if_agent_info_provider~get_abap_agent_info.
+
+  ENDMETHOD.
+
+  METHOD zpru_if_prompt_provider~get_abap_system_prompt.
 
   ENDMETHOD.
 

@@ -16,4 +16,8 @@ CLASS zpru_cl_nested_system_prompt IMPLEMENTATION.
 
   ENDMETHOD.
 
+  METHOD zpru_if_prompt_provider~get_abap_system_prompt.
+
+  ENDMETHOD.
+
 ENDCLASS.
