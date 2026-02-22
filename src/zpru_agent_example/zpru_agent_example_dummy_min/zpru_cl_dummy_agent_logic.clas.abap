@@ -607,4 +607,12 @@ CLASS zpru_cl_dummy_agent_logic IMPLEMENTATION.
 
   ENDMETHOD.
 
+  METHOD zpru_if_agent_info_provider~get_abap_agent_info.
+
+  ENDMETHOD.
+
+  METHOD zpru_if_prompt_provider~get_abap_system_prompt.
+
+  ENDMETHOD.
+
 ENDCLASS.

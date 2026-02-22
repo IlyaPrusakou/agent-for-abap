@@ -52,6 +52,7 @@ CLASS zpru_cl_decision_provider DEFINITION
                 it_tool                    TYPE zpru_if_adf_type_and_constant=>tt_agent_tool
                 io_controller              TYPE REF TO zpru_if_agent_controller
                 io_input                   TYPE REF TO zpru_if_payload
+                io_decision_request        TYPE REF TO zpru_if_decision_request
                 io_system_prompt           TYPE REF TO zpru_if_prompt_provider            OPTIONAL
                 io_short_memory            TYPE REF TO zpru_if_short_memory_provider      OPTIONAL
                 io_long_memory             TYPE REF TO zpru_if_long_memory_provider       OPTIONAL
@@ -111,8 +112,12 @@ CLASS zpru_cl_decision_provider IMPLEMENTATION.
     DATA ls_decision_log         TYPE zpru_s_decision_log.
     DATA lo_tool_schema_provider TYPE REF TO zpru_if_tool_schema_provider.
     DATA lr_first_input          TYPE REF TO data.
+    DATA lo_decision_request     TYPE REF TO zpru_if_decision_request.
+    DATA ls_decision_request     TYPE zpru_s_decision_request.
+    DATA lo_agent_info_provider  TYPE REF TO zpru_if_agent_info_provider.
+    DATA lo_syst_prompt_provider TYPE REF TO zpru_if_prompt_provider.
 
-    ls_decision_log-agentUUID            = is_agent-agentuuid.
+    ls_decision_log-agentuuid            = is_agent-agentuuid.
     ls_decision_log-modelid              = set_model_id( ).
     ls_decision_log-inputprompt          = io_input->get_data( )->*.
     ls_decision_log-thinkigstartdatetime = get_timestamp( ).
@@ -181,13 +186,42 @@ CLASS zpru_cl_decision_provider IMPLEMENTATION.
     <ls_thinking_step>-thinkingstepdatetime = get_timestamp( ).
     <ls_thinking_step>-thinkingstepcontent  = `Read data for thinking is finished`.
 
+    TRY.
 
-*zpru_s_decision_request qqq
+        lo_decision_request ?= zpru_cl_agent_service_mngr=>get_service(
+                                   iv_service = `ZPRU_IF_DECISION_REQUEST`
+                                   iv_context = zpru_if_agent_frw=>cs_context-standard ).
+      CATCH zpru_cx_agent_core.
+        RAISE EXCEPTION NEW zpru_cx_agent_core( ).
+    ENDTRY.
+
+    CREATE OBJECT lo_agent_info_provider TYPE (is_agent-agentinfoprovider).
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION NEW zpru_cx_agent_core( ).
+    ENDIF.
+
+    CREATE OBJECT lo_syst_prompt_provider TYPE (is_agent-systempromptprovider).
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION NEW zpru_cx_agent_core( ).
+    ENDIF.
+
+    ls_decision_request-agentmetadata         = lo_agent_info_provider->get_abap_agent_info( ).
+    ls_decision_request-systemprompt          = lo_syst_prompt_provider->get_abap_system_prompt( ).
+    ls_decision_request-sessionmemory         = lt_session_memory.
+    ls_decision_request-episodicmessagememory = lt_episodic_message_memory.
+    ls_decision_request-episodicsummarymemory = lt_episodic_summary_memory.
+    ls_decision_request-semanticmemory        = lt_semantic_memory.
+    ls_decision_request-ragdata               = lt_rag_data.
+    ls_decision_request-thinkingdata          = lo_thinking_data->get_data( ).
+    ls_decision_request-userprompt            = io_input->get_data( )->*.
+
+    lo_decision_request->zpru_if_payload~set_data( ir_data = NEW zpru_s_decision_request( ls_decision_request ) ).
 
     process_thinking( EXPORTING is_agent                   = is_agent
                                 it_tool                    = it_tool
                                 io_controller              = io_controller
                                 io_input                   = io_input
+                                io_decision_request        = lo_decision_request
                                 io_system_prompt           = io_system_prompt
                                 io_short_memory            = io_short_memory
                                 io_long_memory             = io_long_memory

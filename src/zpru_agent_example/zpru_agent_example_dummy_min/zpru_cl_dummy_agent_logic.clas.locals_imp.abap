@@ -248,6 +248,10 @@ CLASS lcl_agent_info_provider IMPLEMENTATION.
     GET TIME STAMP FIELD DATA(lv_now).
     rv_agent_info = |JUST DUMMY AGENT - { lv_now }|.
   ENDMETHOD.
+  METHOD zpru_if_agent_info_provider~get_abap_agent_info.
+
+  ENDMETHOD.
+
 ENDCLASS.
 
 

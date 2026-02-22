@@ -81,4 +81,8 @@ CLASS zpru_cl_syst_prmpt_prvdr_base IMPLEMENTATION.
      |{ lv_dynamyc_tool_example } | &&
      cl_abap_char_utilities=>newline.
   ENDMETHOD.
+  METHOD zpru_if_prompt_provider~get_abap_system_prompt.
+
+  ENDMETHOD.
+
 ENDCLASS.
