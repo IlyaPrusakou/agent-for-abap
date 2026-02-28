@@ -14,8 +14,8 @@ CLASS zpru_cl_tmlp_use_interfaces DEFINITION
     INTERFACES zpru_if_agent_singleton_meth.
 
   PRIVATE SECTION.
-    CLASS-DATA so_short_memory TYPE REF TO lcl_short_memory_provider.
-    CLASS-DATA so_long_memory  TYPE REF TO lcl_long_memory_provider.
+    CLASS-DATA so_adf_short_memory TYPE REF TO lcl_adf_short_memory_provider.
+    CLASS-DATA so_adf_long_memory  TYPE REF TO lcl_adf_long_memory_provider.
 
 ENDCLASS.
 
@@ -24,7 +24,7 @@ CLASS zpru_cl_tmlp_use_interfaces IMPLEMENTATION.
   METHOD zpru_if_decision_provider~call_decision_engine.
     DATA lo_decision_provider TYPE REF TO zpru_if_decision_provider.
 
-    lo_decision_provider = NEW lcl_decision_provider( ).
+    lo_decision_provider = NEW lcl_adf_decision_provider( ).
 
     lo_decision_provider->call_decision_engine( EXPORTING is_agent               = is_agent
                                                           it_tool                = it_tool
@@ -43,7 +43,7 @@ CLASS zpru_cl_tmlp_use_interfaces IMPLEMENTATION.
   METHOD zpru_if_decision_provider~prepare_final_response.
     DATA lo_decision_provider TYPE REF TO zpru_if_decision_provider.
 
-    lo_decision_provider = NEW lcl_decision_provider( ).
+    lo_decision_provider = NEW lcl_adf_decision_provider( ).
     lo_decision_provider->prepare_final_response( EXPORTING iv_run_uuid       = iv_run_uuid
                                                             iv_query_uuid     = iv_query_uuid
                                                             io_controller     = io_controller
@@ -56,13 +56,13 @@ CLASS zpru_cl_tmlp_use_interfaces IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD zpru_if_agent_singleton_meth~get_short_memory.
-    IF zpru_cl_tmlp_use_interfaces=>so_short_memory IS BOUND.
-      ro_instance = zpru_cl_tmlp_use_interfaces=>so_short_memory.
+    IF zpru_cl_tmlp_use_interfaces=>so_adf_short_memory IS BOUND.
+      ro_instance = zpru_cl_tmlp_use_interfaces=>so_adf_short_memory.
       RETURN.
     ENDIF.
 
-    zpru_cl_tmlp_use_interfaces=>so_short_memory = NEW lcl_short_memory_provider( ).
-    ro_instance = zpru_cl_tmlp_use_interfaces=>so_short_memory.
+    zpru_cl_tmlp_use_interfaces=>so_adf_short_memory = NEW lcl_adf_short_memory_provider( ).
+    ro_instance = zpru_cl_tmlp_use_interfaces=>so_adf_short_memory.
   ENDMETHOD.
 
   METHOD zpru_if_short_memory_provider~clear_history.
@@ -137,13 +137,13 @@ CLASS zpru_cl_tmlp_use_interfaces IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD zpru_if_agent_singleton_meth~get_long_memory.
-    IF zpru_cl_tmlp_use_interfaces=>so_long_memory IS BOUND.
-      ro_instance = zpru_cl_tmlp_use_interfaces=>so_long_memory.
+    IF zpru_cl_tmlp_use_interfaces=>so_adf_long_memory IS BOUND.
+      ro_instance = zpru_cl_tmlp_use_interfaces=>so_adf_long_memory.
       RETURN.
     ENDIF.
 
-    zpru_cl_tmlp_use_interfaces=>so_long_memory = NEW lcl_long_memory_provider( ).
-    ro_instance = zpru_cl_tmlp_use_interfaces=>so_long_memory.
+    zpru_cl_tmlp_use_interfaces=>so_adf_long_memory = NEW lcl_adf_long_memory_provider( ).
+    ro_instance = zpru_cl_tmlp_use_interfaces=>so_adf_long_memory.
   ENDMETHOD.
 
   METHOD zpru_if_long_memory_provider~get_msg_persistence.
@@ -232,35 +232,35 @@ CLASS zpru_cl_tmlp_use_interfaces IMPLEMENTATION.
   METHOD zpru_if_agent_info_provider~get_abap_agent_info.
     DATA lo_agent_info_provider TYPE REF TO zpru_if_agent_info_provider.
 
-    lo_agent_info_provider = NEW lcl_agent_info_provider( ).
+    lo_agent_info_provider = NEW lcl_adf_agent_info_provider( ).
     rs_agent_info = lo_agent_info_provider->get_abap_agent_info( iv_agent_uuid = iv_agent_uuid ).
   ENDMETHOD.
 
   METHOD zpru_if_agent_info_provider~get_agent_info.
     DATA lo_agent_info_provider TYPE REF TO zpru_if_agent_info_provider.
 
-    lo_agent_info_provider = NEW lcl_agent_info_provider( ).
+    lo_agent_info_provider = NEW lcl_adf_agent_info_provider( ).
     rv_agent_info = lo_agent_info_provider->get_agent_info( iv_agent_uuid = iv_agent_uuid ).
   ENDMETHOD.
 
   METHOD zpru_if_prompt_provider~get_system_prompt.
     DATA lo_prompt_provider TYPE REF TO zpru_if_prompt_provider.
 
-    lo_prompt_provider = NEW lcl_syst_prompt_provider( ).
+    lo_prompt_provider = NEW lcl_adf_syst_prompt_provider( ).
     rv_system_prompt = lo_prompt_provider->get_system_prompt( iv_agent_uuid = iv_agent_uuid ).
   ENDMETHOD.
 
   METHOD zpru_if_prompt_provider~get_abap_system_prompt.
     DATA lo_prompt_provider TYPE REF TO zpru_if_prompt_provider.
 
-    lo_prompt_provider = NEW lcl_syst_prompt_provider( ).
+    lo_prompt_provider = NEW lcl_adf_syst_prompt_provider( ).
     rs_abap_system_prompt = lo_prompt_provider->get_abap_system_prompt( iv_agent_uuid = iv_agent_uuid ).
   ENDMETHOD.
 
   METHOD zpru_if_tool_provider~get_tool.
     DATA lo_tool_provider TYPE REF TO zpru_if_tool_provider.
 
-    lo_tool_provider = NEW lcl_tool_provider( ).
+    lo_tool_provider = NEW lcl_adf_tool_provider( ).
     ro_executor = lo_tool_provider->get_tool( is_agent            = is_agent
                                               io_controller       = io_controller
                                               io_input            = io_input
@@ -271,7 +271,7 @@ CLASS zpru_cl_tmlp_use_interfaces IMPLEMENTATION.
   METHOD zpru_if_tool_info_provider~get_tool_info.
     DATA lo_tool_info_provider TYPE REF TO zpru_if_tool_info_provider.
 
-    lo_tool_info_provider = NEW lcl_tool_info_provider( ).
+    lo_tool_info_provider = NEW lcl_adf_tool_info_provider( ).
     rv_tool_info = lo_tool_info_provider->get_tool_info( is_tool_master_data = is_tool_master_data
                                                          is_execution_step   = is_execution_step ).
   ENDMETHOD.
@@ -279,7 +279,7 @@ CLASS zpru_cl_tmlp_use_interfaces IMPLEMENTATION.
   METHOD zpru_if_tool_info_provider~get_abap_tool_info.
     DATA lo_tool_info_provider TYPE REF TO zpru_if_tool_info_provider.
 
-    lo_tool_info_provider = NEW lcl_tool_info_provider( ).
+    lo_tool_info_provider = NEW lcl_adf_tool_info_provider( ).
     rs_abap_tool_info = lo_tool_info_provider->get_abap_tool_info( is_tool_master_data = is_tool_master_data
                                                                    is_execution_step   = is_execution_step ).
   ENDMETHOD.
@@ -287,7 +287,7 @@ CLASS zpru_cl_tmlp_use_interfaces IMPLEMENTATION.
   METHOD zpru_if_tool_schema_provider~input_json_schema.
     DATA lo_input_schema_provider TYPE REF TO zpru_if_tool_schema_provider.
 
-    lo_input_schema_provider = NEW lcl_schema_provider( ).
+    lo_input_schema_provider = NEW lcl_adf_schema_provider( ).
     ro_json_schema = lo_input_schema_provider->input_json_schema( is_tool_master_data = is_tool_master_data
                                                                   is_execution_step   = is_execution_step ).
   ENDMETHOD.
@@ -295,7 +295,7 @@ CLASS zpru_cl_tmlp_use_interfaces IMPLEMENTATION.
   METHOD zpru_if_tool_schema_provider~input_rtts_schema.
     DATA lo_input_schema_provider TYPE REF TO zpru_if_tool_schema_provider.
 
-    lo_input_schema_provider = NEW lcl_schema_provider( ).
+    lo_input_schema_provider = NEW lcl_adf_schema_provider( ).
     ro_structure_schema = lo_input_schema_provider->input_rtts_schema( is_tool_master_data = is_tool_master_data
                                                                        is_execution_step   = is_execution_step ).
   ENDMETHOD.
@@ -303,7 +303,7 @@ CLASS zpru_cl_tmlp_use_interfaces IMPLEMENTATION.
   METHOD zpru_if_tool_schema_provider~output_json_schema.
     DATA lo_input_schema_provider TYPE REF TO zpru_if_tool_schema_provider.
 
-    lo_input_schema_provider = NEW lcl_schema_provider( ).
+    lo_input_schema_provider = NEW lcl_adf_schema_provider( ).
     ro_json_schema = lo_input_schema_provider->output_json_schema( is_tool_master_data = is_tool_master_data
                                                                    is_execution_step   = is_execution_step ).
   ENDMETHOD.
@@ -311,7 +311,7 @@ CLASS zpru_cl_tmlp_use_interfaces IMPLEMENTATION.
   METHOD zpru_if_tool_schema_provider~output_rtts_schema.
     DATA lo_input_schema_provider TYPE REF TO zpru_if_tool_schema_provider.
 
-    lo_input_schema_provider = NEW lcl_schema_provider( ).
+    lo_input_schema_provider = NEW lcl_adf_schema_provider( ).
     ro_structure_schema = lo_input_schema_provider->output_rtts_schema( is_tool_master_data = is_tool_master_data
                                                                         is_execution_step   = is_execution_step ).
   ENDMETHOD.
