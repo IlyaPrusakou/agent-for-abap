@@ -1853,7 +1853,7 @@ CLASS zpru_cl_api_agent IMPLEMENTATION.
     GET TIME STAMP FIELD DATA(lv_now).
 
     DATA(lv_system_prompt) = |\{ "USER": "{ sy-uname }", "TOPIC" : "SYSTEM_PROMPT", "TIMESTAMP" : "{ lv_now }",| &&
-                             | "CONTENT" : "{ io_system_prompt_provider->get_system_prompt( ) }" \}|.
+                             | "CONTENT" : "{ io_system_prompt_provider->get_system_prompt( iv_agent_uuid = is_agent-agentuuid ) }" \}|.
 
     DATA(lv_agent_info) = |\{ "USER": "{ sy-uname }", "TOPIC" : "AGENT_INFO", "TIMESTAMP" : "{ lv_now }",| &&
                              | "CONTENT" : "{ io_agent_info_provider->get_agent_info( iv_agent_uuid = is_agent-agentuuid ) }" \}|.

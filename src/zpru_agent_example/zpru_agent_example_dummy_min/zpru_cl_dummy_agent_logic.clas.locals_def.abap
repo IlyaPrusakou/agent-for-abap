@@ -64,6 +64,14 @@ CLASS lcl_prompt_provider DEFINITION
 
   PUBLIC SECTION.
     METHODS zpru_if_prompt_provider~get_system_prompt REDEFINITION.
+  PROTECTED SECTION.
+    METHODS: set_primary_session_task REDEFINITION.
+    METHODS: set_technical_rules REDEFINITION,
+             set_business_rules REDEFINITION,
+             set_format_guidelines REDEFINITION,
+             set_reasoning_step REDEFINITION,
+             set_prompt_restrictions REDEFINITION.
+    METHODS: set_arbitrary_text REDEFINITION.
 ENDCLASS.
 
 CLASS lcl_abap_code_tool DEFINITION

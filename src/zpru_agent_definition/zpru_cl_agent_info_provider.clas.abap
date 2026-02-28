@@ -68,7 +68,7 @@ CLASS zpru_cl_agent_info_provider IMPLEMENTATION.
     lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
                                                         iv_context = zpru_if_agent_frw=>cs_context-standard ).
 
-    DATA(ls_abap_agent_info) = me->zpru_if_agent_info_provider~get_abap_agent_info( iv_agent_uuid = iv_agent_uuid ).
+    DATA(ls_abap_agent_info) = zpru_if_agent_info_provider~get_abap_agent_info( iv_agent_uuid = iv_agent_uuid ).
 
     DATA(lv_free_text_label) = ls_abap_agent_info-freetextlabel.
 

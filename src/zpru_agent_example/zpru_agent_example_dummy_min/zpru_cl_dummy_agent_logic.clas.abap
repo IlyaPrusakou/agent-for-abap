@@ -387,7 +387,7 @@ CLASS zpru_cl_dummy_agent_logic IMPLEMENTATION.
     DATA lo_prompt_provider TYPE REF TO zpru_if_prompt_provider.
 
     lo_prompt_provider = NEW lcl_prompt_provider( ).
-    rv_system_prompt = lo_prompt_provider->get_system_prompt( ).
+    rv_system_prompt = lo_prompt_provider->get_system_prompt( iv_agent_uuid = iv_agent_uuid ).
   ENDMETHOD.
 
   METHOD zpru_if_decision_provider~prepare_final_response.
