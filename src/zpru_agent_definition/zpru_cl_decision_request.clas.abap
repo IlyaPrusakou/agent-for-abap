@@ -1,5 +1,5 @@
 CLASS zpru_cl_decision_request DEFINITION
-  PUBLIC FINAL
+  PUBLIC
   CREATE PUBLIC.
 
   PUBLIC SECTION.
@@ -353,12 +353,9 @@ CLASS zpru_cl_decision_request IMPLEMENTATION.
         lv_promptrestrictions_count += 1.
       ENDLOOP.
 
-      IF ls_request-systemprompt-arbitrarytexttitle IS NOT INITIAL.
-        lv_string = |{ lv_string }{ ls_request-systemprompt-arbitrarytexttitle } { cl_abap_char_utilities=>newline }|.
-      ENDIF.
-
-      IF ls_request-systemprompt-arbitrarytext IS NOT INITIAL.
-        lv_string = |{ lv_string }{ ls_request-systemprompt-arbitrarytext } { cl_abap_char_utilities=>newline }|.
+      IF ls_request-systemprompt-arbitrarytexttitle IS NOT INITIAL and ls_request-systemprompt-arbitrarytext IS NOT INITIAL.
+        lv_string = |{ lv_string }{ ls_request-systemprompt-arbitrarytexttitle }: { cl_abap_char_utilities=>newline }|.
+        lv_string = |{ lv_string }{ ls_request-systemprompt-arbitrarytext }. { cl_abap_char_utilities=>newline }|.
       ENDIF.
 
     ENDIF.

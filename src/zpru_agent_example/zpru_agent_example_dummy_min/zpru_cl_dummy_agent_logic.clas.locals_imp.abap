@@ -260,7 +260,7 @@ ENDCLASS.
 
 CLASS lcl_prompt_provider IMPLEMENTATION.
   METHOD zpru_if_prompt_provider~get_system_prompt.
-    rv_system_prompt = super->zpru_if_prompt_provider~get_system_prompt( ).
+    rv_system_prompt = super->zpru_if_prompt_provider~get_system_prompt( iv_agent_uuid = iv_agent_uuid ).
 
     zpru_cl_dummy_agent_logic=>ms_method_registr-get_system_prompt = abap_true.
 
@@ -379,6 +379,35 @@ CLASS lcl_prompt_provider IMPLEMENTATION.
                                            | of packages, their marks and numbers corresponded with the { cl_abap_char_utilities=>newline } | &&
                                            | statements in the consignment note. |.
   ENDMETHOD.
+
+  METHOD set_primary_session_task.
+
+  ENDMETHOD.
+
+  METHOD set_business_rules.
+
+  ENDMETHOD.
+
+  METHOD set_format_guidelines.
+
+  ENDMETHOD.
+
+  METHOD set_prompt_restrictions.
+
+  ENDMETHOD.
+
+  METHOD set_reasoning_step.
+
+  ENDMETHOD.
+
+  METHOD set_technical_rules.
+
+  ENDMETHOD.
+
+  METHOD set_arbitrary_text.
+
+  ENDMETHOD.
+
 ENDCLASS.
 
 CLASS lcl_abap_code_tool IMPLEMENTATION.
