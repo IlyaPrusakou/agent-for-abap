@@ -1,5 +1,5 @@
 CLASS zpru_cl_tmlp_use_base_classes DEFINITION
-  PUBLIC FINAL
+  PUBLIC
   CREATE PUBLIC.
 
   PUBLIC SECTION.
@@ -12,15 +12,15 @@ CLASS zpru_cl_tmlp_use_base_classes DEFINITION
     INTERFACES zpru_if_tool_schema_provider.
     INTERFACES zpru_if_tool_info_provider.
 
+    CLASS-METHODS get_short_memory
+      RETURNING VALUE(ro_instance) TYPE REF TO zpru_if_short_memory_provider.
+
+    CLASS-METHODS get_long_memory
+      RETURNING VALUE(ro_instance) TYPE REF TO zpru_if_long_memory_provider.
+
   PRIVATE SECTION.
     CLASS-DATA so_short_memory TYPE REF TO lcl_short_memory_provider.
     CLASS-DATA so_long_memory  TYPE REF TO lcl_long_memory_provider.
-
-    CLASS-METHODS get_short_memory
-      RETURNING VALUE(ro_instance) TYPE REF TO lcl_short_memory_provider.
-
-    CLASS-METHODS get_long_memory
-      RETURNING VALUE(ro_instance) TYPE REF TO lcl_long_memory_provider.
 
 ENDCLASS.
 
