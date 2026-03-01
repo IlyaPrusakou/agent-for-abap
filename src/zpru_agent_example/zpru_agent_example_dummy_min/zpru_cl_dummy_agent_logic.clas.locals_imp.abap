@@ -431,6 +431,47 @@ ENDCLASS.
 
 CLASS lcl_adf_abap_executor IMPLEMENTATION.
   METHOD execute_code_int.
+*  DATA: ls_header         TYPE bapi2017_gm_head_01,
+*        ls_code           TYPE bapi2017_gm_code,
+*        lt_items          TYPE TABLE OF bapi2017_gm_item_create,
+*        lt_return         TYPE TABLE OF bapiret2,
+*        lv_mat_doc        TYPE mblnr.
+*
+*
+*  ls_header-pstng_date = sy-datum.
+*  ls_header-doc_date   = sy-datum.
+*  ls_header-header_txt = |RMA:{ iv_rma_id }|.
+*
+*
+*  ls_code-gm_code = '01'.
+*
+*
+*  APPEND INITIAL LINE TO lt_items ASSIGNING FIELD-SYMBOL(<ls_item>).
+*  <ls_item>-material  = iv_material.
+*  <ls_item>-plant     = iv_plant.
+*  <ls_item>-stge_loc  = iv_storage_location.
+*  <ls_item>-move_type = '651'.
+*  <ls_item>-entry_qnt = iv_quantity.
+*  <ls_item>-entry_uom = iv_uom.
+*
+*  CALL FUNCTION 'BAPI_GOODSMVT_CREATE'
+*    EXPORTING
+*      goodsmvt_header  = ls_header
+*      goodsmvt_code    = ls_code
+*    IMPORTING
+*      materialdocument = lv_mat_doc
+*    TABLES
+*      goodsmvt_item    = lt_items
+*      return           = lt_return.
+*
+*  IF lv_mat_doc IS NOT INITIAL.
+*    CALL FUNCTION 'BAPI_TRANSACTION_COMMIT' EXPORTING wait = abap_true.
+*    ev_status = |SUCCESS: Material Document { lv_mat_doc } posted.|.
+*  ELSE.
+*
+*    ev_status = |FAILED: | && lt_return[ 1 ]-message.
+*  ENDIF.
+*
   ENDMETHOD.
 ENDCLASS.
 
@@ -526,18 +567,322 @@ ENDCLASS.
 
 CLASS lcl_adf_http_request_tool IMPLEMENTATION.
   METHOD send_http_int.
+*    send_via_url( EXPORTING io_controller = io_controller
+*                            io_request    = io_request
+*                  IMPORTING eo_response   = eo_response
+*                            ev_error_flag = ev_error_flag ).
+  ENDMETHOD.
+
+  METHOD send_via_url.
+    DATA lv_url         TYPE string.
+    DATA lo_http_client TYPE REF TO if_web_http_client.
+    DATA lo_response    TYPE REF TO if_web_http_response.
+    DATA lo_util        TYPE REF TO zpru_if_agent_util.
+
+    lv_url = 'https://www.youtube.com/watch?v=bkCQK-rROWk'.
+
+    TRY.
+
+        lo_http_client = get_http_client( lv_url ).
+
+        lo_http_client->get_http_request( )->set_header_fields(
+            i_fields = VALUE #( value = if_web_http_header=>accept_application_json
+                                ( name = if_web_http_header=>content_type )
+                                ( name = if_web_http_header=>accept ) ) ).
+
+        lo_response = lo_http_client->execute( if_web_http_client=>get ).
+
+        DATA(lv_status) = lo_response->get_status( ).
+        IF lv_status-code <> '200'.
+          " raise exception
+        ENDIF.
+
+        DATA(lv_response_json) = lo_response->get_text( ).
+
+        DATA(lv_input_json) = io_request->get_data( ).
+
+        TRY.
+            lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                                iv_context = zpru_if_agent_frw=>cs_context-standard ).
+          CATCH zpru_cx_agent_core.
+            RETURN.
+        ENDTRY.
+
+        DATA(lv_output) = lo_util->append_json_to_json( iv_field_4_append = 'http_result'
+                                                        iv_json_4_append  = lv_response_json
+                                                        iv_json_target    = lv_input_json->*  ).
+
+        eo_response->set_data( ir_data = NEW string( lv_output ) ).
+
+      CATCH cx_http_dest_provider_error
+            cx_web_http_client_error.
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD get_http_client.
+    DATA lo_http_destination TYPE REF TO if_http_destination.
+
+    IF zpru_cl_logic_switch=>get_logic( ) = abap_true.
+      ro_http_client = NEW zpru_cl_web_http_client( ).
+    ELSE.
+      TRY.
+          lo_http_destination = cl_http_destination_provider=>create_by_url( i_url = iv_url ).
+          ro_http_client = cl_web_http_client_manager=>create_by_http_destination(
+                               i_destination = lo_http_destination ).
+        CATCH cx_http_dest_provider_error
+              cx_web_http_client_error.
+      ENDTRY.
+
+    ENDIF.
   ENDMETHOD.
 ENDCLASS.
 
 
 CLASS lcl_adf_service_cons_mdl_tool IMPLEMENTATION.
   METHOD consume_service_model_int.
+    DATA lt_business_data         TYPE TABLE OF zpru_storage_bin=>tys_warehouse_storage_bin_type.
+    DATA lo_http_client           TYPE REF TO if_web_http_client.
+    DATA lo_client_proxy          TYPE REF TO /iwbep/if_cp_client_proxy.
+    DATA lo_request               TYPE REF TO /iwbep/if_cp_request_read_list.
+    DATA lo_response              TYPE REF TO /iwbep/if_cp_response_read_lst.
+    DATA lo_filter_factory        TYPE REF TO /iwbep/if_cp_filter_factory.
+    DATA lo_filter_node_1         TYPE REF TO /iwbep/if_cp_filter_node.
+    DATA lo_filter_node_2         TYPE REF TO /iwbep/if_cp_filter_node.
+    DATA lo_filter_node_root      TYPE REF TO /iwbep/if_cp_filter_node.
+    DATA lt_range_ewmwarehouse    TYPE RANGE OF char4.
+    DATA lt_range_ewmstorage_bin  TYPE RANGE OF char18.
+    DATA lv_comm_scenario         TYPE if_com_management=>ty_cscn_id.
+    DATA lv_service_id            TYPE if_com_management=>ty_cscn_outb_srv_id.
+    DATA lv_comm_system_id        TYPE if_com_management=>ty_cs_id.
+    DATA lv_repository_id         TYPE /iwbep/if_cp_runtime_types=>ty_proxy_model_repo_id.
+    DATA lv_proxy_model_id        TYPE /iwbep/if_cp_runtime_types=>ty_proxy_model_id.
+    DATA lv_proxy_model_version   TYPE /iwbep/if_cp_runtime_types=>ty_proxy_model_version.
+    DATA lv_relative_service_root TYPE string.
+    DATA lo_util                  TYPE REF TO zpru_if_agent_util.
+    DATA lv_response_json         TYPE string.
+
+    lv_comm_scenario = 'SAP_COM_0550'.
+    lv_service_id = 'API_WHSE_STORAGE_BIN_2'.
+    lv_comm_system_id = 'S4H_EXT_SYSTEM'.
+    lv_repository_id = 'DEFAULT'.
+    lv_proxy_model_id = 'ZPRU_STORAGE_BIN'.
+    lv_proxy_model_version = '0001'.
+    lv_relative_service_root = '/sap/opu/odata4/sap/api_whse_storage_bin_2/srvd_a2x/sap/warehousestoragebin/0001'.
+
+    TRY.
+        DATA(lo_destination) = cl_http_destination_provider=>create_by_comm_arrangement(
+                                   comm_scenario  = lv_comm_scenario
+                                   comm_system_id = lv_comm_system_id
+                                   service_id     = lv_service_id ).
+        lo_http_client = cl_web_http_client_manager=>create_by_http_destination( lo_destination ).
+        lo_client_proxy = /iwbep/cl_cp_factory_remote=>create_v4_remote_proxy(
+                              is_proxy_model_key       = VALUE #( repository_id       = lv_repository_id
+                                                                  proxy_model_id      = lv_proxy_model_id
+                                                                  proxy_model_version = lv_proxy_model_version )
+                              io_http_client           = lo_http_client
+                              iv_relative_service_root = lv_relative_service_root ).
+        ASSERT lo_http_client IS BOUND.
+
+        lo_request = lo_client_proxy->create_resource_for_entity_set( 'WAREHOUSE_STORAGE_BIN' )->create_request_for_read( ).
+
+        lo_filter_factory = lo_request->create_filter_factory( ).
+        lo_filter_node_1  = lo_filter_factory->create_by_range( iv_property_path = 'EWMWAREHOUSE'
+                                                                it_range         = lt_range_ewmwarehouse ).
+        lo_filter_node_2  = lo_filter_factory->create_by_range( iv_property_path = 'EWMSTORAGE_BIN'
+                                                                it_range         = lt_range_ewmstorage_bin ).
+        lo_filter_node_root = lo_filter_node_1->and( lo_filter_node_2 ).
+        lo_request->set_filter( lo_filter_node_root ).
+        lo_request->set_top( 50 )->set_skip( 0 ).
+
+        lo_response = lo_request->execute( ).
+        lo_response->get_business_data( IMPORTING et_business_data = lt_business_data ).
+
+*        DATA(lv_input_json) = io_request->get_data( ).
+
+        TRY.
+            lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                                iv_context = zpru_if_agent_frw=>cs_context-standard ).
+          CATCH zpru_cx_agent_core.
+            RETURN.
+        ENDTRY.
+
+        lo_util->convert_to_string( EXPORTING ir_abap   = REF #( lt_business_data )
+                                    CHANGING  cr_string = lv_response_json ).
+
+*        DATA(lv_output) = lo_util->append_json_to_json( iv_field_4_append = 'csm_result'
+*                                                        iv_json_4_append  = lv_response_json
+*                                                        iv_json_target    = lv_input_json->*  ).
+
+*        eo_response->set_data( ir_data = NEW string( lv_output ) ).
+
+      CATCH /iwbep/cx_cp_remote INTO DATA(lx_remote).
+        RAISE SHORTDUMP lx_remote.
+      CATCH /iwbep/cx_gateway INTO DATA(lx_gateway).
+        RAISE SHORTDUMP lx_gateway.
+      CATCH cx_http_dest_provider_error INTO DATA(lx_dest_provider_error).
+        RAISE SHORTDUMP lx_dest_provider_error.
+      CATCH cx_web_http_client_error INTO DATA(lx_web_http_client_error).
+        RAISE SHORTDUMP lx_web_http_client_error.
+    ENDTRY.
   ENDMETHOD.
 ENDCLASS.
 
 
 CLASS lcl_adf_call_llm_tool IMPLEMENTATION.
   METHOD call_large_language_model_int.
+*    DATA lo_llm_api TYPE REF TO if_aic_completion_api.
+*    DATA lo_message TYPE REF TO if_aic_message_container.
+
+*    preprocess_llm_request( EXPORTING iv_islm_scenario = `MY_GEMINI_3`
+*                                      io_controller    = io_controller
+*                                      io_request       = io_request
+*                            IMPORTING eo_message       = lo_message
+*                                      eo_llm_api       = lo_llm_api
+*                                      ev_error_flag    = ev_error_flag ).
+
+    IF ev_error_flag = abap_true.
+      RETURN.
+    ENDIF.
+
+*    process_llm_request( EXPORTING io_controller = io_controller
+*                                   io_request    = io_request
+*                                   io_message    = lo_message
+*                                   io_llm_api    = lo_llm_api
+*                         IMPORTING eo_response   = eo_response
+*                                   ev_error_flag = ev_error_flag ).
+  ENDMETHOD.
+
+  METHOD prepare_prompt.
+    ro_message = io_llm_api->create_message_container( ).
+    ro_message->set_system_role( iv_system_role ).
+    ro_message->add_user_message( iv_user_message ).
+    ro_message->add_assistant_message( iv_assistant_message ).
+    ro_message->add_user_message( iv_user_message_2 ).
+  ENDMETHOD.
+
+  METHOD get_response_schema.
+    " {
+    "   "type": "object",
+    "   "properties": {
+    "     "explanation": {
+    "       "type": "string",
+    "       "description": "Short technical explanation of the solution."
+    "     },
+    "     "abap_code": {
+    "       "type": "string",
+    "       "description": "The executable ABAP code block."
+    "     },
+    "     "objects_used": {
+    "       "type": "array",
+    "       "items": { "type": "string" },
+    "       "description": "List of SAP standard tables or classes mentioned."
+    "     },
+    "     "confidence_score": {
+    "       "type": "number",
+    "       "description": "Model's certainty in this answer from 0 to 1."
+    "     }
+    "   },
+    "   "required": ["explanation", "abap_code", "objects_used"]
+    " }
+
+    rv_response_schema =
+       |\{ | &&
+       |  "type": "object", | &&
+       |  "properties": \{ | &&
+       |    "explanation": \{ "type": "string" \}, | &&
+       |    "abap_code": \{ "type": "string" \}, | &&
+       |    "objects_used": \{ "type": "array", "items": \{ "type": "string" \} \} | &&
+       |  \}, | &&
+       |  "required": ["explanation", "abap_code", "objects_used"] | &&
+       |\}|.
+  ENDMETHOD.
+
+  METHOD preprocess_llm_request.
+    " TODO: parameter IO_CONTROLLER is never used (ABAP cleaner)
+    " TODO: parameter IO_REQUEST is never used (ABAP cleaner)
+
+    DATA lo_llm_parameter TYPE REF TO if_aic_completion_parameters.
+
+    CLEAR: eo_message,
+           eo_llm_api.
+
+    ev_error_flag = abap_false.
+
+    DATA(lo_llm_api_factory) = lcl_common_algorithms=>get_llm_api_factory( ).
+
+    TRY.
+        eo_llm_api = lo_llm_api_factory->create_instance( iv_islm_scenario ).
+      CATCH cx_aic_api_factory.
+        ev_error_flag = abap_true.
+        RETURN.
+    ENDTRY.
+
+    IF eo_llm_api IS NOT BOUND.
+      ev_error_flag = abap_true.
+      RETURN.
+    ENDIF.
+
+    eo_message = prepare_prompt( io_llm_api           = eo_llm_api
+                                 iv_system_role       = `You are an ABAP expert`
+                                 iv_user_message      = `Does ABAP support OO programming?`
+                                 iv_assistant_message = `Yes`
+                                 iv_user_message_2    = `Can you build RESTful applications in ABAP?` ).
+
+    lo_llm_parameter = eo_llm_api->get_parameter_setter( ).
+    lo_llm_parameter->set_temperature( `1.0` ).
+    lo_llm_parameter->set_maximum_tokens( 2000 ).
+    lo_llm_parameter->set_any_parameter( name  = `responseMimeType`
+                                         value = `application/json` ).
+    lo_llm_parameter->set_any_parameter( name  = `thinking_level`
+                                         value = `high` ).
+
+    DATA(lv_schema) = get_response_schema( ).
+    lo_llm_parameter->set_any_parameter( name  = `responseSchema`
+                                         value = lv_schema ).
+
+    lo_llm_parameter->set_any_parameter( name  = `tools`
+                                         value = `[{ "google_search": {} }]` ).
+  ENDMETHOD.
+
+  METHOD process_llm_request.
+    " TODO: parameter IO_CONTROLLER is never used (ABAP cleaner)
+    " TODO: parameter EO_RESPONSE is never cleared or assigned (ABAP cleaner)
+    " TODO: parameter EV_ERROR_FLAG is never cleared or assigned (ABAP cleaner)
+
+    DATA ls_result_payload TYPE ts_result_payload.
+    DATA lo_llm_result     TYPE REF TO if_aic_completion_api_result.
+    DATA lo_util           TYPE REF TO zpru_if_agent_util.
+    DATA lv_json_2_append  TYPE zpru_if_agent_frw=>ts_json.
+
+    TRY.
+        lo_llm_result = io_llm_api->execute_for_messages( io_message ).
+        ls_result_payload-llm_response = lo_llm_result->get_completion( ).
+
+      CATCH cx_aic_completion_api.
+        RETURN.
+    ENDTRY.
+
+    ls_result_payload-llm_total_tokens           = lo_llm_result->get_total_token_count( ).
+    ls_result_payload-llm_finish_reason          = lo_llm_result->get_finish_reason( ).
+    ls_result_payload-llm_original_finish_reason = lo_llm_result->get_original_finish_reason( ).
+
+    lo_util->convert_to_string( EXPORTING ir_abap   = REF #( ls_result_payload )
+                                CHANGING  cr_string = lv_json_2_append ).
+
+    DATA(lv_input_json) = io_request->get_data( ).
+
+    TRY.
+        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = zpru_if_agent_frw=>cs_context-standard ).
+      CATCH zpru_cx_agent_core.
+        RETURN.
+    ENDTRY.
+
+    DATA(lv_output) = lo_util->append_json_to_json( iv_field_4_append = 'llm_result'
+                                                    iv_json_4_append  = lv_json_2_append
+                                                    iv_json_target    = lv_input_json->*  ).
+
+    eo_response->set_data( ir_data = NEW string( lv_output ) ).
   ENDMETHOD.
 ENDCLASS.
 
@@ -554,12 +899,171 @@ ENDCLASS.
 
 CLASS lcl_adf_user_tool IMPLEMENTATION.
   METHOD execute_user_tool_int.
+*    IF zpru_cl_logic_switch=>get_logic( ) = abap_true.
+*
+*      process_dummy_email( EXPORTING io_controller = io_controller
+*                                     io_request    = io_request
+*                           IMPORTING eo_response   = eo_response
+*                                     ev_error_flag = ev_error_flag ).
+*
+*    ELSE.
+*      process_prod_email( EXPORTING io_controller = io_controller
+*                                    io_request    = io_request
+*                          IMPORTING eo_response   = eo_response
+*                                    ev_error_flag = ev_error_flag ).
+*
+*    ENDIF.
+  ENDMETHOD.
+
+  METHOD process_dummy_email.
+    " TODO: parameter IO_CONTROLLER is never used (ABAP cleaner)
+    " TODO: parameter EO_RESPONSE is never cleared or assigned (ABAP cleaner)
+
+    DATA lv_sender       TYPE cl_bcs_mail_message=>ty_address.
+    DATA lv_recipient    TYPE cl_bcs_mail_message=>ty_address.
+    DATA lv_subject      TYPE cl_bcs_mail_message=>ty_subject.
+    DATA lv_content      TYPE string.
+    DATA lv_content_type TYPE cl_bcs_mail_bodypart=>ty_content_type.
+    DATA lo_util         TYPE REF TO zpru_if_agent_util.
+    DATA lv_input        TYPE zpru_if_agent_frw=>ts_json.
+
+    ev_error_flag = abap_false.
+
+    TRY.
+        lo_util ?= zpru_cl_agent_service_mngr=>get_service( iv_service = `ZPRU_IF_AGENT_UTIL`
+                                                            iv_context = zpru_if_agent_frw=>cs_context-standard ).
+      CATCH zpru_cx_agent_core.
+        RETURN.
+    ENDTRY.
+
+    lv_input =  io_request->get_data( )->*.
+
+    lv_sender = lo_util->search_node_in_json( iv_json           = lv_input
+                                              iv_field_2_search = 'sender' ).
+
+    lv_recipient = lo_util->search_node_in_json( iv_json           = lv_input
+                                                 iv_field_2_search = 'recipient' ).
+
+    lv_subject = lo_util->search_node_in_json( iv_json           = lv_input
+                                               iv_field_2_search = 'subject' ).
+
+    lv_content = lo_util->search_node_in_json( iv_json           = lv_input
+                                               iv_field_2_search = 'content' ).
+
+    lv_content = lo_util->search_node_in_json( iv_json           = lv_input
+                                               iv_field_2_search = 'content_type' ).
+
+    TRY.
+        prepare_dummy_email( EXPORTING iv_sender       = lv_sender
+                                       iv_recipient    = lv_recipient
+                                       iv_subject      = lv_subject
+                                       iv_content      = lv_content
+                                       iv_content_type = lv_content_type
+                             IMPORTING eo_mail_manager = DATA(lo_mail_manager) ).
+
+        lo_mail_manager->send( IMPORTING ev_mail_status = DATA(lv_email_status) ).
+
+        IF lv_email_status = 'E'.
+          ev_error_flag = abap_true.
+          RETURN.
+        ENDIF.
+
+        DATA(lv_response) = |EMAIL TO { lv_recipient } HAS BEEN SENT SUCCESSFULLY|.
+
+        DATA(lv_output) = lo_util->append_json_to_json( iv_field_4_append = 'email_response'
+                                                        iv_json_4_append  = lv_response
+                                                        iv_json_target    = lv_input ).
+
+        eo_response->set_data( NEW string( lv_output ) ).
+
+      CATCH cx_bcs_mail.
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD prepare_dummy_email.
+    TRY.
+        eo_mail_manager = zpru_cl_bcs_mail_message=>create_instance( ).
+        eo_mail_manager->set_sender( iv_sender ).
+        eo_mail_manager->add_recipient( iv_recipient ).
+        eo_mail_manager->set_subject( iv_subject ).
+
+        DATA(lo_email_message) = zpru_cl_mail_bodypart=>create_instance( iv_content      = iv_content
+                                                                         iv_content_type = iv_content_type ).
+
+        eo_mail_manager->set_main( lo_email_message ).
+      CATCH cx_bcs_mail.
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD process_prod_email.
+*    DATA lo_mail_manager TYPE REF TO cl_bcs_mail_message.
+*    DATA lv_sender       TYPE cl_bcs_mail_message=>ty_address.
+*    DATA lv_recipient    TYPE cl_bcs_mail_message=>ty_address.
+*    DATA lv_subject      TYPE cl_bcs_mail_message=>ty_subject.
+*    DATA lv_content      TYPE string.
+*    DATA lv_content_type TYPE cl_bcs_mail_bodypart=>ty_content_type.
+*
+*    lv_sender = `my.email@gmail.com`.
+*    lv_recipient = `your.email@gmail.com`.
+*    lv_subject = `CMR processing`.
+*    lv_content = `Let's discuss CMR process`.
+*    lv_content_type = 'text/html'.
+*
+*
+*    TRY.
+*        lo_mail_manager = cl_bcs_mail_message=>create_instance( ).
+*        lo_mail_manager->set_sender( lv_sender ).
+*        lo_mail_manager->add_recipient( lv_recipient ).
+*        lo_mail_manager->set_subject( lv_subject ).
+*
+*        DATA(lo_email_message) = cl_bcs_mail_textpart=>create_instance( iv_content      = lv_content
+*                                                                        iv_content_type = lv_content_type ).
+*
+*        lo_mail_manager->set_main( lo_email_message ).
+*
+*        lo_mail_manager->send( IMPORTING et_status      = DATA(lt_status)
+*                                         ev_mail_status = DATA(lv_email_status) ).
+*
+*      CATCH cx_bcs_mail.
+*    ENDTRY.
   ENDMETHOD.
 ENDCLASS.
 
 
 CLASS lcl_adf_tool_provider IMPLEMENTATION.
   METHOD provide_tool_instance.
+    CASE is_tool_master_data-toolname.
+
+      WHEN zpru_if_adf_type_and_constant=>cs_step_type-nested_agent.
+        ro_executor = NEW lcl_adf_nested_agent( ).
+
+      WHEN zpru_if_adf_type_and_constant=>cs_step_type-knowledge_source.
+        ro_executor = NEW lcl_adf_knowledge_provider( ).
+
+      WHEN zpru_if_adf_type_and_constant=>cs_step_type-abap_code.
+        ro_executor = NEW lcl_adf_abap_executor( ).
+
+      WHEN zpru_if_adf_type_and_constant=>cs_step_type-http_request.
+        ro_executor = NEW lcl_adf_http_request_tool( ).
+
+      WHEN zpru_if_adf_type_and_constant=>cs_step_type-service_consumption_model.
+        ro_executor = NEW lcl_adf_service_cons_mdl_tool( ).
+
+      WHEN zpru_if_adf_type_and_constant=>cs_step_type-call_llm.
+        ro_executor = NEW lcl_adf_call_llm_tool( ).
+
+      WHEN zpru_if_adf_type_and_constant=>cs_step_type-dynamic_abap_code.
+        ro_executor = NEW lcl_adf_dynamic_abap_code_tool( ).
+
+      WHEN zpru_if_adf_type_and_constant=>cs_step_type-infer_ml_model.
+        ro_executor = NEW lcl_adf_ml_model_inference( ).
+
+      WHEN zpru_if_adf_type_and_constant=>cs_step_type-user_tool.
+        ro_executor = NEW lcl_adf_user_tool( ).
+
+      WHEN OTHERS.
+        RETURN.
+    ENDCASE.
   ENDMETHOD.
 ENDCLASS.
 
